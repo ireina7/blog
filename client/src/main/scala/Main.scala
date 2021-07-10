@@ -45,7 +45,7 @@ object Main {
     val content: dom.Element = {
         div(marginLeft := 50, marginRight := 50, fontSize := 20)(
             p("""
-这是一个首页测试，目前问题还有很多，视觉性较差。
+这是一个首页测试，目前问题还有很多，视觉性较差。.
 我是Ireina，混迹在世界各地的旅行魔女，遇到我将会是你的荣幸。
             """),
             p("高亮解决！"),
