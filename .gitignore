@@ -37,3 +37,4 @@ classes/
 .metals
 
 assets/
+node_modules/
