@@ -86,7 +86,7 @@ lazy val shared = (project in file("shared"))
 
 lazy val jsPipe = taskKey[Unit]("Copy compiled js files into server")
 jsPipe := {
-    println("Copying js files to shared assets...")
+    println("Copying js and css files to shared assets...")
     copyFile(
         "./client/target/scala-2.13/client-fastopt/main.js",
         "./shared/assets/js/main.js"
@@ -94,6 +94,10 @@ jsPipe := {
     copyFile(
         "./client/target/scala-2.13/client-fastopt/main.js.map",
         "./shared/assets/js/main.js.map"
+    )
+    copyFile(
+        "./client/css/main.css",
+        "./shared/assets/css/main.css"
     )
 }
 
