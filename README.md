@@ -2,10 +2,14 @@
 My personal blog written purely in Scala.
 - version: `0.1.0`
 
-## Using
+## Dependences
 - `cats` and `cats-effect` for core
 - `Scala.js` and `scalatags` for front end
 - `http4s` for back end
+
+
+## Configuration
+- Please refer to [configuration file](./doc/Configuration.md)
 
 ## Usage
 0. `cd <this folder>`
