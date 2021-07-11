@@ -1,6 +1,6 @@
-# Blog
+# λ Blog
+My personal blog written purely in Scala.  
 ![k-on!](./img/k-on-q.png)  
-My personal blog written purely in Scala.
 - version: `0.1.0`
 
 ## Dependences
