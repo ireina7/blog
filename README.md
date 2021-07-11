@@ -1,12 +1,14 @@
 # Blog
 My personal blog written purely in Scala.
+- version: `0.1.0`
 
 ## Using
-- `cats` for core
-- `Scala.js` & `scalatags` for front end
+- `cats` and `cats-effect` for core
+- `Scala.js` and `scalatags` for front end
 - `http4s` for back end
 
 ## Usage
+0. `cd <this folder>`
 1. `sbt`
 2. `compile`
 3. `server/run`

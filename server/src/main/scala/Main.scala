@@ -22,7 +22,7 @@ object SimpleHttpServer extends IOApp {
         blocker <- Blocker[IO]
         server <- BlazeServerBuilder[IO](global)
             .bindHttp(8080)
-            .withHttpApp(Routes.routes.orNotFound)
+            .withHttpApp((Routes.mainRoutes[IO] <+> Routes.routes).orNotFound)
             .resource
         } yield server
 }

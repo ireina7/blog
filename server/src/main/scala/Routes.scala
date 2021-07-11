@@ -19,22 +19,6 @@ import org.http4s.syntax.kleisli._
 import scala.concurrent.ExecutionContext.global
 object Routes {
 
-    def mainRoutes[F[_]: Sync]: HttpRoutes[F] = {
-        val dsl = new Http4sDsl[F]{}
-        import dsl._
-        HttpRoutes.of[F] {
-            case req @ GET -> Root =>
-                val helloWorldInScalaTags = html(mainTitle("ScalaTags Playground"), body(p("Hello World!")))
-                println("!!!!!")
-                Ok(helloWorldInScalaTags)
-                // StaticFile.fromString("").getOrElseF(NotFound())
-            case GET -> Root / "about" =>
-                Ok(About.main)
-            case GET -> Root / "shutdown" =>
-                sys.exit()
-        }
-    }
-
     import java.util.concurrent._
     import scala.concurrent.ExecutionContext
 
@@ -42,12 +26,28 @@ object Routes {
     val blocker = Blocker.liftExecutorService(blockingPool)
     implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
 
+    def mainRoutes[F[_]: Sync]: HttpRoutes[F] = {
+        val dsl = new Http4sDsl[F]{}
+        import dsl._
+        HttpRoutes.of[F] {
+            case req @ GET -> Root =>
+                val helloWorldInScalaTags = page.Frame.index//html(mainTitle("ScalaTags Playground"), body(p("Hello World!")))
+                Ok(helloWorldInScalaTags)
+            case GET -> Root / "about" =>
+                Ok(About.main)
+            case GET -> Root / "shutdown" =>
+                sys.exit()
+        }
+    }
+
+    
+
     val dsl = new Http4sDsl[IO]{}
     import dsl._
     val routes = HttpRoutes.of[IO] {
-        case request @ GET -> Root =>
-            StaticFile.fromFile(new File("./shared/assets/index.html"), blocker, Some(request))
-                .getOrElseF(NotFound())
+        // case request @ GET -> Root =>
+        //     StaticFile.fromFile(new File("./shared/assets/index.html"), blocker, Some(request))
+        //         .getOrElseF(NotFound())
         case request @ GET -> Root / file if file.endsWith(".js") => 
             StaticFile.fromFile(new File(s"./shared/assets/js/$file"), blocker, Some(request))
                 .getOrElseF(NotFound())
