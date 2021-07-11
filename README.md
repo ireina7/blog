@@ -1,5 +1,5 @@
 # Blog
-[k-on!](./img/k-on-q.png)
+![k-on!](./img/k-on-q.png)  
 My personal blog written purely in Scala.
 - version: `0.1.0`
 
