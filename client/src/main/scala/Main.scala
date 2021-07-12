@@ -12,6 +12,7 @@ import js.annotation.{
 import scalatags.JsDom.all._
 
 
+@JSExportTopLevel("blog")
 object Main {
     def main(args: Array[String]): Unit = {
         println("Hello world!")
@@ -35,7 +36,7 @@ object Main {
                 footer
             )
         document.body.appendChild(sideBar)
-        document.getElementById("content").appendChild(content)
+        // document.getElementById("content").appendChild(content)
         // document.body.appendChild(main.render)
         // ScalaJSExample.draw(canvas)
         // ScalaJSExample.clock(canvas)
@@ -103,26 +104,32 @@ def searchBar: dom.Element = {
     val sideBar: dom.Element = {
 
         div(id := "mySidenav", `class` := "sidenav")(
-            a(href := "#")("About"),
+            a(href := "/")("Home"),
+            a(href := "/about")("About"),
             a(href := "#")("Filter"),
             a(href := "#")("Category"),
             a(href := "#")("Structure"),
         )
     }.render
 
-
+    @JSExport
+    val sideBarWidth = "500px"
+    @JSExport
     var sideBarShow = false
+    
+    @JSExport
+    def openSideBar(): Unit = {
+        document.getElementById("mySidenav").asInstanceOf[html.Element].style.width = sideBarWidth
+        sideBarShow = true
+    }
+    @JSExport
+    def closeSideBar(): Unit = {
+        document.getElementById("mySidenav").asInstanceOf[html.Element].style.width = "0";
+        sideBarShow = false
+    }
+    
     val navBar: dom.Element = {
-
-        val sideBarWidth = "500px"
-        def openSideBar(): Unit = {
-            document.getElementById("mySidenav").asInstanceOf[html.Element].style.width = sideBarWidth
-            sideBarShow = true
-        }
-        def closeSideBar(): Unit = {
-            document.getElementById("mySidenav").asInstanceOf[html.Element].style.width = "0";
-            sideBarShow = false
-        }
+        
         div(
             backgroundImage := "url(/assets/images/yuii.jpg)", 
             backgroundPosition := "right bottom",

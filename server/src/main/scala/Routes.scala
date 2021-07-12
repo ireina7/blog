@@ -32,18 +32,26 @@ object Routes {
     def mainRoutes[F[_]: Sync]: HttpRoutes[F] = {
         val dsl = new Http4sDsl[F]{}
         import dsl._
-        import blog.page.Frame
+        import blog.page._
         HttpRoutes.of[F] {
             case req @ GET -> Root =>
                 val helloWorldInScalaTags = Frame.index()//html(mainTitle("ScalaTags Playground"), body(p("Hello World!")))
                 Ok(helloWorldInScalaTags)
             case req @ GET -> Root / "view" =>
-                val content = Frame.index(Frame.item(
-                    "Test title!", "Ireina", new java.util.Date(), div()
-                ))
+                val content = Frame.index(
+                    div(
+                        for(i <- 0 to 10) yield
+                        Frame.item(
+                            title = s"第${i}篇文章！", 
+                            author = "Ireina", 
+                            date = new java.util.Date(),
+                            view = div(hr),
+                        ),
+                    )
+                )
                 Ok(content)
             case GET -> Root / "about" =>
-                Ok("About.main")
+                Ok(About.index)
             case GET -> Root / "shutdown" =>
                 sys.exit()
         }

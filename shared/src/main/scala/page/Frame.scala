@@ -40,7 +40,7 @@ object Frame {
             ),
             body(
                 navBar, 
-                br, hr,
+                br,
                 div(id := "content")(mainContent), // entry
                 br, hr,
                 footer,
@@ -54,7 +54,7 @@ object Frame {
 
     val searchBar: TypedTag[HTML] = {
 
-        form(cls := "d-flex", marginLeft := 45, bottom := 0, marginTop := 30, width := 600)(
+        form(cls := "blog-searchBar d-flex")(
             input(
                 `class` := "form-control me-2", 
                 `type` := "search",
@@ -66,19 +66,21 @@ object Frame {
         )
     }
 
+
     val navBar: TypedTag[HTML] = {
 
         div(
-            backgroundImage := "url(/assets/img/yuii.jpg)", 
+            `class` := "blog-header",
+            backgroundImage := "url(/assets/img/yuii.jpg)",
             backgroundPosition := "right bottom",
             backgroundSize := "cover",
         )(
-            tag("nav")(`class` := "nav sticky-top", marginTop := 0, marginLeft := 50, height := 150)(
+            tag("nav")(`class` := "nav blog-navigator sticky-top")(
                 div(marginTop := 20)(
                     a(
                         `class` := "navbar-brand",
                         href := "#",
-                        // onclick := { () => if (!sideBarShow) openSideBar() else closeSideBar() }
+                        onclick := "if (!blog.sideBarShow) {blog.openSideBar()} else {blog.closeSideBar()}"
                     )(
                         img(`class` := "spinner", src := "/assets/img/lambda-icon-18.jpg", width := 70),
                     ),
@@ -87,7 +89,7 @@ object Frame {
                 i(fontSize := 20)(b("TM"))
                 // searchBar,
             ),
-            searchBar,
+            searchBar, br,
             pre(
                 marginLeft := 55,
                 fontSize := 18,
@@ -99,6 +101,7 @@ trait Monad[M[_]] {
     def pure[A](a: A): M[A]
     extension [A](ma: M[A]) def flatMap[B](f: A => M[B]): M[B]
 }
+
                 """
             )
         )
@@ -116,6 +119,9 @@ trait Monad[M[_]] {
         )
     }
 
+    def text(cls: String)(content: String): TypedTag[HTML] = 
+        span(`class` := cls)(content)
+
 
     def item(
         title: String,
@@ -124,9 +130,10 @@ trait Monad[M[_]] {
         view: TypedTag[HTML]
     ): TypedTag[HTML] = {
         
-        div(`class` := "item")(
-            h3(title),
-            p(author),
+        div(`class` := "blog-item")(
+            a(href := "#", `class` := "blog-item-title")(title),
+            p("by ", text("blog-item-author")(author)),
+            p(text("blog-item-date")(date.toString)),
             view,
         )
     }
