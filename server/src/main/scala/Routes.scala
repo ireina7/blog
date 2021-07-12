@@ -6,9 +6,12 @@ import scalatags.Text.all._
 import scalatags.Text.tags2.{title => mainTitle}
 
 // import blog.Main.content
-import page.About
+// import page.About
 import java.io.File
-import org.http4s._
+import org.http4s.{
+    client => http4sClient,
+    _
+}
 import org.http4s.dsl._
 
 import cats.effect._
@@ -29,12 +32,18 @@ object Routes {
     def mainRoutes[F[_]: Sync]: HttpRoutes[F] = {
         val dsl = new Http4sDsl[F]{}
         import dsl._
+        import blog.page.Frame
         HttpRoutes.of[F] {
             case req @ GET -> Root =>
-                val helloWorldInScalaTags = page.Frame.index//html(mainTitle("ScalaTags Playground"), body(p("Hello World!")))
+                val helloWorldInScalaTags = Frame.index()//html(mainTitle("ScalaTags Playground"), body(p("Hello World!")))
                 Ok(helloWorldInScalaTags)
+            case req @ GET -> Root / "view" =>
+                val content = Frame.index(Frame.item(
+                    "Test title!", "Ireina", new java.util.Date(), div()
+                ))
+                Ok(content)
             case GET -> Root / "about" =>
-                Ok(About.main)
+                Ok("About.main")
             case GET -> Root / "shutdown" =>
                 sys.exit()
         }
@@ -44,15 +53,13 @@ object Routes {
 
     val dsl = new Http4sDsl[IO]{}
     import dsl._
+    val assets = blog.Shared.assetsPath
     val routes = HttpRoutes.of[IO] {
         // case request @ GET -> Root =>
         //     StaticFile.fromFile(new File("./shared/assets/index.html"), blocker, Some(request))
         //         .getOrElseF(NotFound())
-        case request @ GET -> Root / file if file.endsWith(".js") => 
-            StaticFile.fromFile(new File(s"./shared/assets/js/$file"), blocker, Some(request))
-                .getOrElseF(NotFound())
-        case request @ GET -> Root / file if file.endsWith(".css") => 
-            StaticFile.fromFile(new File(s"./shared/assets/css/$file"), blocker, Some(request))
+        case request @ GET -> "assets" /: file =>
+            StaticFile.fromFile(new File(s"$assets/$file"), blocker, Some(request))
                 .getOrElseF(NotFound())
     }
 }

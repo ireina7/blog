@@ -55,6 +55,7 @@ lazy val server = (project in file("server"))
         addCompilerPlugin("com.olegpy"    %% "better-monadic-for" % "0.3.1"),
     )
 
+    
 lazy val client = (project in file("client"))
     .enablePlugins(ScalaJSPlugin, ScalaJSWeb)
     .dependsOn(shared)
@@ -77,6 +78,7 @@ lazy val shared = (project in file("shared"))
         scalaVersion := "2.13.6",
 
         libraryDependencies += junit % Test,
+        libraryDependencies += "com.lihaoyi" %% "scalatags" % "0.9.1",
     )
 
 
