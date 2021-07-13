@@ -52,6 +52,8 @@ object Routes {
                 Ok(content)
             case GET -> Root / "about" =>
                 Ok(About.index)
+            case GET -> Root / "filter" =>
+                Ok(Filter.index())
             case GET -> Root / "shutdown" =>
                 sys.exit()
         }

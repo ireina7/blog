@@ -106,7 +106,7 @@ def searchBar: dom.Element = {
         div(id := "mySidenav", `class` := "sidenav")(
             a(href := "/")("Home"),
             a(href := "/about")("About"),
-            a(href := "#")("Filter"),
+            a(href := "/filter")("Filter"),
             a(href := "#")("Category"),
             a(href := "#")("Structure"),
         )

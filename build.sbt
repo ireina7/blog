@@ -25,6 +25,7 @@ val CirceVersion = "0.13.0"
 val MunitVersion = "0.7.20"
 val MunitCatsEffectVersion = "0.13.0"
 val LogbackVersion = "1.2.3"
+val doobieVersion = "0.12.1"
 lazy val server = (project in file("server"))
     .dependsOn(shared)
     .settings(
@@ -40,6 +41,7 @@ lazy val server = (project in file("server"))
         ),
 
         libraryDependencies ++= Seq(
+            // Http4s server
             "org.http4s"      %% "http4s-blaze-server" % Http4sVersion,
             "org.http4s"      %% "http4s-blaze-client" % Http4sVersion,
             "org.http4s"      %% "http4s-circe"        % Http4sVersion,
@@ -50,6 +52,10 @@ lazy val server = (project in file("server"))
             "org.typelevel"   %% "munit-cats-effect-2" % MunitCatsEffectVersion % Test,
             "ch.qos.logback"  %  "logback-classic"     % LogbackVersion,
             "com.lihaoyi"     %% "scalatags"           % "0.9.1",
+            // Doobie functional JDBC layer
+            "org.tpolecat"    %% "doobie-core"         % doobieVersion,
+            "org.tpolecat"    %% "doobie-postgres"     % doobieVersion,
+            "org.tpolecat"    %% "doobie-specs2"       % doobieVersion,
         ),
         addCompilerPlugin("org.typelevel" %% "kind-projector"     % "0.10.3"),
         addCompilerPlugin("com.olegpy"    %% "better-monadic-for" % "0.3.1"),
@@ -72,15 +78,23 @@ lazy val client = (project in file("client"))
 
 
 lazy val shared = (project in file("shared"))
+    .aggregate(skeleton)
     .settings(
         name := "shared",
-
         scalaVersion := "2.13.6",
 
         libraryDependencies += junit % Test,
         libraryDependencies += "com.lihaoyi" %% "scalatags" % "0.9.1",
     )
 
+lazy val skeleton = (project in file("skeleton"))
+    .settings(
+        name := "skeleton",
+        scalaVersion := "2.13.6",
+
+        libraryDependencies += junit % Test,
+        libraryDependencies += "com.lihaoyi" %% "scalatags" % "0.9.1",
+    )
 
 
 
