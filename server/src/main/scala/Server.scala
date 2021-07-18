@@ -8,15 +8,15 @@ import org.http4s.server.middleware.Logger
 import scala.concurrent.ExecutionContext.global
 
 object Server {
-    def stream[F[_] : ConcurrentEffect](implicit T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
-        val httpApp = Routes.mainRoutes[F].orNotFound
-        val finalHttpApp = Logger.httpApp(true, true)(httpApp)
-        for {
-            exitCode <- BlazeServerBuilder[F](global)
-                .bindHttp(8080, "0.0.0.0")
-                .withHttpApp(finalHttpApp)
-                .serve
-        } yield exitCode
-    }.drain
+  def stream[F[_] : ConcurrentEffect](implicit T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
+    val httpApp = Routes.mainRoutes[F].orNotFound
+    val finalHttpApp = Logger.httpApp(true, true)(httpApp)
+    for {
+      exitCode <- BlazeServerBuilder[F](global)
+        .bindHttp(8080, "0.0.0.0")
+        .withHttpApp(finalHttpApp)
+        .serve
+    } yield exitCode
+  }.drain
     
 }
