@@ -3,6 +3,7 @@ ThisBuild / version := "0.1.0"
 ThisBuild / scalaVersion := "2.13.6"
 
 import Dependencies._
+import Library._
 import Operations._
 
 
@@ -13,19 +14,13 @@ lazy val blog = (project in file("."))
     name := "blog",
     scalaVersion := "2.13.6",
 
-    libraryDependencies += junit,
+    libraryDependencies += junit % Test,
 
     Compile/compile := (Compile/compile).dependsOn(compileOthers).value,
     // Compile/runner := (Compile/runner).dependsOn(server/Compile/runner).value
   )
 
 
-val Http4sVersion = "0.21.24"
-val CirceVersion = "0.13.0"
-val MunitVersion = "0.7.20"
-val MunitCatsEffectVersion = "0.13.0"
-val LogbackVersion = "1.2.3"
-val doobieVersion = "0.12.1"
 lazy val server = (project in file("server"))
   .dependsOn(shared)
   .settings(
@@ -41,24 +36,30 @@ lazy val server = (project in file("server"))
     ),
 
   libraryDependencies ++= Seq(
+
+    circe,
+    logBack,
+    scalatags,
+
     // Http4s server
-    "org.http4s"      %% "http4s-blaze-server" % Http4sVersion,
-    "org.http4s"      %% "http4s-blaze-client" % Http4sVersion,
-    "org.http4s"      %% "http4s-circe"        % Http4sVersion,
-    "org.http4s"      %% "http4s-dsl"          % Http4sVersion,
-    "org.http4s"      %% "http4s-scalatags"    % Http4sVersion,
-    "io.circe"        %% "circe-generic"       % CirceVersion,
-    "org.scalameta"   %% "munit"               % MunitVersion           % Test,
-    "org.typelevel"   %% "munit-cats-effect-2" % MunitCatsEffectVersion % Test,
-    "ch.qos.logback"  %  "logback-classic"     % LogbackVersion,
-    "com.lihaoyi"     %% "scalatags"           % "0.9.1",
+    Http4s.server,
+    Http4s.client,
+    Http4s.circe,
+    Http4s.dsl,
+    Http4s.scalatags,
+
+    
     // Doobie functional JDBC layer
-    "org.tpolecat"    %% "doobie-core"         % doobieVersion,
-    "org.tpolecat"    %% "doobie-postgres"     % doobieVersion,
-    "org.tpolecat"    %% "doobie-specs2"       % doobieVersion,
+    Doobie.core,
+    Doobie.postgres,
+    Doobie.specs2,
+
+    // For test
+    Munit.munit      % Test,
+    Munit.catsEffect % Test,
   ),
-  addCompilerPlugin("org.typelevel" %% "kind-projector"     % "0.10.3"),
-  addCompilerPlugin("com.olegpy"    %% "better-monadic-for" % "0.3.1"),
+  addCompilerPlugin(Dependencies.Plugin.Compiler.kindProjector),
+  addCompilerPlugin(Dependencies.Plugin.Compiler.betterMonadicFor),
 )
 
 
@@ -84,7 +85,7 @@ lazy val shared = (project in file("shared"))
     scalaVersion := "2.13.6",
 
     libraryDependencies += junit % Test,
-    libraryDependencies += "com.lihaoyi" %% "scalatags" % "0.9.1",
+    libraryDependencies += scalatags,
   )
 
 lazy val skeleton = (project in file("skeleton"))
@@ -93,7 +94,7 @@ lazy val skeleton = (project in file("skeleton"))
     scalaVersion := "2.13.6",
 
     libraryDependencies += junit % Test,
-    libraryDependencies += "com.lihaoyi" %% "scalatags" % "0.9.1",
+    libraryDependencies += scalatags,
   )
 
 

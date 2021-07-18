@@ -1,3 +1,5 @@
+package blog.server
+
 import cats.effect.Sync
 import org.http4s.HttpRoutes
 import org.http4s.dsl.Http4sDsl
@@ -37,8 +39,8 @@ object Routes {
     HttpRoutes.of[F] {
 
       case req @ GET -> Root =>
-        val helloWorldInScalaTags = Frame.index()//html(mainTitle("ScalaTags Playground"), body(p("Hello World!")))
-        Ok(helloWorldInScalaTags)
+        val homePage = Frame.index()
+        Ok(homePage)
 
       case req @ GET -> Root / "view" =>
         val content = Frame.index(
@@ -58,7 +60,9 @@ object Routes {
         Ok(About.index)
 
       case GET -> Root / "filter" =>
-        Ok(Filter.index())
+        Ok(Filter.index(
+          span(color := "grey")("No result")
+        ))
 
       case GET -> Root / "shutdown" =>
         sys.exit()
@@ -70,7 +74,7 @@ object Routes {
   val dsl = new Http4sDsl[IO]{}
   import dsl._
   val assets = blog.Shared.assetsPath
-  val routes = HttpRoutes.of[IO] {
+  val ioRoutes = HttpRoutes.of[IO] {
     // case request @ GET -> Root =>
     //     StaticFile.fromFile(new File("./shared/assets/index.html"), blocker, Some(request))
     //         .getOrElseF(NotFound())

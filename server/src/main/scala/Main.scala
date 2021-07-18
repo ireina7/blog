@@ -1,3 +1,4 @@
+package blog.server
 
 // import cats.effect.{ ExitCode, IO, IOApp }
 import cats.effect._
@@ -22,7 +23,7 @@ object BlogHttpServer extends IOApp {
       blocker <- Blocker[IO]
       server  <- BlazeServerBuilder[IO](global)
         .bindHttp(8080)
-        .withHttpApp((Routes.mainRoutes[IO] <+> Routes.routes).orNotFound)
+        .withHttpApp((Routes.mainRoutes[IO] <+> Routes.ioRoutes).orNotFound)
         .resource
     } yield server
 }
