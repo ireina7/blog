@@ -40,11 +40,11 @@ object Dependencies {
     val scalatags          = "com.lihaoyi"            %% "scalatags"                  % V.scalatags
 
     object Http4s {
-      val server    = "org.http4s"      %% "http4s-blaze-server" % V.http4s
-      val client    = "org.http4s"      %% "http4s-blaze-client" % V.http4s
-      val circe     = "org.http4s"      %% "http4s-circe"        % V.http4s
-      val dsl       = "org.http4s"      %% "http4s-dsl"          % V.http4s
-      val scalatags = "org.http4s"      %% "http4s-scalatags"    % V.http4s
+      val server    = "org.http4s" %% "http4s-blaze-server" % V.http4s
+      val client    = "org.http4s" %% "http4s-blaze-client" % V.http4s
+      val circe     = "org.http4s" %% "http4s-circe"        % V.http4s
+      val dsl       = "org.http4s" %% "http4s-dsl"          % V.http4s
+      val scalatags = "org.http4s" %% "http4s-scalatags"    % V.http4s
     }
     object Doobie {
       val core     = "org.tpolecat" %% "doobie-core"     % V.doobie

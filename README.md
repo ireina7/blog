@@ -1,12 +1,14 @@
 # λ Blog
 My personal blog written purely in Scala.  
 ![k-on!](./img/k-on-q.png)  
-- version: `0.1.0`
+- version: `0.1.2`
 
 ## Dependences
+- `Scala3` the programming language
+- `sbt` the build tool
 - `cats` and `cats-effect` for core
-- `Scala.js` and `scalatags` for front end
-- `http4s` for back end
+- `scala.js` and `scalatags` for front end
+- `http4s`, `doobie` and `quill` for back end
 
 
 ## Configuration

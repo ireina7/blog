@@ -107,13 +107,14 @@ lazy val skeleton = (project in file("skeleton"))
 
 lazy val jsPipe = taskKey[Unit]("Copy compiled js files into server")
 jsPipe := {
+  val jsSourceFolder = "target/scala-3.0.1/client-fastopt"
   println("Copying js and css files to shared assets...")
   copyFile(
-    "./client/target/scala-2.13/client-fastopt/main.js",
+    s"./client/$jsSourceFolder/main.js",
     "./shared/assets/js/main.js"
   )
   copyFile(
-    "./client/target/scala-2.13/client-fastopt/main.js.map",
+    s"./client/$jsSourceFolder/main.js.map",
     "./shared/assets/js/main.js.map"
   )
   copyFile(
