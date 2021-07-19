@@ -4,6 +4,10 @@ import sbt._
 
 object V {
 
+  // Scala versions
+  val scala3             = "3.0.1"
+  val scala2             = "2.13.6" 
+
   // Libraries
   val junit              = "0.11"
   val scalaParCollection = "1.0.3"
@@ -27,12 +31,12 @@ object V {
 object Dependencies {
   
   object Library {
+    val junit              = "com.novocode"           %  "junit-interface"            % V.junit
+    val logBack            = "ch.qos.logback"         %  "logback-classic"            % V.logBack
     val scalaParCollection = "org.scala-lang.modules" %% "scala-parallel-collections" % V.scalaParCollection
     val rxScala            = "io.reactivex"           %% "rxscala"                    % V.rxScala
     val akka               = "com.typesafe.akka"      %% "akka-actor-typed"           % V.akka
-    val junit              = "com.novocode"           %  "junit-interface"            % V.junit
     val circe              = "io.circe"               %% "circe-generic"              % V.circe
-    val logBack            = "ch.qos.logback"         %  "logback-classic"            % V.logBack
     val scalatags          = "com.lihaoyi"            %% "scalatags"                  % V.scalatags
 
     object Http4s {

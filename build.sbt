@@ -1,6 +1,6 @@
 ThisBuild / organization := "blog"
-ThisBuild / version := "0.1.0"
-ThisBuild / scalaVersion := "2.13.6"
+ThisBuild / version := "0.1.2"
+ThisBuild / scalaVersion := V.scala3
 
 import Dependencies._
 import Library._
@@ -12,7 +12,8 @@ lazy val blog = (project in file("."))
   // .dependsOn(server, client)
   .settings(
     name := "blog",
-    scalaVersion := "2.13.6",
+    scalaVersion := V.scala3,
+    scalacOptions += "-source:future",
 
     libraryDependencies += junit % Test,
 
@@ -25,20 +26,22 @@ lazy val server = (project in file("server"))
   .dependsOn(shared)
   .settings(
     name := "server",
-    scalaVersion := "2.13.6",
+    scalaVersion := V.scala3,//"2.13.6",
     scalacOptions ++= Seq(
       "-deprecation",
       "-encoding", "UTF-8",
-      "-language:higherKinds",
+      // "-language:higherKinds",
       "-language:postfixOps",
       "-feature",
       "-Xfatal-warnings",
+      "-source:future",
     ),
 
+  libraryDependencies += logBack,
+  libraryDependencies += junit,
   libraryDependencies ++= Seq(
 
     circe,
-    logBack,
     scalatags,
 
     // Http4s server
@@ -48,7 +51,6 @@ lazy val server = (project in file("server"))
     Http4s.dsl,
     Http4s.scalatags,
 
-    
     // Doobie functional JDBC layer
     Doobie.core,
     Doobie.postgres,
@@ -57,9 +59,9 @@ lazy val server = (project in file("server"))
     // For test
     Munit.munit      % Test,
     Munit.catsEffect % Test,
-  ),
-  addCompilerPlugin(Dependencies.Plugin.Compiler.kindProjector),
-  addCompilerPlugin(Dependencies.Plugin.Compiler.betterMonadicFor),
+  ).map(_.cross(CrossVersion.for3Use2_13)),
+  // addCompilerPlugin(Dependencies.Plugin.Compiler.kindProjector),
+  // addCompilerPlugin(Dependencies.Plugin.Compiler.betterMonadicFor),
 )
 
 
@@ -69,12 +71,14 @@ lazy val client = (project in file("client"))
   .settings(
     name := "client",
 
-    scalaVersion := "2.13.6",
+    scalaVersion := V.scala3,
     scalaJSUseMainModuleInitializer := true,
 
     libraryDependencies += junit % Test,
-    libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "1.1.0",
-    libraryDependencies += "com.lihaoyi" %%% "scalatags" % "0.9.1",
+    libraryDependencies ++= Seq(
+      "org.scala-js" %%% "scalajs-dom" % "1.1.0",
+      "com.lihaoyi" %%% "scalatags" % "0.9.1",
+    ).map(_.cross(CrossVersion.for3Use2_13)),
   )
 
 
@@ -82,19 +86,19 @@ lazy val shared = (project in file("shared"))
   .aggregate(skeleton)
   .settings(
     name := "shared",
-    scalaVersion := "2.13.6",
+    scalaVersion := V.scala3,
 
     libraryDependencies += junit % Test,
-    libraryDependencies += scalatags,
+    libraryDependencies += scalatags.cross(CrossVersion.for3Use2_13),
   )
 
 lazy val skeleton = (project in file("skeleton"))
   .settings(
     name := "skeleton",
-    scalaVersion := "2.13.6",
+    scalaVersion := V.scala3,
 
     libraryDependencies += junit % Test,
-    libraryDependencies += scalatags,
+    libraryDependencies += scalatags.cross(CrossVersion.for3Use2_13),
   )
 
 

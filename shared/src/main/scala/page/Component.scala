@@ -54,7 +54,7 @@ object Component {
 
 
   object BootStrap extends CSSLibrary("Bootstrap") {
-    def html: HTML = Seq(
+    def html = Seq(
       link(
         href := "https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css",
         rel := "stylesheet",
@@ -65,7 +65,7 @@ object Component {
   }
 
   object Highlight extends JSLibrary("Hightlight") {
-    def html: HTML = Seq(
+    def html = Seq(
       link(
         rel := "stylesheet",
         href := "/assets/css/highlight/styles/a11y-light.min.css",
@@ -80,7 +80,7 @@ object Component {
   
   object Dependencies extends MiscLibrary("All libraries") {
 
-    def html: HTML = Seq(
+    def html = Seq(
       BootStrap.html,
       Highlight.html,
     ).flatten

@@ -1,10 +1,10 @@
 package blog.server
 
 // import cats.effect.{ ExitCode, IO, IOApp }
-import cats.effect._
-import cats.implicits._
-import org.http4s.server.staticcontent._
-import org.http4s.syntax.kleisli._
+import cats.effect.*
+import cats.implicits.*
+import org.http4s.server.staticcontent.*
+import org.http4s.syntax.kleisli.*
 import org.http4s.server.Server
 import org.http4s.server.blaze.BlazeServerBuilder
 import scala.concurrent.ExecutionContext.global

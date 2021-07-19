@@ -3,28 +3,28 @@ package blog.server
 import cats.effect.Sync
 import org.http4s.HttpRoutes
 import org.http4s.dsl.Http4sDsl
-import org.http4s.scalatags._
-import scalatags.Text.all._
-import scalatags.Text.tags2.{title => mainTitle}
+import org.http4s.scalatags.*
+import scalatags.Text.all.*
+import scalatags.Text.tags2.{title as mainTitle}
 
 // import blog.Main.content
 // import page.About
 import java.io.File
 import org.http4s.{
-    client => http4sClient,
-    _
+  client as http4sClient,
+  *
 }
-import org.http4s.dsl._
+import org.http4s.dsl.*
 
-import cats.effect._
+import cats.effect.*
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.server.Server
-import org.http4s.server.staticcontent._
-import org.http4s.syntax.kleisli._
+import org.http4s.server.staticcontent.*
+import org.http4s.syntax.kleisli.*
 import scala.concurrent.ExecutionContext.global
 object Routes {
 
-  import java.util.concurrent._
+  import java.util.concurrent.*
   import scala.concurrent.ExecutionContext
 
   val blockingPool = Executors.newFixedThreadPool(4)
@@ -33,8 +33,8 @@ object Routes {
 
   def mainRoutes[F[_]: Sync]: HttpRoutes[F] = {
     val dsl = new Http4sDsl[F]{}
-    import dsl._
-    import blog.page._
+    import dsl.*
+    import blog.page.*
 
     HttpRoutes.of[F] {
 
@@ -72,7 +72,7 @@ object Routes {
   
 
   val dsl = new Http4sDsl[IO]{}
-  import dsl._
+  import dsl.*
   val assets = blog.Shared.assetsPath
   val ioRoutes = HttpRoutes.of[IO] {
     // case request @ GET -> Root =>

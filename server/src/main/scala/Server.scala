@@ -1,10 +1,10 @@
 package blog.server
 
 import cats.effect.{ ConcurrentEffect, ContextShift, Timer }
-import cats.implicits._
+import cats.implicits.*
 import fs2.Stream
 import org.http4s.client.blaze.BlazeClientBuilder
-import org.http4s.implicits._
+import org.http4s.implicits.*
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.server.middleware.Logger
 import scala.concurrent.ExecutionContext.global
