@@ -15,6 +15,7 @@ import scala.concurrent.ExecutionContext.global
 // }
 
 object BlogHttpServer extends IOApp {
+  
   override def run(args: List[String]): IO[ExitCode] =
     app.use(_ => IO.never).as(ExitCode.Success)
 

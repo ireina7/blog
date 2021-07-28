@@ -15,7 +15,15 @@ lazy val blog = (project in file("."))
     scalaVersion := V.scala3,
     scalacOptions += "-source:future",
 
-    libraryDependencies += junit % Test,
+    libraryDependencies ++= Seq(
+      catsCore,
+      catsFree,
+      catsLaws,
+      catsEffect,
+
+      junit      % Test,
+      scalaCheck % Test,
+    ),
 
     Compile/compile := (Compile/compile).dependsOn(compileOthers).value,
     // Compile/runner := (Compile/runner).dependsOn(server/Compile/runner).value

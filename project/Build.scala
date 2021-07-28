@@ -9,6 +9,8 @@ object V {
   val scala2             = "2.13.6" 
 
   // Libraries
+  val cats               = "2.6.1"
+  val catsEffect         = "3.1.1"
   val junit              = "0.11"
   val scalaParCollection = "1.0.3"
   val rxScala            = "0.27.0"
@@ -21,6 +23,7 @@ object V {
   val munitCatsEffect    = "0.13.0"
   val scalatags          = "0.9.1"
   val scalaJsDom         = "1.1.0"
+  val scalaCheck         = "1.15.4"
 
   // Plugins
   val kindProjector      = "0.10.3"
@@ -33,11 +36,16 @@ object Dependencies {
   object Library {
     val junit              = "com.novocode"           %  "junit-interface"            % V.junit
     val logBack            = "ch.qos.logback"         %  "logback-classic"            % V.logBack
+    val catsCore           = "org.typelevel"          %% "cats-core"                  % V.cats
+    val catsLaws           = "org.typelevel"          %% "cats-laws"                  % V.cats
+    val catsFree           = "org.typelevel"          %% "cats-free"                  % V.cats
+    val catsEffect         = "org.typelevel"          %% "cats-effect"                % V.catsEffect
     val scalaParCollection = "org.scala-lang.modules" %% "scala-parallel-collections" % V.scalaParCollection
     val rxScala            = "io.reactivex"           %% "rxscala"                    % V.rxScala
     val akka               = "com.typesafe.akka"      %% "akka-actor-typed"           % V.akka
     val circe              = "io.circe"               %% "circe-generic"              % V.circe
     val scalatags          = "com.lihaoyi"            %% "scalatags"                  % V.scalatags
+    val scalaCheck         = "org.scalacheck"         %% "scalacheck"                 % V.scalaCheck
 
     object Http4s {
       val server    = "org.http4s" %% "http4s-blaze-server" % V.http4s

@@ -1,5 +1,5 @@
 # λ Blog
-My personal blog written purely in Scala.  
+My personal blog written mostly in Scala.  
 ![k-on!](./img/k-on-q.png)  
 - version: `0.1.2`
 
