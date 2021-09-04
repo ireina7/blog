@@ -36,5 +36,10 @@ classes/
 .bloop
 .metals
 
+
+/shared/public/*
+!/shared/public/.gitkeep
+!/shared/public/README.md
+
 assets/
 node_modules/
