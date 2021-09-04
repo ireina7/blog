@@ -12,7 +12,7 @@ import scalatags.Text.tags2.title
 object Frame {
   import scalatags.Text
   import scalatags.Text.TypedTag
-  import Component._
+  import Component.*
 
 
   def index(inner: TypedTag[HTML] = div()): TypedTag[HTML] = {

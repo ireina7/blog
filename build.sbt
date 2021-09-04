@@ -14,6 +14,7 @@ lazy val blog = (project in file("."))
     name := "blog",
     scalaVersion := V.scala3,
     scalacOptions += "-source:future",
+    scalacOptions += "-Ykind-projector:underscores",
 
     libraryDependencies ++= Seq(
       catsCore,
@@ -43,6 +44,7 @@ lazy val server = (project in file("server"))
       "-feature",
       "-Xfatal-warnings",
       "-source:future",
+      "-Ykind-projector:underscores",
     ),
 
   libraryDependencies += logBack,

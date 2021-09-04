@@ -39,20 +39,31 @@ trait Search[F[_], DB, Query]:
 
 
 
-enum Dsl[A] {
-  case FilterBy[A](f: Snapshot => Boolean) extends Dsl[A]
+trait Dsl[F[_]] {
+  def filterBy(f: Snapshot => Boolean): F[Snapshot]
+
+  import Snapshot.*
+  def filterByTitle(title: Title)        = filterBy(_.title == title)
+  def filterByAuthor(author: Author)     = filterBy(_.author == author)
+  def filterByDate(date: Date)           = filterBy(_.date == date)
+  def filterByDescription(query: String) = filterBy(_.description.contains(query))
 }
 
 
 object Dsl {
-  import Snapshot.*
+  def apply[F[_]](using dsl: Dsl[F]) = dsl
 
-  def filterBy[A](f: Snapshot => Boolean) = FilterBy[A](f)
-  def filterByTitle[A](title: Title)        = filterBy[A](_.title == title)
-  def filterByAuthor[A](author: Author)     = filterBy[A](_.author == author)
-  def filterByDate[A](date: Date)           = filterBy[A](_.date == date)
-  def filterByDescription[A](query: String) = filterBy[A](_.description.contains(query))
+  given dslLocal: Dsl[Id] with
+    def filterBy(f: Snapshot => Boolean) = ???
+
+  given dslIO: Dsl[IO] with
+    def filterBy(f: Snapshot => Boolean): IO[Snapshot] = {
+      ???
+    }
 }
+
+
+
 
 
 
@@ -81,4 +92,7 @@ object Snapshot {
   given (using local: Hit.HitLocal[String, Snapshot]): Hit[IO, String, Snapshot] with
     extension (a: Snapshot) def hit(q: String): IO[Boolean] = 
       ???
+
+  given blog.ToHTML[Snapshot] with
+    extension (s: Snapshot) def toHTML = ???
 }

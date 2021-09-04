@@ -12,8 +12,10 @@ import js.annotation.{
 import scalatags.JsDom.all._
 
 
+
 @JSExportTopLevel("blog")
 object Main {
+
   def main(args: Array[String]): Unit = {
     println("Hello world!")
     document.addEventListener("DOMContentLoaded", (e: dom.Event) => {
@@ -21,14 +23,32 @@ object Main {
     })
   }
 
+  val assetsPath = 
+    if isStatic then "../shared/assets"
+    else "/assets"
 
   def setup(): Unit = {
     
     document.body.appendChild(sideBar)
-    document.getElementById("blog-navigator").appendChild(navBar)
-    document.getElementById("blog-footer").appendChild(footer)
+    if isStatic then
+      setupStaticBlogIfNecessary()
+    else // is dynamic blog
+      document.getElementById("blog-navigator").appendChild(navBar)
+      document.getElementById("blog-footer").appendChild(footer)
     // ScalaJSExample.draw(canvas)
     // ScalaJSExample.clock(canvas)
+  }
+
+  def isStatic: Boolean = 
+    document.getElementById("static-content") != null
+
+  def setupStaticBlogIfNecessary(): Unit = {
+
+    val staticBlog: dom.Element | Null = document.getElementById("static-content")
+    if staticBlog != null then
+      println("Static blog has been set up.")
+      staticBlog.appendChild(navBar)
+      staticBlog.appendChild(footer)
   }
 
 
@@ -120,7 +140,7 @@ form(cls := "d-flex")(
   val navBar: dom.Element = {
       
     div(
-      backgroundImage := "url(/assets/img/yuii.jpg)", 
+      backgroundImage := s"url($assetsPath/img/yuii.jpg)", 
       backgroundPosition := "right bottom",
       backgroundSize := "cover",
     )(
@@ -131,7 +151,7 @@ form(cls := "d-flex")(
             href := "#",
             onclick := { () => if (!sideBarShow) openSideBar() else closeSideBar() }
           )(
-            img(`class` := "spinner", src := "/assets/img/lambda-icon-18.jpg", width := 70),
+            img(`class` := "spinner", src := s"$assetsPath/img/lambda-icon-18.jpg", width := 70),
           ),
           span(`class` := "navbar-text", fontSize := 30)(i(b(span(color := "purple")("Ireina's "), "magic"))),
         ),
