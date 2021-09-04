@@ -34,7 +34,7 @@ object Main {
       setupStaticBlogIfNecessary()
     else // is dynamic blog
       document.getElementById("blog-navigator").appendChild(navBar)
-      document.getElementById("blog-footer").appendChild(footer)
+      document.getElementById("blog-footer"   ).appendChild(footer)
     // ScalaJSExample.draw(canvas)
     // ScalaJSExample.clock(canvas)
   }

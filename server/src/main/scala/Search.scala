@@ -38,7 +38,6 @@ trait Search[F[_], DB, Query]:
 
 
 
-
 trait Dsl[F[_]] {
   def filterBy(f: Snapshot => Boolean): F[Snapshot]
 
