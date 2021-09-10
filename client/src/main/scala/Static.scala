@@ -14,6 +14,7 @@ import scalatags.Text.tags2.title
 object StaticBlog {
 
   type HtmlText = TypedTag[String]
+  given blog.Configuation = blog.Configuation(isStatic = true)
 
   def main = {
     ???

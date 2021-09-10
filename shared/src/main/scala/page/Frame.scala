@@ -1,12 +1,15 @@
 package blog.page
 
 
+import blog.*
 import scalatags.Text.all.{
   title => titleAttr,
   _
 }
 import scalatags.Text.tags2.title
 // import scalatags.Text.short._
+import cats.data.Reader
+import cats.data.ReaderT
 
 
 object Frame {
@@ -15,34 +18,36 @@ object Frame {
   import Component.*
 
 
-  def index(inner: TypedTag[HTML] = div()): TypedTag[HTML] = {
-    html(
-      head(
-        configurations,
-        title("Ireina's magic"),
-        cssFile("/assets/css/main.css"),
-        Dependencies.html,
-      ),
-      body(
-        navigator,
-        br,
-        mainContent(inner),
-        br,
-        hr,
-        footer,
-        jsFile("/assets/js/main.js"),
-        Highlight.enable,
-      ),
-    )
-  }
+  def index(inner: HtmlText = div()): BlogContext[HtmlText] = 
+
+    conf ?=> {
+      html(
+        head(
+          configurations,
+          title("Ireina's magic"),
+          cssFile("/assets/css/main.css"),
+          Dependencies.html,
+        ),
+        body(
+          navigator,
+          br,
+          mainContent(inner),
+          br,
+          hr,
+          footer,
+          jsFile("/assets/js/main.js"),
+          Highlight.enable,
+        ),
+      )
+    }
 
 
   def item(
     title: String,
     author: String,
     date: java.util.Date,
-    view: TypedTag[HTML]
-  ): TypedTag[HTML] = {
+    view: HtmlText
+  ): HtmlText = {
     
     div(`class` := "blog-item")(
       a(href := "#", `class` := "blog-item-title")(title),

@@ -1,8 +1,11 @@
 package blog.page
 
 
+import blog.*
 import scalatags.Text.all._
 import scalatags.Text
+import cats.data.Reader
+import scalatags.generic.TypedTag
 
 object Filter {
 
@@ -18,21 +21,23 @@ object Filter {
     )
   }
   
-  def index(results: Text.TypedTag[String] = div()) = Frame.index {
-    div(`class` := "blog-content")(
-      h2("Filter"),
-      br,
-      form(cls := "blog-searchBar d-flex")(
-        p("Tag:"),
-        inputBar,
+  def index(results: HtmlText = div()): BlogContext[HtmlText] = 
+
+    Frame.index(
+      div(`class` := "blog-content")(
+        h2("Filter"),
         br,
-        p("Date:"),
-        inputBar,
-        button(`class` := "btn btn-outline-success", `type` := "submit", height := 40)("summon")
-      ),
-      hr,
-      results,
+        form(cls := "blog-searchBar d-flex")(
+          p("Tag:"),
+          inputBar,
+          br,
+          p("Date:"),
+          inputBar,
+          button(`class` := "btn btn-outline-success", `type` := "submit", height := 40)("summon")
+        ),
+        hr,
+        results,
+      )
     )
-  }
 
 }

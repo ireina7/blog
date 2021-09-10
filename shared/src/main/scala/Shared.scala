@@ -10,6 +10,8 @@ object Shared {
   val snapshots = s"$assetsPath/snapshots.json"
 }
 
+type HtmlText = TypedTag[String]
+type BlogContext[T] = blog.Configuation ?=> T
 
 trait ToHTML[A] {
   extension (a: A) def toHTML: TypedTag[String]
