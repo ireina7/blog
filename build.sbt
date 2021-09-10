@@ -98,9 +98,9 @@ lazy val shared = (project in file("shared"))
     name := "shared",
     scalaVersion := V.scala3,
 
-    libraryDependencies ++= Seq(
-      catsCore
-    ),
+    // libraryDependencies ++= Seq(
+    //   catsCore
+    // ),
     libraryDependencies += junit % Test,
     libraryDependencies += scalatags.cross(CrossVersion.for3Use2_13),
   )

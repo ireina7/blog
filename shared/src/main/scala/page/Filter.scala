@@ -4,7 +4,7 @@ package blog.page
 import blog.*
 import scalatags.Text.all._
 import scalatags.Text
-import cats.data.Reader
+// import cats.data.Reader
 import scalatags.generic.TypedTag
 
 object Filter {

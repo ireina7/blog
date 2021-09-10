@@ -2,11 +2,22 @@ package blog
 
 
 case class Configuation(
-  isStatic: Boolean,
+  blogType: BlogType,
 )
 
 object Configuation {
   
-  val staticBlog = Configuation(isStatic = true)
-  val onlineBlog = Configuation(isStatic = false)
+  val staticBlog = Configuation(blogType = BlogType.Static)
+  val onlineBlog = Configuation(blogType = BlogType.Online)
+}
+
+
+enum BlogType {
+  case Online
+  case Static
+
+  def assetsPath: String = this match
+    case Online => "/assets"
+    case Static => "./assets"
+  
 }

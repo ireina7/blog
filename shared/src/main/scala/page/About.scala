@@ -4,7 +4,7 @@ package blog.page
 import blog.*
 import scalatags.Text
 import scalatags.Text.all._
-import cats.data.Reader
+// import cats.data.Reader
 
 
 object About {

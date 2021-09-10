@@ -26,7 +26,7 @@ import scala.concurrent.ExecutionContext
 
 object Routes {
 
-  given blog.Configuation = blog.Configuation(isStatic = false)
+  given blog.Configuation = blog.Configuation.onlineBlog
 
   def mainRoutes[F[_]: Sync]: HttpRoutes[F] =
     val dsl = new Http4sDsl[F]{}

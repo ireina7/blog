@@ -1,6 +1,7 @@
 package blog.page
 
 
+import blog.*
 import scalatags.Text.all.{
     title => titleAttr,
     _
@@ -11,7 +12,7 @@ import scalatags.Text.TypedTag
 
 
 trait Library {
-  type HTML = Seq[TypedTag[String]]
+  type HTML = Seq[HtmlText]
   def html: HTML
 }
 
@@ -23,7 +24,6 @@ abstract class MiscLibrary(name: String) extends Library
 
 object Component {
 
-  type HTML = String
 
   val configurations = {
     meta(attr("http-equiv") := "Content-Type", content := "text/html; charset=UTF-8")
@@ -33,11 +33,11 @@ object Component {
     div(id := "blog-navigator")
   }
 
-  def mainContent(content: TypedTag[HTML]) = {
+  def mainContent(content: HtmlText) = {
     div(id := "blog-content")(content)
   }
   
-  val footer: TypedTag[HTML] = {
+  val footer: HtmlText = {
     div(id := "blog-footer")
   }
 
@@ -49,7 +49,7 @@ object Component {
     script(`type` := "text/javascript", src := filePath)
   }
 
-  def text(cls: String)(content: String): TypedTag[HTML] = 
+  def text(cls: String)(content: String): HtmlText = 
     span(`class` := cls)(content)
 
 
@@ -63,27 +63,34 @@ object Component {
       )
     )
   }
-
-  object Highlight extends JSLibrary("Hightlight") {
+  
+  class HighlightLibrary(conf: blog.Configuation) extends JSLibrary("Hightlight") {
     def html = Seq(
       link(
         rel := "stylesheet",
-        href := "/assets/css/highlight/styles/a11y-light.min.css",
+        href := s"${conf.blogType.assetsPath}/css/highlight/styles/a11y-light.min.css",
       ),
-      script(src := "/assets/css/highlight/highlight.min.js"),
+      script(src := s"${conf.blogType.assetsPath}/css/highlight/highlight.min.js"),
     )
 
-    def enable: TypedTag[String] = {
+    def enable: HtmlText = {
       script("hljs.highlightAll();")
     }
   }
-  
-  object Dependencies extends MiscLibrary("All libraries") {
 
+  def Highlight: BlogContext[HighlightLibrary] = conf ?=>
+    new HighlightLibrary(conf)
+  
+  class AllLibraries(conf: blog.Configuation) extends MiscLibrary("All libraries") {
+
+    given blog.Configuation = conf
     def html = Seq(
       BootStrap.html,
       Highlight.html,
     ).flatten
   }
+
+  def Dependencies: BlogContext[AllLibraries] = conf ?=>
+    new AllLibraries(conf)
 
 }
