@@ -23,9 +23,11 @@ object Main {
     })
   }
 
+  /**
+   * It is sad that we cannot reuse [[blog.BlogType]] here.
+  */
   val assetsPath = 
-    if isStatic then "../shared/assets"
-    else "/assets"
+    if isStatic then "./assets" else "/assets"
 
   def setup(): Unit = {
     

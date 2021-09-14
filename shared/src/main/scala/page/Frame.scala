@@ -21,15 +21,14 @@ object Frame {
   def index(inner: HtmlText = div()): BlogContext[HtmlText] = conf ?=> {
 
     val assetPath = conf.blogType.assetsPath
-    
-    html(
-      head(
-        configurations,
-        title("Ireina's magic"),
-        cssFile(s"$assetPath/css/main.css"),
-        Dependencies.html,
-      ),
-      body(
+    val theBody = 
+      if conf.blogType == blog.BlogType.Static
+      then body(
+        div(id := "static-content"),
+        jsFile(s"$assetPath/js/main.js"),
+        Highlight.enable,
+      )
+      else body(
         navigator,
         br,
         mainContent(inner),
@@ -38,7 +37,16 @@ object Frame {
         footer,
         jsFile(s"$assetPath/js/main.js"),
         Highlight.enable,
+      )
+    
+    html(
+      head(
+        configurations,
+        title("Ireina's magic"),
+        cssFile(s"$assetPath/css/main.css"),
+        Dependencies.html,
       ),
+      theBody,
     )
   }
 
