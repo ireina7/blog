@@ -86,12 +86,44 @@ object Dependencies {
 object Operations {
 
   def copyFile(from: String, to: String): Unit = {
-    import java.io.{ File,FileInputStream, FileOutputStream }
+    import java.io.{ 
+      File,
+      FileInputStream, 
+      FileOutputStream,
+      IOException,
+    }
     
     val a = new File(from)
     val b = new File(to)
     new FileOutputStream(b)
       .getChannel()
       .transferFrom(new FileInputStream(a) getChannel, 0, Long.MaxValue)
+  }
+
+  /**
+    * Recursively copy folder.
+    * This is dirty implementation!!
+    *
+    * @param from
+    * @param to
+    */
+  def copyFolder(from: String, to: String): Unit = {
+    import java.nio.file.{
+      Files,
+      Paths,
+      Path,
+      StandardCopyOption,
+    }
+
+    def copyFolderA(src: Path, dest: Path): Unit = {
+      val stream = Files.walk(src)
+      stream.forEach(source => copy(source, dest.resolve(src.relativize(source))))
+    }
+
+    def copy(source: Path, dest: Path): Unit = {
+      Files.copy(source, dest, StandardCopyOption.REPLACE_EXISTING)
+    }
+
+    copyFolderA(Paths.get(from), Paths.get(to))
   }
 }

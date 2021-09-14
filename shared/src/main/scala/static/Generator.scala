@@ -13,4 +13,11 @@ object Generator {
     index
   }
 
+  /**
+   * This is dirty!
+  */
+  def writeHtmlToFile(path: String): Unit = {
+    ???
+  }
+
 }
