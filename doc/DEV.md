@@ -10,3 +10,8 @@
   aggregates `scala.js` project and an extra `scalatags` project
 - Make server more flexible and support more routes
 - Error handling
+
+## Version `0.1.2`
+- Add `static` module, now can generate static package.
+- Add `skeleton` module which serves as a front-end page generator.
+- Robust path resolution.
