@@ -9,7 +9,7 @@ import Operations._
 
 lazy val blog = (project in file("."))
   .aggregate(server, client, shared)
-  // .dependsOn(server, client)
+  // .dependsOn(server, client, shared)
   .settings(
     name := "blog",
     scalaVersion := V.scala3,
@@ -121,7 +121,7 @@ lazy val skeleton = (project in file("skeleton"))
 lazy val jsPipe = taskKey[Unit]("Copy compiled js files into server")
 jsPipe := {
   val jsSourceFolder = "target/scala-3.0.1/client-fastopt"
-  println("Copying js and css files to shared assets...")
+  println("blog> Copying js and css files to shared assets...")
   copyFile(
     s"./client/$jsSourceFolder/main.js",
     "./shared/assets/js/main.js"
@@ -134,6 +134,7 @@ jsPipe := {
     "./client/css/main.css",
     "./shared/assets/css/main.css"
   )
+  println(s"blog> Refleshing assets folder...")
   copyFolder(
     "./shared/assets",
     "./shared/public/assets"

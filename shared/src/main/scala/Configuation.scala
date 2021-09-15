@@ -9,6 +9,7 @@ object Configuation {
   
   val staticBlog = Configuation(blogType = BlogType.Static)
   val onlineBlog = Configuation(blogType = BlogType.Online)
+
 }
 
 

@@ -100,6 +100,30 @@ object Operations {
       .transferFrom(new FileInputStream(a) getChannel, 0, Long.MaxValue)
   }
 
+  def deleteFolder(directory: File): Boolean = {
+    import java.io.{ 
+      File,
+      FileInputStream, 
+      FileOutputStream,
+      IOException,
+    }
+
+    if (directory.exists()) {
+      val files = directory.listFiles()
+      if (null != files) {
+        for (i <- 0 until files.length) {
+          if (files(i).isDirectory()) {
+            deleteFolder(files(i));
+          }
+          else {
+            files(i).delete();
+          }
+        }
+      }
+    }
+    directory.delete()
+  }
+
   /**
     * Recursively copy folder.
     * This is dirty implementation!!
@@ -108,6 +132,7 @@ object Operations {
     * @param to
     */
   def copyFolder(from: String, to: String): Unit = {
+    import java.io.File
     import java.nio.file.{
       Files,
       Paths,
@@ -124,6 +149,7 @@ object Operations {
       Files.copy(source, dest, StandardCopyOption.REPLACE_EXISTING)
     }
 
+    deleteFolder(new File(to))
     copyFolderA(Paths.get(from), Paths.get(to))
   }
 }

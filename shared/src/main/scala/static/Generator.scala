@@ -4,6 +4,11 @@ import blog.*
 import blog.page.Frame
 
 
+
+def pack(): Unit = {
+  Generator.writeHtmlToFile("./shared/public/index.html")
+}
+
 object Generator {
 
   given blog.Configuation = blog.Configuation.staticBlog
@@ -23,7 +28,9 @@ object Generator {
       p.close
     }
   }
-
+  /**
+   * Dirty too!
+  */
   def writeHtmlToFile(path: String): Unit = {
     writeToFile(path, generateHtml().toString)
   }
