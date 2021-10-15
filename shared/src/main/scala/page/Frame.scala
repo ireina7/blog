@@ -17,7 +17,6 @@ object Frame {
   import scalatags.Text.TypedTag
   import Component.*
 
-
   def index(inner: HtmlText = div()): BlogContext[HtmlText] = conf ?=> {
 
     val assetPath = conf.blogType.assetsPath

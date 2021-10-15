@@ -21,6 +21,14 @@ abstract class JSLibrary  (name: String) extends Library
 abstract class MiscLibrary(name: String) extends Library
 
 
+case class Item(
+  title: String,
+  author: String,
+  date: String,
+  view: String
+)
+
+
 
 object Component {
 

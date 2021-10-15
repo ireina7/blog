@@ -30,7 +30,6 @@ lazy val blog = (project in file("."))
     // Compile/runner := (Compile/runner).dependsOn(server/Compile/runner).value
   )
 
-
 lazy val server = (project in file("server"))
   .dependsOn(shared)
   .settings(
@@ -46,33 +45,32 @@ lazy val server = (project in file("server"))
       "-source:future",
       "-Ykind-projector:underscores",
     ),
+    libraryDependencies += logBack,
+    libraryDependencies += junit,
+    libraryDependencies ++= Seq(
 
-  libraryDependencies += logBack,
-  libraryDependencies += junit,
-  libraryDependencies ++= Seq(
+      Circe.generic,
+      scalatags,
 
-    circe,
-    scalatags,
+      // Http4s server
+      Http4s.server,
+      Http4s.client,
+      Http4s.circe,
+      Http4s.dsl,
+      Http4s.scalatags,
 
-    // Http4s server
-    Http4s.server,
-    Http4s.client,
-    Http4s.circe,
-    Http4s.dsl,
-    Http4s.scalatags,
+      // Doobie functional JDBC layer
+      Doobie.core,
+      Doobie.postgres,
+      Doobie.specs2,
 
-    // Doobie functional JDBC layer
-    Doobie.core,
-    Doobie.postgres,
-    Doobie.specs2,
-
-    // For test
-    Munit.munit      % Test,
-    Munit.catsEffect % Test,
-  ).map(_.cross(CrossVersion.for3Use2_13)),
+      // For test
+      Munit.munit      % Test,
+      Munit.catsEffect % Test,
+    ).map(_.cross(CrossVersion.for3Use2_13)),
   // addCompilerPlugin(Dependencies.Plugin.Compiler.kindProjector),
   // addCompilerPlugin(Dependencies.Plugin.Compiler.betterMonadicFor),
-)
+  )
 
 
 lazy val client = (project in file("client"))
@@ -91,18 +89,22 @@ lazy val client = (project in file("client"))
     ).map(_.cross(CrossVersion.for3Use2_13)),
   )
 
-
 lazy val shared = (project in file("shared"))
   .aggregate(skeleton)
   .settings(
     name := "shared",
     scalaVersion := V.scala3,
 
-    // libraryDependencies ++= Seq(
-    //   catsCore
-    // ),
+    libraryDependencies ++= Seq(
+      catsCore,
+      catsEffect,
+      scalatags,
+      Circe.core,
+      Circe.generic,
+      Circe.parser,
+    ).map(_.cross(CrossVersion.for3Use2_13)),
     libraryDependencies += junit % Test,
-    libraryDependencies += scalatags.cross(CrossVersion.for3Use2_13),
+    // libraryDependencies += scalatags.cross(CrossVersion.for3Use2_13),
   )
 
 lazy val skeleton = (project in file("skeleton"))
@@ -134,7 +136,7 @@ jsPipe := {
     "./client/css/main.css",
     "./shared/assets/css/main.css"
   )
-  println(s"blog> Refleshing assets folder...")
+  println(s"blog> Refreshing assets folder...")
   copyFolder(
     "./shared/assets",
     "./shared/public/assets"
@@ -143,8 +145,8 @@ jsPipe := {
 
 lazy val compileOthers = taskKey[Unit]("Compile server and client")
 compileOthers := Def.sequential(
-  (shared/Compile/compile),
-  (client/Compile/fastLinkJS),
-  (server/Compile/compile),
+  shared/Compile/compile,
+  client/Compile/fastLinkJS,
+  server/Compile/compile,
   jsPipe,
 ).value

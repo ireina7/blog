@@ -1,5 +1,8 @@
 package blog.shared
 
+import cats.*
+import cats.effect.*
+
 
 @main def main(): Unit = {
 

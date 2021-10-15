@@ -5,12 +5,12 @@ import sbt._
 object V {
 
   // Scala versions
-  val scala3             = "3.0.1"
+  val scala3             = "3.0.1" // We are brave scala 3 users!
   val scala2             = "2.13.6" 
 
   // Libraries
   val cats               = "2.6.1"
-  val catsEffect         = "3.1.1"
+  val catsEffect         = "2.5.3" // Unfortunately, we cannot use version 3.x for compatibility problems
   val junit              = "0.11"
   val scalaParCollection = "1.0.3"
   val rxScala            = "0.27.0"
@@ -43,9 +43,14 @@ object Dependencies {
     val scalaParCollection = "org.scala-lang.modules" %% "scala-parallel-collections" % V.scalaParCollection
     val rxScala            = "io.reactivex"           %% "rxscala"                    % V.rxScala
     val akka               = "com.typesafe.akka"      %% "akka-actor-typed"           % V.akka
-    val circe              = "io.circe"               %% "circe-generic"              % V.circe
     val scalatags          = "com.lihaoyi"            %% "scalatags"                  % V.scalatags
     val scalaCheck         = "org.scalacheck"         %% "scalacheck"                 % V.scalaCheck
+
+    object Circe {
+      val core    = "io.circe" %% "circe-core"    % V.circe
+      val generic = "io.circe" %% "circe-generic" % V.circe
+      val parser  = "io.circe" %% "circe-parser"  % V.circe
+    }
 
     object Http4s {
       val server    = "org.http4s" %% "http4s-blaze-server" % V.http4s
