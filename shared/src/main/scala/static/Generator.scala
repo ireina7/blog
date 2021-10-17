@@ -7,12 +7,15 @@ import scalatags.Text.all.{
   _
 }
 import scalatags.Text.tags2.title
+import cats.Id
+import cats.Monad
+import cats.syntax.flatMap.*
+import cats.syntax.functor.*
 
 
-
-def pack(): Unit = {
-  Generator.writeHtmlToFile("./shared/public/index.html")
-}
+// def pack(): Unit = {
+//   Generator.writeHtmlToFile("./shared/public/index.html")
+// }
 
 object Generator {
 
@@ -24,36 +27,16 @@ object Generator {
   }
 
   /**
-   * This is dirty!
-  */
-  def writeToFile(path: String, content: String): Unit = {
-    import java.io.PrintWriter
-    Some(new PrintWriter(path)).foreach { p => 
-      p.write(content)
-      p.close
-    }
-  }
-
-  /**
-   * This is also dirty
-  */
-  def readFile(path: String): String = {
-    import java.nio.file.{ Files, Paths }
-
-    new String(Files.readAllBytes(Paths.get(path)))
-  }
-
-  /**
    * Dirty too!
   */
-  def writeHtmlToFile(path: String): Unit = {
-    writeToFile(path, generateHtml().toString)
+  def writeHtmlToFile[F[_]](path: String)(using fileIO: FileIO[F, String, String]): Unit = {
+    fileIO.writeFile(path, generateHtml().toString)
   }
 
   /**
    * Read in `items.json`
   */
-  def readIndex(): blog.Result[HtmlText] = {
+  def readIndex[F[_]: Monad]()(using fileIO: FileIO[F, String, String]): blog.Result[HtmlText] = {
     import io.circe.*
     import io.circe.generic.auto.*
     import io.circe.parser.*
@@ -70,8 +53,13 @@ object Generator {
           page.Item(title, author, date, view)
         }
     
-    val raw = readFile(Path.items)
-    val parseResult = decode[List[page.Item]](raw)
+    val parseResult = for {
+      raw <- fileIO.readFile(Path.items)
+    } yield {
+      decode[List[page.Item]](raw)
+    }
+    // val raw = ev.readFile(Path.items)
+    // val parseResult = decode[List[page.Item]](raw)
     println(parseResult)
     Right(div())
   }

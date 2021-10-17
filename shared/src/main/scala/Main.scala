@@ -11,5 +11,5 @@ import cats.effect.*
   // println(html.toString)
 
   println("blog> Generating static html file...")
-  blog.static.Generator.writeHtmlToFile("./shared/public/index.html")
+  blog.static.Generator.writeHtmlToFile[Id]("./shared/public/index.html")
 }

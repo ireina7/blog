@@ -1,7 +1,7 @@
 package blog
 
 import scalatags.Text.TypedTag
-
+import cats.Id
 
 object Shared {
 
@@ -11,7 +11,7 @@ object Shared {
 
   def generateHtml(): Unit = {
     println("blog> Generating static html file...")
-    static.Generator.writeHtmlToFile("./shared/public/index.html")
+    static.Generator.writeHtmlToFile[Id]("./shared/public/index.html")
     println("blog> Done.")
   }
 }
