@@ -20,11 +20,18 @@ trait Console[F[_]](using ev: Monad[F]) {
 
 object Console {
   import cats.*
+  import cats.effect.*
 
   // Dirty one
   given Console[Id] with {
     def print(s: String) = scala.Console.print(s)
     def readLine() = scala.io.StdIn.readLine()
     def readChar() = scala.io.StdIn.readChar()
+  }
+
+  given Console[IO] with {
+    def print(s: String) = IO { summon[Console[Id]].print(s) }
+    def readLine() = IO { summon[Console[Id]].readLine() }
+    def readChar() = IO { summon[Console[Id]].readChar() }
   }
 }

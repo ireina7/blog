@@ -23,7 +23,7 @@ object Frame {
     val theBody = 
       if conf.blogType == blog.BlogType.Static
       then body(
-        div(id := "static-content"),
+        div(id := "static-content")(inner),
         jsFile(s"$assetPath/js/main.js"),
         Highlight.enable,
       )
@@ -43,6 +43,7 @@ object Frame {
         configurations,
         title("Ireina's magic"),
         cssFile(s"$assetPath/css/main.css"),
+        // jsFile(s"$assetPath/js/main.js"),
         Dependencies.html,
       ),
       theBody,

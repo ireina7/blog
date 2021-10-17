@@ -7,8 +7,7 @@ import scalatags.Text.all.{
   _
 }
 import scalatags.Text.tags2.title
-import cats.Id
-import cats.Monad
+import cats.*
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
 
@@ -23,20 +22,24 @@ object Generator {
   
   def generateHtml(content: HtmlText = div()): HtmlText = {
     val index = Frame.index(content)
+    println(index)
     index
   }
 
   /**
    * Dirty too!
   */
-  def writeHtmlToFile[F[_]](path: String)(using fileIO: FileIO[F, String, String]): Unit = {
-    fileIO.writeFile(path, generateHtml().toString)
+  def writeHtmlToFile[F[_]](path: String)
+    (using fileIO: FileIO[F, String, String]): F[Unit] = {
+    
+    fileIO.writeFile(path, generateHtml(b("hello!!")).toString)
   }
 
   /**
    * Read in `items.json`
   */
-  def readIndex[F[_]: Monad]()(using fileIO: FileIO[F, String, String]): blog.Result[HtmlText] = {
+  def readIndex[F[_]: Monad]()
+    (using fileIO: FileIO[F, String, String]): blog.Result[HtmlText] = {
     import io.circe.*
     import io.circe.generic.auto.*
     import io.circe.parser.*
