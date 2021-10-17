@@ -8,6 +8,7 @@ My personal blog written mostly in Scala.
 - `sbt` the build tool
 - `cats` and `cats-effect` for core
 - `scala.js` and `scalatags` for front end
+- `circe` for *Json* processing
 - `http4s`, `doobie` and `quill` for back end
 
 
