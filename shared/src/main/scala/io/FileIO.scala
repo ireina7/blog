@@ -51,4 +51,12 @@ object FileIO:
       IO { summon[FileIO[Id, String, String]].writeFile(path, content) }
   }
 
+  given ioError: FileIO[[T] =>> IO[Either[Exception, T]], String, String] with {
+
+    def readFile(path: String) = 
+      IO { Right(summon[FileIO[Id, String, String]].readFile(path)) }
+    def writeFile(path: String, content: String) = 
+      IO { Right(summon[FileIO[Id, String, String]].writeFile(path, content)) }
+  }
+
 end FileIO

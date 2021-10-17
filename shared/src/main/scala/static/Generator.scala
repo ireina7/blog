@@ -1,6 +1,7 @@
 package blog.static
 
 import blog.*
+import blog.util.*
 import blog.page.Frame
 import scalatags.Text.all.{
   title => titleAttr,
@@ -39,32 +40,17 @@ object Generator {
    * Read in `items.json`
   */
   def readIndex[F[_]: Monad]()
-    (using fileIO: FileIO[F, String, String]): blog.Result[HtmlText] = {
-    import io.circe.*
-    import io.circe.generic.auto.*
-    import io.circe.parser.*
-    // import io.circe.generic.semiauto.*
-
-    given itemDecoder: Decoder[page.Item] = new Decoder[page.Item]:
-      def apply(c: HCursor) =
-        for {
-          title  <- c.downField("title" ).as[String]
-          author <- c.downField("author").as[String]
-          date   <- c.downField("date"  ).as[String]
-          view   <- c.downField("view"  ).as[String]
-        } yield {
-          page.Item(title, author, date, view)
-        }
+    (using fileIO: FileIO[F, String, String])
+    (using jsonParser: From[F, String, List[page.Item]])
+    : F[List[page.Item]] = {
     
-    val parseResult = for {
+    for {
       raw <- fileIO.readFile(Path.items)
+      res <- jsonParser.from(raw)
     } yield {
-      decode[List[page.Item]](raw)
+      res
     }
-    // val raw = ev.readFile(Path.items)
-    // val parseResult = decode[List[page.Item]](raw)
-    println(parseResult)
-    Right(div())
+    // Right(div())
   }
 
 }
