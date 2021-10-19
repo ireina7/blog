@@ -3,7 +3,7 @@ package blog.page
 
 import blog.*
 import scalatags.Text
-import scalatags.Text.all._
+import scalatags.Text.all.*
 // import cats.data.Reader
 
 

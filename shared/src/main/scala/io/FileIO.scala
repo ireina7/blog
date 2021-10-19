@@ -1,11 +1,13 @@
 package blog
 
 
-trait FileIO[F[_], Path, Content] {
+trait FileIO[F[_], Path, -Content] {
   
   def readFile(path: Path): F[String]
   def writeFile(path: Path, content: Content): F[Unit]
 }
+
+type FileIOString[F[_]] = FileIO[F, String, String]
 
 
 object FileIO:
@@ -13,6 +15,7 @@ object FileIO:
   import cats.effect.*
 
   // The dirty one
+  // type Id[A] = A
   given FileIO[Id, String, String] with {
 
     def readFile(path: String) = {

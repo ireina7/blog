@@ -3,8 +3,8 @@ package blog.page
 
 import blog.*
 import scalatags.Text.all.{
-    title => titleAttr,
-    _
+    title as titleAttr,
+    *
 }
 import scalatags.Text.tags2.title
 import scalatags.Text

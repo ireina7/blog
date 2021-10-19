@@ -94,6 +94,16 @@ lazy val shared = (project in file("shared"))
   .settings(
     name := "shared",
     scalaVersion := V.scala3,
+    scalacOptions ++= Seq(
+      "-deprecation",
+      "-encoding", "UTF-8",
+      // "-language:higherKinds",
+      "-language:postfixOps",
+      "-feature",
+      "-Xfatal-warnings",
+      "-source:future",
+      "-Ykind-projector:underscores",
+    ),
 
     libraryDependencies ++= Seq(
       catsCore,

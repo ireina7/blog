@@ -12,5 +12,6 @@ import cats.effect.*
 
   println("blog> Generating static html file...")
   val exe = blog.static.Generator.writeHtmlToFile[IO]("./shared/public/index.html")
+  
   exe.unsafeRunSync()
 }
