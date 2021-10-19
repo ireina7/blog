@@ -1,5 +1,6 @@
 # λ Blog
-My personal blog written mostly in Scala.  
+My personal blog written mostly in Scala.
+Trying `finally tagless` with `extensive effects`.
 ![k-on!](./img/k-on-q.png)  
 - version: `0.1.2`
 

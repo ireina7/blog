@@ -14,9 +14,6 @@ import cats.syntax.functor.*
 import cats.syntax.applicative.*
 
 
-// def pack(): Unit = {
-//   Generator.writeHtmlToFile("./shared/public/index.html")
-// }
 
 object Generator:
 
@@ -41,7 +38,7 @@ object Generator:
    * Read in `items.json`
   */
   type Index = List[page.Item]
-  def readIndex[F[_]: Monad]()
+  def readIndex[F[_]: Monad]
     (using 
       fileIO: FileIOString[F],
       jsonParser: From[F, String, Index]
@@ -105,6 +102,5 @@ object Generator:
         case Left(nextA) => tailRecM(nextA)(f)
       }
   }
-
 
 end Generator
