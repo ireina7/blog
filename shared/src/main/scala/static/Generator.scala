@@ -15,6 +15,7 @@ import cats.syntax.applicative.*
 
 
 
+
 object Generator {
 
   given blog.Configuation = blog.Configuation.staticBlog

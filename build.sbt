@@ -8,7 +8,7 @@ import Operations._
 
 
 lazy val blog = (project in file("."))
-  .aggregate(server, client, shared)
+  .aggregate(server, client, shared, skeleton)
   // .dependsOn(server, client, shared)
   .settings(
     name := "blog",
@@ -90,7 +90,7 @@ lazy val client = (project in file("client"))
   )
 
 lazy val shared = (project in file("shared"))
-  .aggregate(skeleton)
+  // .aggregate(skeleton)
   .settings(
     name := "shared",
     scalaVersion := V.scala3,
@@ -118,12 +118,16 @@ lazy val shared = (project in file("shared"))
   )
 
 lazy val skeleton = (project in file("skeleton"))
+  .dependsOn(shared)
   .settings(
     name := "skeleton",
     scalaVersion := V.scala3,
 
     libraryDependencies += junit % Test,
-    libraryDependencies += scalatags.cross(CrossVersion.for3Use2_13),
+    libraryDependencies ++= Seq(
+      scalatags,
+      scalaParser,
+    ).map(_.cross(CrossVersion.for3Use2_13))
   )
 
 

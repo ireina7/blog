@@ -24,6 +24,7 @@ object V {
   val scalatags          = "0.9.1"
   val scalaJsDom         = "1.1.0"
   val scalaCheck         = "1.15.4"
+  val scalaParser        = "2.1.0" // Parser combinators
 
   // Plugins
   val kindProjector      = "0.10.3"
@@ -45,6 +46,7 @@ object Dependencies {
     val akka               = "com.typesafe.akka"      %% "akka-actor-typed"           % V.akka
     val scalatags          = "com.lihaoyi"            %% "scalatags"                  % V.scalatags
     val scalaCheck         = "org.scalacheck"         %% "scalacheck"                 % V.scalaCheck
+    val scalaParser        = "org.scala-lang.modules" %% "scala-parser-combinators"   % V.scalaParser
 
     object Circe {
       val core    = "io.circe" %% "circe-core"    % V.circe
