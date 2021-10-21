@@ -17,11 +17,12 @@ object From {
     def apply(c: HCursor) =
       for {
         title  <- c.downField("title" ).as[String]
+        link   <- c.downField("link"  ).as[String]
         author <- c.downField("author").as[String]
         date   <- c.downField("date"  ).as[String]
         view   <- c.downField("view"  ).as[String]
       } yield {
-        blog.page.Item(title, author, date, view)
+        blog.page.Item(title, link, author, date, view)
       }
 
   given parseJson[B](using decoder: io.circe.Decoder[B])

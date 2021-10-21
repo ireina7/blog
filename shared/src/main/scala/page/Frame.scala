@@ -21,13 +21,10 @@ object Frame {
 
     val assetPath = conf.blogType.assetsPath
     val theBody = 
-      if conf.blogType == blog.BlogType.Static
-      then body(
-        div(id := "static-content")(inner),
-        jsFile(s"$assetPath/js/main.js"),
-        Highlight.enable,
-      )
-      else body(
+      body(
+        if conf.blogType == blog.BlogType.Static
+        then div(id := "static-content")
+        else div(),
         navigator,
         br,
         mainContent(inner),
@@ -51,19 +48,15 @@ object Frame {
   }
 
 
-  def item(
-    title: String,
-    author: String,
-    date: java.util.Date,
-    view: HtmlText
-  ): HtmlText = {
+  val item: page.Item => HtmlText = { 
+    case page.Item(title, link, author, date, view) => 
     
-    div(`class` := "blog-item")(
-      a(href := "#", `class` := "blog-item-title")(title),
-      p("by ", text("blog-item-author")(author)),
-      p(text("blog-item-date")(date.toString)),
-      view,
-    )
+      div(`class` := "blog-item")(
+        a(href := link, `class` := "blog-item-title")(title),
+        p("by ", text("blog-item-author")(author)),
+        p(text("blog-item-date")(date)),
+        p(view),
+      )
   }
 
 }

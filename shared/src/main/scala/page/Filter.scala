@@ -9,7 +9,6 @@ import scalatags.generic.TypedTag
 
 object Filter {
 
-
   def inputBar = {
     input(
       `class` := "form-control me-2", 

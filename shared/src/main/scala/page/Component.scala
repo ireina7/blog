@@ -23,6 +23,7 @@ abstract class MiscLibrary(name: String) extends Library
 
 case class Item(
   title: String,
+  link: String,
   author: String,
   date: String,
   view: String

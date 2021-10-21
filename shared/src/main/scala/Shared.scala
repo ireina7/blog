@@ -2,18 +2,13 @@ package blog
 
 import scalatags.Text.TypedTag
 import cats.Id
+import cats.effect.*
 
 object Shared {
 
   val msg = "Shared message"
   val assetsPath = "./shared/assets"
   val snapshots = s"$assetsPath/snapshots.json"
-
-  def generateHtml(): Unit = {
-    println("blog> Generating static html file...")
-    static.Generator.writeHtmlToFile[Id]("./shared/public/index.html")
-    println("blog> Done.")
-  }
 }
 
 type HtmlText = TypedTag[String]

@@ -32,9 +32,9 @@ object Main {
   def setup(): Unit = {
     
     document.body.appendChild(sideBar)
-    if isStatic then
-      setupStaticBlogIfNecessary()
-    else // is dynamic blog
+    // if isStatic then
+    //   setupStaticBlogIfNecessary()
+    // else // is dynamic blog
       document.getElementById("blog-navigator").appendChild(navBar)
       document.getElementById("blog-footer"   ).appendChild(footer)
     // ScalaJSExample.draw(canvas)

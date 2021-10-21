@@ -43,11 +43,11 @@ object Routes {
         val content = Frame.index(
           div(
             for(i <- 0 to 10) yield
-              Frame.item(
+              Frame.item(blog.page.Item(
                 title = s"第${i}篇文章！", 
                 author = "Ireina", 
-                date = new java.util.Date(),
-                view = div(hr),
+                date = java.util.Date().toString,
+                view = "")
               ),
           )
         )
