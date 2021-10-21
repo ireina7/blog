@@ -45,6 +45,7 @@ object Routes {
             for(i <- 0 to 10) yield
               Frame.item(blog.page.Item(
                 title = s"第${i}篇文章！", 
+                link = "???",
                 author = "Ireina", 
                 date = java.util.Date().toString,
                 view = "")
