@@ -29,7 +29,7 @@ case class Item(
   view: String
 )
 
-
+type Index = List[page.Item]
 
 object Component {
 

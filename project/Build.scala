@@ -5,7 +5,7 @@ import sbt._
 object V {
 
   // Scala versions
-  val scala3             = "3.0.1" // We are brave scala 3 users!
+  val scala3             = "3.1.0" // We are brave scala 3 users!
   val scala2             = "2.13.6" 
 
   // Libraries

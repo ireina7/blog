@@ -11,7 +11,7 @@ object Shared {
   val snapshots = s"$assetsPath/snapshots.json"
 }
 
-type HtmlText = TypedTag[String]
+type HtmlText = scalatags.Text.Frag
 type BlogContext[T] = blog.Configuation ?=> T
 
 trait ToHTML[A] {

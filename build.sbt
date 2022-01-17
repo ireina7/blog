@@ -127,6 +127,7 @@ lazy val skeleton = (project in file("skeleton"))
     libraryDependencies ++= Seq(
       scalatags,
       scalaParser,
+      scalaCheck,
     ).map(_.cross(CrossVersion.for3Use2_13))
   )
 
@@ -136,7 +137,7 @@ lazy val skeleton = (project in file("skeleton"))
 
 lazy val jsPipe = taskKey[Unit]("Copy compiled js files into server")
 jsPipe := {
-  val jsSourceFolder = "target/scala-3.0.1/client-fastopt"
+  val jsSourceFolder = "target/scala-3.1.0/client-fastopt"
   println("blog> Copying js and css files to shared assets...")
   copyFile(
     s"./client/$jsSourceFolder/main.js",

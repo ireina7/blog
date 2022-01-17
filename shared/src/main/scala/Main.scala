@@ -2,7 +2,18 @@ package blog.shared
 
 import cats.*
 import cats.effect.*
+import blog.util.Effect.*
+import blog.util.Effect.given
+import blog.static.given
 
+
+import blog.util.Generator
+def testGenerator[Eff[_]: blog.util.Runnable]
+  (using generator: Generator[Eff]) = {
+  
+  val exe = generator.generateIndexPage
+  exe.run()
+}
 
 @main def main(): Unit = {
 
@@ -11,7 +22,10 @@ import cats.effect.*
   // println(html.toString)
 
   println("blog> Generating static html file...")
-  val exe = blog.static.Generator.writeHtmlToFile[IO]("./shared/public/index.html")
+  val result = testGenerator[IOErr]
+  result match
+    case Left(error) => println(s"Error while running generator: $error")
+    case _ => println(s"Ok generated index page.")
   
-  exe.unsafeRunSync()
+  // exe.unsafeRunSync()
 }

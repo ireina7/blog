@@ -9,10 +9,7 @@ import cats.syntax.functor.*
 trait Console[F[_]](using ev: Monad[F]) {
   
   def print(s: String): F[Unit]
-  def println(s: String): F[Unit] = for {
-    _ <- print(s)
-    _ <- print("\n")
-  } yield ()
+  def println(s: String): F[Unit] = print(s) >> print("\n")
   def readLine(): F[String]
   def readChar(): F[Char]
 }
@@ -22,6 +19,7 @@ object Console {
   import cats.*
   import cats.effect.*
 
+  type Id[A] = A
   // Dirty one
   given Console[Id] with {
     def print(s: String) = scala.Console.print(s)
