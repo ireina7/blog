@@ -38,46 +38,32 @@ end EvalSkele
 
 
 
-type Env[A] = scala.collection.mutable.Map[String, A]
-type SkeleEnv[F[_], Env, A] = Env ?=> F[A]
-// type SkeleValueEnv[A] = SkeleEnv[Option, Env[A], A]
-
-
-given [F[_], Env](using app: Applicative[F]): 
-  Applicative[[A] =>> SkeleEnv[F, Env, A]] with
-  def pure[A](a: A) = env ?=> app.pure(a)
-  def ap[A, B](f: SkeleEnv[F, Env, A => B])(ma: SkeleEnv[F, Env, A]): SkeleEnv[F, Env, B] = 
-    env ?=> {
-      app.ap(f(using env))(ma(using env))
-    }
-end given
-
-
-given [F[_], Env](using traversing: Traverse[F]):
-  Traverse[[A] =>> SkeleEnv[F, Env, A]] with
-  override def foldLeft[A, B](fa: SkeleEnv[F, Env, A], b: B)(f: (B, A) => B): B = ???
-  override def foldRight[A, B]
-    (fa: SkeleEnv[F, Env, A], lb: cats.Eval[B])
-      (f: (A, cats.Eval[B]) => cats.Eval[B]): cats.Eval[B] = ???
-  override def traverse[G[_], A, B]
-    (fa: SkeleEnv[F, Env, A])(f: A => G[B])
-    (using appG: Applicative[G]): G[SkeleEnv[F, Env, B]] = ???
-end given
 
 
 
-type SkeleValueEnv[A] = SkeleEnv[blog.Result, Env[SkeleExpr], A]
-given EvalSkele[SkeleValueEnv, SkeleExpr] with
-  def variable(name: String) = env ?=> {
+import blog.util.Effect.{*, given}
+type Skele[F[_], A] = Injection[F, blog.BlogEnv[SkeleExpr], A]
+given [F[_]: Monad: Traverse]:
+  EvalSkele[[A] =>> Skele[F, A], blog.HtmlText] with {
+  override def variable(name: String) = env ?=> {
     ???
   }
-  def integer(i: Int) = Right(SkeleExpr.integer(i))
-  def number(n: Double) = Right(SkeleExpr.number(n))
-  def string(s: String) = Right(SkeleExpr.string(s))
-  def list(xs: List[SkeleExpr]) = ???
+  override def integer(i: Int) = ???
+  override def number(n: Double) = ???
+  override def string(s: String) = ???
+  override def list(xs: List[blog.HtmlText]) = ???
   override def application(
-    xs: SkeleValueEnv[List[SkeleExpr]]
+    xs: Skele[F, List[blog.HtmlText]]
   ) = ???
+}
+
+
+
+
+
+
+
+
 
 
 
@@ -85,7 +71,6 @@ given EvalSkele[SkeleValueEnv, SkeleExpr] with
 object Eval:
   import cats.catsInstancesForId
   def d = 0
-  val s = summon[Applicative[[A] =>> SkeleValueEnv[A]]]
   val i = summon[Applicative[cats.Id]]
 
 end Eval

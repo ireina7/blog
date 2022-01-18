@@ -2,6 +2,7 @@ package blog.util
 
 import blog.*
 import blog.util.*
+import cats.syntax.traverse
 
 
 trait Runnable[Effect[_]]:
@@ -56,11 +57,9 @@ object Effect:
 
   given Runnable[IOErr] with
     extension [T](mach: IOErr[T]) 
-      def run() = {
+      override def run() = {
         val result = mach.value.unsafeRunSync()
-        result match
-          case Right(x) => Right(x)
-          case Left(err) => Left(err)
+        result
       }
 
 
@@ -73,44 +72,92 @@ object Effect:
    * @tparam Env the injection environment
    * @tparam A the output type
   */
-  type Mana[F[_], Env, A] = Env ?=> F[A]
+  type Injection[F[_], Env, A] = Env ?=> F[A]
 
   given [Env, F[_]: Functor]: 
-    Functor[[A] =>> Mana[F, Env, A]] with
-    def map[A, B](ma: Mana[F, Env, A])(f: A => B) = env ?=> {
+    Functor[[A] =>> Injection[F, Env, A]] with
+    override def map[A, B](ma: Injection[F, Env, A])(f: A => B) = env ?=> {
       ma(using env).map(f)
     }
+  
 
   given [Env, F[_]](using app: Applicative[F]): 
-    Applicative[[A] =>> Mana[F, Env, A]] with
-    def pure[A](a: A) = app.pure(a)
-    def ap[A, B](ff: Mana[F, Env, A => B])(fa: Mana[F, Env, A]) = env ?=> {
+    Applicative[[A] =>> Injection[F, Env, A]] with {
+    override def pure[A](a: A) = app.pure(a)
+    override def ap[A, B](ff: Injection[F, Env, A => B])(fa: Injection[F, Env, A]) = env ?=> {
       app.ap(ff(using env))(fa(using env))
     }
+  }
 
-  given [Env, F[_]: Monad](using app: Applicative[[A] =>> Mana[F, Env, A]]):
-    Monad[[A] =>> Mana[F, Env, A]] with
+  given [Env, F[_]: Monad](using app: Applicative[[A] =>> Injection[F, Env, A]]):
+    Monad[[A] =>> Injection[F, Env, A]] with {
     export app.pure
-    def flatMap[A, B](fa: Mana[F, Env, A])(f: A => Mana[F, Env, B]) = env ?=> {
-      ???
+    override def flatMap[A, B](fa: Injection[F, Env, A])(f: A => Injection[F, Env, B]) = env ?=> {
+      fa(using env).flatMap(a => f(a)(using env))
     }
-    def tailRecM[A, B](a: A)(f: A => Mana[F, Env, Either[A, B]]): Mana[F, Env, B] = env ?=> {
-      ???
+    override def tailRecM[A, B]
+      (a: A)(f: A => Injection[F, Env, Either[A, B]]): Injection[F, Env, B] = {
+      flatMap(f(a)) {
+        case Left(a) => tailRecM(a)(f)
+        case Right(b) => pure(b)
+      }
     }
+  }
 
+  given [F[_]: Traverse, Env]:
+    Traverse[[A] =>> Injection[F, Env, A]] with {
+
+      // def traverse()
+      override def foldLeft[A, B]
+        (fa: Injection[F, Env, A], b: B)
+        (f: (B, A) => B): B = {
+        ???
+      }
+      override def foldRight[A, B]
+        (fa: Injection[F, Env, A], lb: cats.Eval[B])
+        (f: (A, cats.Eval[B]) => cats.Eval[B])
+        : cats.Eval[B] = {
+        ???
+      }
+
+      override def traverse[G[_], A, B]
+        (fa: Injection[F, Env, A])
+        (f: A => G[B])
+        (implicit evidence$1: cats.Applicative[G])
+        : G[Injection[F, Env, B]] = {
+        ???
+      }
+  }
+
+  
   given [F[_], Env](using fio: FileIO[F, String, String]):
-    FileIO[[A] =>> Mana[F, Env, A], String, String] with
-    def readFile(path: String) = fio.readFile(path)
-    def writeFile(path: String, content: String) = fio.writeFile(path, content)
+    FileIO[[A] =>> Injection[F, Env, A], String, String] with {
+    override def readFile(path: String) = 
+      fio.readFile(path)
+    override def writeFile(path: String, content: String) = 
+      fio.writeFile(path, content)
+  }
   
 
   given [F[_], Env](using fp: Parser[F, page.Index]):
-    Parser[[A] =>> Mana[F, Env, A], page.Index] with
-    def parse(s: String) = fp.parse(s)
+    Parser[[A] =>> Injection[F, Env, A], page.Index] with
+    override def parse(s: String) = fp.parse(s)
+  
 
-  given [F[_]: Runnable, Env](using env: Env):
-    Runnable[[A] =>> Mana[F, Env, A]] with
-    extension [T](mach: Mana[F, Env, T]) def run() = mach.run()
+  given [F[_], Env](using F: Runnable[F], env: Env):
+    Runnable[[A] =>> Injection[F, Env, A]] with {
+
+    extension [T](mach: Injection[F, Env, T]) 
+      override def run() = {
+        /** 
+         * If we write `mach.run()` or `mach(using env).run()` here,
+         * We will get into trouble since above 2 expressions will be
+         * reconstructed by scala compiler as `(env ?=> mach(using env)).run()`
+         * and finally cause stackoverflow :(
+         */
+        F.run(mach(using env))() // We have to explicitly refer to the exact version of run.
+      }
+  }
 
 
 end Effect

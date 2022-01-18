@@ -22,10 +22,11 @@ def testGenerator[Eff[_]: blog.util.Runnable]
   // println(html.toString)
 
   println("blog> Generating static html file...")
-  val result = testGenerator[IOErr]
+  given blog.Configuation = blog.Configuation.staticBlog
+  type Effect[A] = Injection[IOErr, blog.Configuation, A]
+  val result = testGenerator[Effect]
   result match
     case Left(error) => println(s"Error while running generator: $error")
     case _ => println(s"Ok generated index page.")
   
-  // exe.unsafeRunSync()
 }

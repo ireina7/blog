@@ -23,3 +23,6 @@ import Effect.given
 given Generator[IOErr] with
   def config = blog.Configuation.staticBlog
 
+
+given Generator[[A] =>> Injection[IOErr, blog.Configuation, A]] with
+  def config = blog.Configuation.staticBlog
