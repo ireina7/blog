@@ -1,7 +1,7 @@
 package blog.static
 
 import blog.*
-import blog.util.*
+import blog.core.*
 import blog.page
 import scalatags.Text.all.{
   title as titleAttr,
@@ -21,8 +21,8 @@ import cats.syntax.applicative.*
 import Effect.*
 import Effect.given
 given Generator[IOErr] with
-  def config = blog.Configuation.staticBlog
+  def config = blog.Configuration.staticBlog
 
 
-given Generator[[A] =>> Injection[IOErr, blog.Configuation, A]] with
-  def config = blog.Configuation.staticBlog
+given Generator[[A] =>> Injection[IOErr, blog.Configuration, A]] with
+  def config = blog.Configuration.staticBlog

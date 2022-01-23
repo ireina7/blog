@@ -1,4 +1,4 @@
-package blog.util
+package blog.core
 
 
 trait From[F[_], A, B] {

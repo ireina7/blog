@@ -12,7 +12,7 @@ object Shared {
 }
 
 type HtmlText = scalatags.Text.Frag
-type BlogContext[T] = blog.Configuation ?=> T
+type BlogContext[T] = blog.Configuration ?=> T
 
 trait ToHTML[A] {
   extension (a: A) def toHTML: HtmlText

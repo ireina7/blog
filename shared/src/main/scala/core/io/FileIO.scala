@@ -1,5 +1,17 @@
-package blog
+package blog.core
 
+
+
+trait DiskIO[F[_], Path, -Content, File]:
+  def readFile(file: File): F[String]
+  def writeFile(file: File, content: Content): F[Unit]
+
+  def openFile(path: Path): F[File]
+  def closeFile(file: File): F[Unit]
+end DiskIO
+
+
+import scala.io.{ Source, BufferedSource }
 
 trait FileIO[F[_], Path, -Content] {
   
@@ -7,22 +19,27 @@ trait FileIO[F[_], Path, -Content] {
   def writeFile(path: Path, content: Content): F[Unit]
 }
 
-type FileIOString[F[_]] = FileIO[F, String, String]
+
+type FileIOString[F[_]] = 
+  FileIO[F, String, String]
+
+
 
 
 object FileIO:
   import cats.*
   import cats.effect.*
+  import java.io.File
 
   // The dirty one
   // type Id[A] = A
   given FileIO[Id, String, String] with {
 
-    def readFile(path: String) = {
+    override def readFile(path: String) = {
       import java.nio.file.{ Files, Paths }
       new String(Files.readAllBytes(Paths.get(path)))
     }
-    def writeFile(path: String, content: String) = {
+    override def writeFile(path: String, content: String) = {
       import java.io.PrintWriter
       Some(new PrintWriter(path)).foreach { p => 
         p.write(content)
@@ -46,20 +63,16 @@ object FileIO:
     }
   }
 
-  given FileIO[IO, String, String] with {
+  given (using rawIO: FileIO[Id, String, String]): 
+    FileIO[IO, String, String] with {
 
     def readFile(path: String) = 
-      IO { summon[FileIO[Id, String, String]].readFile(path) }
+      IO { rawIO.readFile(path) }
     def writeFile(path: String, content: String) = 
-      IO { summon[FileIO[Id, String, String]].writeFile(path, content) }
+      IO { rawIO.writeFile(path, content) }
+    
   }
 
-  given ioError: FileIO[[T] =>> IO[Either[Exception, T]], String, String] with {
-
-    def readFile(path: String) = 
-      IO { Right(summon[FileIO[Id, String, String]].readFile(path)) }
-    def writeFile(path: String, content: String) = 
-      IO { Right(summon[FileIO[Id, String, String]].writeFile(path, content)) }
-  }
+  export blog.core.Effect.given FileIO[?, ?, ?]
 
 end FileIO

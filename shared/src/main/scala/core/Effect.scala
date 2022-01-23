@@ -1,12 +1,13 @@
-package blog.util
+package blog.core
 
 import blog.*
-import blog.util.*
+import blog.core.*
 import cats.syntax.traverse
 
 
 trait Runnable[Effect[_]]:
-  extension [A](mach: Effect[A]) def run(): blog.Result[A]
+  extension [A](mach: Effect[A]) 
+    def run(): blog.Result[A]
 
 
 
@@ -26,14 +27,30 @@ object Effect:
 
 
   type IOErr[A] = EitherT[IO, Throwable, A]
-  given FileIO[IOErr, String, String] with {
+
+  given (using rawIO: FileIOString[Id]):
+    FileIO[IOErr, String, String] with {
     def readFile(path: String) = {
-      EitherT.rightT[IO, Throwable](summon[FileIOString[Id]].readFile(path))
+      EitherT.rightT[IO, Throwable](rawIO.readFile(path))
     }
     def writeFile(path: String, content: String) = {
-      EitherT.rightT[IO, Throwable](summon[FileIOString[Id]].writeFile(path, content))
+      EitherT.rightT[IO, Throwable](rawIO.writeFile(path, content))
     }
   }
+
+
+  given (using ioio: Console[IO]): 
+    Console[IOErr] with
+
+    override def print(s: String) = {
+      EitherT.right(ioio.print(s))
+    }
+    override def readChar() = EitherT.right(ioio.readChar())
+    override def readLine() = EitherT.right(ioio.readLine())
+  end given
+  
+
+
   given Parser[IOErr, page.Index] with {
     def parse(s: String): IOErr[page.Index] = {
       import io.circe.*
@@ -61,7 +78,7 @@ object Effect:
         val result = mach.value.unsafeRunSync()
         result
       }
-
+  end given
 
 
 
@@ -84,17 +101,23 @@ object Effect:
   given [Env, F[_]](using app: Applicative[F]): 
     Applicative[[A] =>> Injection[F, Env, A]] with {
     override def pure[A](a: A) = app.pure(a)
-    override def ap[A, B](ff: Injection[F, Env, A => B])(fa: Injection[F, Env, A]) = env ?=> {
-      app.ap(ff(using env))(fa(using env))
-    }
+    override def ap[A, B]
+      (ff: Injection[F, Env, A => B])
+      (fa: Injection[F, Env, A]) = 
+      env ?=> {
+        app.ap(ff(using env))(fa(using env))
+      }
   }
 
-  given [Env, F[_]: Monad](using app: Applicative[[A] =>> Injection[F, Env, A]]):
+  given [F[_]: Monad, Env](using app: Applicative[[A] =>> Injection[F, Env, A]]):
     Monad[[A] =>> Injection[F, Env, A]] with {
     export app.pure
-    override def flatMap[A, B](fa: Injection[F, Env, A])(f: A => Injection[F, Env, B]) = env ?=> {
-      fa(using env).flatMap(a => f(a)(using env))
-    }
+    override def flatMap[A, B]
+      (fa: Injection[F, Env, A])
+      (f: A => Injection[F, Env, B]) = 
+      env ?=> {
+        fa(using env).flatMap(a => f(a)(using env))
+      }
     override def tailRecM[A, B]
       (a: A)(f: A => Injection[F, Env, Either[A, B]]): Injection[F, Env, B] = {
       flatMap(f(a)) {
@@ -104,38 +127,59 @@ object Effect:
     }
   }
 
-  given [F[_]: Traverse, Env]:
-    Traverse[[A] =>> Injection[F, Env, A]] with {
-
-      // def traverse()
-      override def foldLeft[A, B]
-        (fa: Injection[F, Env, A], b: B)
-        (f: (B, A) => B): B = {
-        ???
-      }
-      override def foldRight[A, B]
-        (fa: Injection[F, Env, A], lb: cats.Eval[B])
-        (f: (A, cats.Eval[B]) => cats.Eval[B])
-        : cats.Eval[B] = {
-        ???
-      }
-
-      override def traverse[G[_], A, B]
-        (fa: Injection[F, Env, A])
-        (f: A => G[B])
-        (implicit evidence$1: cats.Applicative[G])
-        : G[Injection[F, Env, B]] = {
-        ???
-      }
+  given [F[_]: Monad, Env](using 
+    monad: Monad[[A] =>> Injection[F, Env, A]], 
+    errF: MonadError[F, Throwable]
+  ):
+    MonadError[[A] =>> Injection[F, Env, A], Throwable] with {
+    
+    def handleErrorWith[A]
+      (fa: Injection[F, Env, A])
+      (f: Throwable => Injection[F, Env, A]) = {
+      ???
+    }
+    def raiseError[A](e: Throwable): Injection[F, Env, A] = {
+      ???
+    }
+    
+    export monad.*
   }
 
-  
+
   given [F[_], Env](using fio: FileIO[F, String, String]):
     FileIO[[A] =>> Injection[F, Env, A], String, String] with {
     override def readFile(path: String) = 
       fio.readFile(path)
     override def writeFile(path: String, content: String) = 
       fio.writeFile(path, content)
+  }
+
+
+  given given_console_config[F[_]: Monad](using 
+    ioio: Console[F],
+  ): Console[[A] =>> Injection[F, blog.Configuration, A]] with {
+    
+    override def print(s: String) = ioio.print(s)
+    override def log(s: String) = env ?=> {
+      val prompt = env.prompt
+      ioio.println(s"[$prompt] $s")
+    }
+    override def readChar() = ioio.readChar()
+    override def readLine() = ioio.readLine()
+  }
+
+  given given_console[F[_]: Monad, Env, Query, A](using 
+    ioio: Console[F],
+    envi: Environment[F, Env, Query, A],
+  ): Console[[A] =>> Injection[F, Env, A]] with {
+    
+    override def print(s: String) = ioio.print(s)
+    // override def log(s: String) = env ?=> {
+    //   val prompt = env.prompt
+    //   ioio.println(s"[$prompt] $s")
+    // }
+    override def readChar() = ioio.readChar()
+    override def readLine() = ioio.readLine()
   }
   
 

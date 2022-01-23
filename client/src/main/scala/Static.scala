@@ -14,7 +14,7 @@ import scalatags.Text.tags2.title
 object StaticBlog {
 
   // type HtmlText = TypedTag[String]
-  given blog.Configuation = blog.Configuation.staticBlog
+  given blog.Configuration = blog.Configuration.staticBlog
 
   def main = {
     ???

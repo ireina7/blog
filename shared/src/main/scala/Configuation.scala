@@ -1,14 +1,15 @@
 package blog
 
 
-case class Configuation(
+case class Configuration(
   blogType: BlogType,
+  prompt: String = "blog",
 )
 
-object Configuation {
+object Configuration {
   
-  val staticBlog = Configuation(blogType = BlogType.Static)
-  val onlineBlog = Configuation(blogType = BlogType.Online)
+  val staticBlog = Configuration(blogType = BlogType.Static)
+  val onlineBlog = Configuration(blogType = BlogType.Online)
 }
 
 

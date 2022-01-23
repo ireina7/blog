@@ -73,7 +73,7 @@ object Component {
     )
   }
   
-  class HighlightLibrary(conf: blog.Configuation) extends JSLibrary("Hightlight") {
+  class HighlightLibrary(conf: blog.Configuration) extends JSLibrary("Hightlight") {
     def html = Seq(
       link(
         rel := "stylesheet",
@@ -90,9 +90,9 @@ object Component {
   def Highlight: BlogContext[HighlightLibrary] = conf ?=>
     new HighlightLibrary(conf)
   
-  class AllLibraries(conf: blog.Configuation) extends MiscLibrary("All libraries") {
+  class AllLibraries(conf: blog.Configuration) extends MiscLibrary("All libraries") {
 
-    given blog.Configuation = conf
+    given blog.Configuration = conf
     def html = Seq(
       BootStrap.html,
       Highlight.html,

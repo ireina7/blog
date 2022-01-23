@@ -4,17 +4,10 @@ import cats.*
 
 
 
-trait Environment[F[_], Env, Query, A] {
-
-  extension (env: Env) 
-    def configuration: blog.Configuation
-    def query(query: Query): F[A]
-    def add(query: Query, a: A): F[Unit]
-}
 
 
 
-class BlogEnv[A](val config: blog.Configuation) {
+class BlogEnv[A](val config: blog.Configuration) {
 
   import scala.collection.mutable.Map
   val memo = Map[String, A]()
@@ -24,11 +17,12 @@ class BlogEnv[A](val config: blog.Configuation) {
 }
 
 
+import blog.core.Environment
 given [F[_]: Monad, A]: 
   Environment[F, BlogEnv[A], String, A] with {
 
   extension (env: BlogEnv[A]) 
-    def configuration: blog.Configuation = env.config
+    def configuration: blog.Configuration = env.config
     def query(query: String): F[A] = ???
     def add(query: String, a: A): F[Unit] = ???
 }

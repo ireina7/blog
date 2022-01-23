@@ -1,4 +1,4 @@
-package blog.util
+package blog.core
 
 trait Show[A] {
   extension (a: A) def show: String

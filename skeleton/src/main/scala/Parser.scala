@@ -1,34 +1,49 @@
 package blog.skeleton
 
 
-import blog.util.Parser
+import blog.core.Parser
 import scala.annotation.targetName
 import scala.language.implicitConversions
 import blog.skeleton.Exprs.*
 
 
 
+
+import cats.*
+import cats.effect.*
+
+given Parser[Id, SkeleExpr] with {
+  def parse(s: String) = Parser.parseSkeleExpr(s).getOrElse(SkeleExpr.Pass)
+}
+given Parser[IO, SkeleExpr] with {
+  def parse(s: String) = IO { Parser.parseSkeleExpr(s).getOrElse(SkeleExpr.Pass) }
+}
+given Parser[blog.Result, SkeleExpr] with {
+  def parse(s: String) = Parser.parseSkeleExpr(s)
+}
+given Parser[blog.Result, blog.HtmlText] with {
+  def parse(s: String) = for {
+    skele <- summon[Parser[blog.Result, SkeleExpr]].parse(s)
+    htmlT <- Parser.parseSkeleExprToHtml(skele)
+  } yield htmlT
+}
+
+
+import blog.core.Effect.{*, given}
+given [F[_], Env](using 
+  F: Monad[F],
+  err: MonadError[F, Throwable],
+  rawParser: Parser[blog.Result, SkeleExpr],
+): 
+  Parser[[A] =>> Injection[F, Env, A], SkeleExpr] with
+  def parse(s: String) = rawParser.parse(s) match
+    case Left(er) => err.raiseError(Throwable(er))
+    case Right(x) => F.pure(x)
+
+
 object Parser {
-  import cats.*
-  import cats.effect.*
   
-  given Parser[Id, SkeleExpr] with {
-    def parse(s: String) = parseSkeleExpr(s).getOrElse(SkeleExpr.Pass)
-  }
-  given Parser[IO, SkeleExpr] with {
-    def parse(s: String) = IO { parseSkeleExpr(s).getOrElse(SkeleExpr.Pass) }
-  }
-  given Parser[blog.Result, SkeleExpr] with {
-    def parse(s: String) = parseSkeleExpr(s)
-  }
-  given Parser[blog.Result, blog.HtmlText] with {
-    def parse(s: String) = for {
-      skele <- summon[Parser[blog.Result, SkeleExpr]].parse(s)
-      htmlT <- parseSkeleExprToHtml(skele)
-    } yield htmlT
-  }
-
-
+  
   val identity = "[a-zA-Z0-9~\\[\\]!=-@#$+%^&*_:\";/,|\\_]+".r
 
   import scala.util.parsing.combinator.RegexParsers
@@ -43,7 +58,10 @@ object Parser {
     def integer    = "[0-9]+".r ^^ (s => Integer(s.toInt))
     def number     = real | integer
     def text       = identity ^^ Str.apply
-    def lists      = ("(" ~> expr.*   <~ ")") ^^ Lisp.apply
+    def lists      = ("(" ~> expr.*   <~ ")") ^^ {
+      case Nil => Pass
+      case f::ps => application(f, ps)
+    }
     // def quote      = ("'" ~> expr) ^^ (x => Lisp(List(Var("'"), x)))
     // def string     = ("{" ~> "[^{}]*".r <~ "}") ^^ Str.apply
     // def structList = (lists) ~ string.? ^^ {
@@ -116,4 +134,7 @@ object Parser {
 
 
 }
+
+
+// export Parser.given Parser[?, ?]
 

@@ -1,7 +1,7 @@
-package blog.util
+package blog.core
 
 import blog.*
-import blog.util.*
+import blog.core.*
 import blog.page
 import scalatags.Text.all.{
   title as titleAttr,
@@ -21,8 +21,8 @@ trait Generator[F[_]: Monad]
     parser: Parser[F, page.Index]
   ):
   
-  def config: blog.Configuation
-  given blog.Configuation = config
+  def config: blog.Configuration
+  given blog.Configuration = config
 
   // A test to abstract typeclass constraints and it works!
   // type FileIOParser[F[_], A] = 
@@ -53,9 +53,19 @@ trait Generator[F[_]: Monad]
     for {
       index <-  generateIndex
       _     <-  fileIO.writeFile(
-                  s"${Path.staticPackage}/index.html", 
+                  s"${Path.staticPackage}/index.html",
                   generateHtml(index).toString
                 )
+    } yield ()
+  }
+
+  def toJson(index: page.Index): F[String] = ???
+  def generateIndexFile
+    (path: String, index: page.Index): F[Unit] = {
+    
+    for {
+      json <- toJson(index)
+      _    <- fileIO.writeFile(path, json)
     } yield ()
   }
 
