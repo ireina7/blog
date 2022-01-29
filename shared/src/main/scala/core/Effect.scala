@@ -1,6 +1,6 @@
 package blog.core
 
-import blog.*
+import blog.page
 import blog.core.*
 import cats.syntax.traverse
 

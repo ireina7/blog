@@ -16,10 +16,9 @@ import cats.syntax.traverse.*
 import cats.MonadError
 
 
-trait EvalSkele[F[_]
-  : Monad
-  , Value
-](using err: MonadError[F, Throwable]) extends 
+trait EvalSkele[F[_], Value]
+  (using err: MonadError[F, Throwable]) 
+  extends 
   Eval[F, SkeleExpr, Value], 
   Expr[F, Value]:
   override def eval(expr: SkeleExpr): F[Value] = {
@@ -28,8 +27,12 @@ trait EvalSkele[F[_]
       case Integer(i) => integer(i)
       case Num(n)     => number(n)
       case Str(s)     => string(s)
-      case Lisp(xs)   => ???
-      case App(f, ps) => application(eval(f), ps.traverse(eval(_)))
+      case Lisp(xs)   => xs.traverse(eval(_)).flatMap(list(_))
+      case App(f, ps) => for {
+        function   <- eval(f)
+        parameters <- ps.traverse(eval(_))
+        result     <- application(function, parameters)
+      } yield result
       case _          => err.raiseError(
         Throwable(s"Evaluation error: Unknown expression: $expr")
       )
@@ -63,17 +66,17 @@ given [F[_]: Monad, Value](using
 
 
 import blog.core.Effect.{*, given}
-import blog.core.Effect.given Monad[?]
 import scala.collection.mutable
 
-type Skele[F[_], A] = Injection[F, mutable.Map[String, SkeleExpr], A]
+type Skele[F[_], A] = Injection[F, SkeleExpr.Env, A]
 
 
-import cats.syntax.apply.*
-given [F[_]: Monad](using err: MonadError[F, Throwable]):
-  EvalSkele[[A] =>> Injection[F, mutable.Map[String, SkeleExpr], A], SkeleExpr] with {
+
+given [F[_]](using err: MonadError[F, Throwable]):
+  EvalSkele[[A] =>> Skele[F, A], SkeleExpr] =
+  new EvalSkele {
   
-  // import cats.syntax.apply.*
+  import cats.syntax.apply.*
   given Conversion[SkeleExpr, F[SkeleExpr]] = _.pure
   override def variable(name: String) = env ?=> {
     env.get(name) match
@@ -84,32 +87,35 @@ given [F[_]: Monad](using err: MonadError[F, Throwable]):
   override def number(n: Double) = Num(n)
   override def string(s: String) = Str(s)
   override def list(xs: List[SkeleExpr]) = Lisp(xs)
+  override def lambda(ps: List[SkeleExpr], expr: SkeleExpr) = env ?=> {
+    Closure(ps, expr, env).pure
+  }
   override def application
-    (f: Skele[F, SkeleExpr], xs: Skele[F, List[SkeleExpr]]): Skele[F, SkeleExpr] = {
+    (f: SkeleExpr, xs: List[SkeleExpr]): Skele[F, SkeleExpr] = {
     
-    for
-      ff <- f
-      ys <- xs
-      ans <- ff match
-        case Closure(ps, expr, env) => {
-          val pairs = (ps zip ys)
-          val lefts = ps diff pairs.map(_._1)
-          pairs.foreach {
-            case (Var(name), v) => env += (name -> v)
-            case _ => err.raiseError(
-              Throwable(s"Application error: found $ff")
-            )
-          }
-          if !lefts.isEmpty then
-            Closure(lefts, expr, env).pure
-          else
-            eval(expr)(using env)
-        }
-        case _ => 
-          err.raiseError(
-            Throwable(s"Application error: found $ff")
+    f match
+      case Closure(ps, expr, env) => {
+        val pairs = (ps zip xs)
+        val lefts = ps diff pairs.map(_._1)
+        pairs.foreach {
+          case (Var(name), v) => env += (name -> v)
+          case (x, _) => err.raiseError(
+            Throwable(s"""
+              |Only application of variable is supported currently: 
+              |found $x
+            """.stripMargin)
           )
-    yield ans
+        }
+        if !lefts.isEmpty then
+          lambda(lefts, expr)(using env)
+        else
+          eval(expr)(using env)
+      }
+      case _ => 
+        err.raiseError(
+          Throwable(s"Application error: found $f")
+        )
+    end match
   }
 }
 
@@ -125,16 +131,22 @@ given [F[_]: Monad](using err: MonadError[F, Throwable]):
 
 
 object Eval:
-  import cats.catsInstancesForId
-  def d = 0
-  val i = summon[Applicative[cats.Id]]
+  // import cats.catsInstancesForId
+  // def d = 0
+  // val i = summon[Applicative[cats.Id]]
 
-  import scala.collection.mutable
-  import blog.skeleton.Exprs.*
-  import SkeleExpr.*
-  val env0: mutable.Map[String, SkeleExpr] = mutable.Map()
-  env0 += (
-    "+1" -> Closure(List(Var("x")), Integer(2), mutable.Map())
-  )
+  def SkelePredef[F[_]]
+    (using parser: Parser[F, SkeleExpr])
+    : SkeleExpr.Env = {
+    import scala.collection.mutable
+    import blog.skeleton.Exprs.*
+    import SkeleExpr.*
+
+    val env0: SkeleExpr.Env = mutable.Map()
+    val env : SkeleExpr.Env = mutable.Map(
+      "+1" -> Closure(List(Var("x")), Integer(2), env0)
+    )
+    env
+  }
 
 end Eval

@@ -2,6 +2,7 @@ package blog.skeleton
 
 
 import blog.core.Parser
+import scala.util.parsing.combinator.RegexParsers
 import scala.annotation.targetName
 import scala.language.implicitConversions
 import blog.skeleton.Exprs.*
@@ -39,9 +40,12 @@ given [F[_], Env](using
   def parse(s: String) = rawParser.parse(s) match
     case Left(er) => err.raiseError(Throwable(er))
     case Right(x) => F.pure(x)
+end given
 
 
-object Parser {
+
+
+object Parser:
   
   
   val identity = "[a-zA-Z0-9~\\[\\]!=-@#$+%^&*_:\";/,|\\_]+".r
@@ -133,8 +137,4 @@ object Parser {
 
 
 
-}
-
-
-// export Parser.given Parser[?, ?]
-
+end Parser
