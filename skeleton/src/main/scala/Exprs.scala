@@ -2,19 +2,98 @@ package blog.skeleton
 
 import scala.language.implicitConversions
 import blog.skeleton.Types.*
+import blog.core.Eval
 
 
 
 
-trait Expr[F[_], E]:
-  def variable(name: String)        : F[E]
-  def integer(i: Int)               : F[E]
-  def number(value: Double)         : F[E]
-  def string(s: String)             : F[E]
-  def list(xs: List[E])             : F[E]
+trait MarkDownLanguage[F[_], E]:
+  def integer(i: Int)       : F[E]
+  def number(value: Double) : F[E]
+  def string(s: String)     : F[E]
+  def list(xs: List[E])     : F[E]
+end MarkDownLanguage
+
+trait LambdaCalculus[F[_], E]:
   def lambda(ps: List[E], expr: E)  : F[E]
   def application(f: E, xs: List[E]): F[E]
-end Expr
+end LambdaCalculus
+
+trait BindingDsl[F[_], E]:
+  def variable(name: String): F[E]
+  def bindings(binds: List[(E, E)], expr: E): F[E]
+end BindingDsl
+
+
+trait Expr[F[_], E] extends 
+  LambdaCalculus[F, E], 
+  MarkDownLanguage[F, E],
+  BindingDsl[F, E]
+
+
+given [F[_], E](using 
+  markDown: MarkDownLanguage[F, E],
+  lambdaCal: LambdaCalculus[F, E],
+  bindDsl: BindingDsl[F, E],
+): Expr[F, E] = new Expr {
+  export markDown.{integer, number, string, list}
+  export lambdaCal.{lambda, application}
+  export bindDsl.{variable, bindings}
+}
+
+
+
+/**
+ * Optional data matching utilities
+*/
+object Unpack:
+
+  trait MarkDownLanguage[E]:
+    def integer(e: E): Int
+    def number (e: E): Double
+    def string (a: E): String
+    def list   (e: E): List[E]
+
+  trait LambdaCalculus[E]:
+    def lambda(e: E)     : (List[E], E)
+    def application(e: E): (E, List[E])
+
+  trait BindingDsl[E]:
+    def variable(e: E): String
+    def bindings(e: E): (List[(E, E)], E)
+
+  trait Expr[E] extends
+    LambdaCalculus[E], 
+    MarkDownLanguage[E],
+    BindingDsl[E]
+
+end Unpack
+
+
+object Match:
+
+  trait MarkDownLanguage[F[_], E]:
+    trait IntegerDsl:
+      def apply(i: Int): F[E]
+      def unapply(e: E): Option[Int]
+
+    trait NumberDsl:
+      def apply(d: Double): F[E]
+      def unapply(e: E): Option[Double]
+
+    trait StringDsl:
+      def apply(s: String): F[E]
+      def unapply(e: E): Option[String]
+
+    // trait ListDsl:
+    //   def apply()
+
+end Match
+
+
+
+
+
 
 
 
@@ -55,6 +134,7 @@ object Exprs:
     case class Closure(ps: List[SkeleExpr], expr: SkeleExpr, env: Env) extends SkeleExpr
     case class App(f: SkeleExpr, xs: List[SkeleExpr]) extends SkeleExpr
     case class Lisp(xs: List[SkeleExpr]) extends SkeleExpr
+    case class Let(bindings: List[(SkeleExpr, SkeleExpr)], expr: SkeleExpr) extends SkeleExpr
 
     
     override def variable(name: String) = Var(name)
@@ -68,6 +148,8 @@ object Exprs:
       // val cl = f.asInstanceOf[Closure] // Since we are in the Id effect, we have to check...
       App(f, xs)
     }
+    override def bindings(binds: List[(SkeleExpr, SkeleExpr)], expr: SkeleExpr) =
+      Let(binds, expr)
     def closure(ps: List[SkeleExpr], expr: SkeleExpr, env: Env) = Closure(ps, expr, env)
   end SkeleExpr
   

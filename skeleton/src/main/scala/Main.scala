@@ -17,17 +17,16 @@ trait Skeleton[F[_]: Monad, Output]
   (using
     fileIO: FileIOString[F],
     parser: Parser[F, SkeleExpr],
-    evalIt: EvalSkele[F, Output],
+    evalIt: blog.core.Eval[F, SkeleExpr, Output],
   ):
   import fileIO.{ readFile, writeFile }
   import parser.parse
-  import evalIt.eval
 
   def register(path: String): F[Unit] = 
     for
       text <- readFile(path)
       tree <- parse(text)
-      html <- eval(tree)
+      html <- tree.eval
       _    <- writeFile(path, html.toString)
     yield ()
 

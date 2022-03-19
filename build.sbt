@@ -26,8 +26,15 @@ lazy val blog = (project in file("."))
       scalaCheck % Test,
     ),
 
+    
     Compile/compile := (Compile/compile).dependsOn(compileOthers).value,
     // Compile/runner := (Compile/runner).dependsOn(server/Compile/runner).value
+
+    // update/evictionWarningOptions :=
+    //   EvictionWarningOptions.default
+    //     .withWarnScalaVersionEviction(false)
+        // .withWarnTransitiveEvictions(false)
+        // .withWarnDirectEvictions(false)
   )
 
 lazy val server = (project in file("server"))
@@ -165,3 +172,7 @@ compileOthers := Def.sequential(
   server/Compile/compile,
   jsPipe,
 ).value
+
+
+
+
