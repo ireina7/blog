@@ -31,15 +31,18 @@ trait Expr[F[_], E] extends
   BindingDsl[F, E]
 
 
-given [F[_], E](using 
-  markDown: MarkDownLanguage[F, E],
-  lambdaCal: LambdaCalculus[F, E],
-  bindDsl: BindingDsl[F, E],
-): Expr[F, E] = new Expr {
-  export markDown.{integer, number, string, list}
-  export lambdaCal.{lambda, application}
-  export bindDsl.{variable, bindings}
-}
+object Expr:
+  given given_expr[F[_], E](using 
+    markDown: MarkDownLanguage[F, E],
+    lambdaCal: LambdaCalculus[F, E],
+    bindDsl: BindingDsl[F, E],
+  ): Expr[F, E] = new Expr {
+    export markDown.{integer, number, string, list}
+    export lambdaCal.{lambda, application}
+    export bindDsl.{variable, bindings}
+  }
+end Expr
+
 
 
 

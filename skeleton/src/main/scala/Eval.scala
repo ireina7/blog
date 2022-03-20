@@ -21,14 +21,14 @@ import cats.MonadError
  * You may wonder why not directly use intercection type:
     Eval[F, Input, Output] & MarkDownLanguage[F, Output].
 
-  To explain this, suppose we have a function wnat to output markdown,
+  To explain this, suppose we have a function want to output markdown,
   then we want to use some (Eval[F, Input, Output] & MarkDownLanguage[F, Output])
   implicitly. However, the scala compiler shall choose the most specific one
   (i.e., Eval[F, Input, Output] & Expr[F, Output]) which cannot handle lambda value error.
 */
-trait EvalMarkDown[F[_], Input, Output] extends 
-  Eval[F, Input, Output], 
-  MarkDownLanguage[F, Output]
+// trait EvalToMarkDown[F[_], Input, Output] extends 
+//   Eval[F, Input, Output], 
+//   MarkDownLanguage[F, Output]
 
 trait EvalExpr[F[_], Input, Output] extends
   Eval[F, Input, Output],
@@ -36,99 +36,98 @@ trait EvalExpr[F[_], Input, Output] extends
 
 
 
+object MarkDownEvaluator:
 
+  trait EvalSkeleExpr[F[_], Value]
+    (using errDsl: MonadError[F, Throwable])
+    extends EvalExpr[F, SkeleExpr, Value]:
 
-trait EvalSkeleToMarkDown[F[_], Value]
-  (using
-    err: MonadError[F, Throwable],
-    bind: BindingDsl[F, Value],
-    lambdaCal: LambdaCalculus[F, Value]
-  ) 
-  extends EvalMarkDown[F, SkeleExpr, Value]:
+    val evalMarkdown: PartialFunction[SkeleExpr, F[Value]] = {
+      
+      case Var(name)  => variable(name)
+      case Integer(i) => integer(i)
+      case Num(n)     => number(n)
+      case Str(s)     => string(s)
+      case Lisp(xs)   => xs.traverse(_.eval).flatMap(list)
+      case App(f, ps) => for {
+        function   <- f.eval
+        parameters <- ps.traverse(_.eval)
+        result     <- application(function, parameters)
+      } yield result
+    }
 
-  extension (expr: SkeleExpr)
-    override def eval: F[Value] = {
-      expr match
-        case Var(name)  => bind.variable(name)
-        case Integer(i) => integer(i)
-        case Num(n)     => number(n)
-        case Str(s)     => string(s)
-        case Lisp(xs)   => xs.traverse(_.eval).flatMap(list(_))
-        /* 
-        * This case is optional.
-        * If the target value type does not support lambda calculus,
-        * Then this case should produce error. 
-        */
-        case Lambda(_, _) => err.raiseError(
+    extension (expr: SkeleExpr)
+      override def eval: F[Value] = evalMarkdown.orElse {
+        case Lambda(_, _) => errDsl.raiseError(
           Throwable(
             s"Evaluation error: lambda(closure) is not valid markdown value: $expr"
           )
         )
-        case App(f, ps) => for {
-          function   <- f.eval
-          parameters <- ps.traverse(_.eval)
-          result     <- lambdaCal.application(function, parameters)
-        } yield result
-        case _          => err.raiseError(
+        case _ => errDsl.raiseError(
           Throwable(s"Evaluation error: Unknown expression: $expr")
         )
-    }
+      }(expr)
 
-end EvalSkeleToMarkDown
+  end EvalSkeleExpr
 
-
-
-trait EvalSkele[F[_], Value]
-  (using markDown: EvalSkeleToMarkDown[F, Value]) 
-  extends EvalExpr[F, SkeleExpr, Value]:
-
-  def evalSkeleLambda(lam: SkeleExpr): F[Value]
-  
-  extension (expr: SkeleExpr)
-    override def eval: F[Value] = {
-      expr match
-        case Lambda(_, _) => evalSkeleLambda(expr)
-        case _ => markDown.eval(expr)
-    }
-
-end EvalSkele
+end MarkDownEvaluator
 
 
-object EvalSkele:
 
-  import blog.core.Parser
-  
-  /**
-   * String -> SkeleExpr -> Value
-  */
-  given [F[_]: Monad, Value](using
-      parser: Parser[F, SkeleExpr],
-      evalSkele: EvalSkele[F, Value]
-    ):
-    Eval[F, String, Value] with {
+object ExprEvaluator:
 
-    extension (s: String)
+  trait EvalSkeleExpr[F[_], Value]
+    (using errDsl: MonadError[F, Throwable])
+    extends EvalExpr[F, SkeleExpr, Value]:
+
+    def evalSkeleLambda(lam: SkeleExpr): F[Value]
+    
+    extension (expr: SkeleExpr)
       override def eval: F[Value] = {
-        for
-          exprs <- parser.parse(s)
-          skele <- exprs.eval
-        yield skele
+        expr match
+          case Var(name)  => variable(name)
+          case Integer(i) => integer(i)
+          case Num(n)     => number(n)
+          case Str(s)     => string(s)
+          case Lisp(xs)   => xs.traverse(_.eval).flatMap(list)
+          case App(f, ps) => for {
+            function   <- f.eval
+            parameters <- ps.traverse(_.eval)
+            result     <- application(function, parameters)
+          } yield result
+          case Lambda(_, _) => evalSkeleLambda(expr)
+          case _ => errDsl.raiseError(
+            Throwable(s"Evaluation error: Unknown expression: $expr")
+          )
+        end match
       }
-  }
+  end EvalSkeleExpr
 
-
-
-end EvalSkele
-
-
+end ExprEvaluator
 
 
 
 
 
+import blog.core.Parser
 
+/**
+ * String -> SkeleExpr -> Value
+*/
+given [F[_]: Monad, Value](using
+    parser: Parser[F, SkeleExpr],
+    evalIt: Eval[F, SkeleExpr, Value]
+  ):
+  Eval[F, String, Value] with {
 
-
+  extension (s: String)
+    override def eval: F[Value] = {
+      for
+        exprs <- parser.parse(s)
+        skele <- exprs.eval
+      yield skele
+    }
+}
 
 
 
@@ -142,70 +141,35 @@ end EvalSkele
 
 
 import blog.core.Effect.{*, given}
-import scala.collection.mutable
 
+/** Skele Effect
+ * 
+*/
 type Skele[F[_], A] = Injection[F, SkeleExpr.Env, A]
 
 
-
-given [F[_]](using err: MonadError[F, Throwable])
-  : LambdaCalculus[F, SkeleExpr] = new LambdaCalculus {
-
-  override def lambda(ps: List[SkeleExpr], expr: SkeleExpr) = {
-    ???
-  }
-  override def application(f: SkeleExpr, xs: List[SkeleExpr]) = {
-    ???
-  }
-}
-
+/** Implementation for Expression Evaluator (ExprEvaluator,EvalSkeleExpr)
+ * evaluate: SkeleExpr => SkeleExpr
+ * 
+ * - Test imports:
+    import blog.core.*
+    import blog.core.given
+    import Effect.*
+    import Effect.given
+    import blog.skeleton.*
+    import blog.skeleton.given
+    import Exprs.*
+    import SkeleExpr.*
+    import blog.skeleton.EvalSkele.given
+*/
 given [F[_]]
-  : BindingDsl[F, SkeleExpr] = new BindingDsl {
-
-  override def variable(name: String) = {
-    ???
-  }
-  override def bindings(binds: List[(SkeleExpr, SkeleExpr)], expr: SkeleExpr) = {
-    ???
-  }
-}
-
-given [F[_]: Monad]
-  : MarkDownLanguage[F, SkeleExpr] = new MarkDownLanguage {
-
-  given Conversion[SkeleExpr, F[SkeleExpr]] = _.pure
-
-  override def integer(i: Int) = Integer(i)
-  override def number(n: Double) = Num(n)
-  override def string(s: String) = Str(s)
-  override def list(xs: List[SkeleExpr]) = Lisp(xs)
-}
-
-
-given xxxx[F[_]](using 
-    err: MonadError[F, Throwable],
-    markDown: MarkDownLanguage[F, SkeleExpr],
-    bindDsl: BindingDsl[F, SkeleExpr],
-    lamCal: LambdaCalculus[F, SkeleExpr],
-  )
-  : EvalSkeleToMarkDown[F, SkeleExpr] = new EvalSkeleToMarkDown {
-  
-  export markDown.{integer, number, string, list}
-}
-
-
-
-
-
-given [F[_]](using 
-  err: MonadError[F, Throwable],
-  xxx: EvalMarkDown[[A] =>> Skele[F, A], SkeleExpr, SkeleExpr],
-):
-  EvalSkele[[A] =>> Skele[F, A], SkeleExpr] =
-  new EvalSkele {
+  (using err: MonadError[F, Throwable])
+  : ExprEvaluator.EvalSkeleExpr[[A] =>> Skele[F, A], SkeleExpr] =
+  new ExprEvaluator.EvalSkeleExpr {
   
   import cats.syntax.apply.*
   given Conversion[SkeleExpr, F[SkeleExpr]] = _.pure
+
   override def variable(name: String) = env ?=> {
     env.get(name) match
       case Some(x) => err.pure(x)
@@ -253,16 +217,6 @@ given [F[_]](using
     end match
   }
 }
-
-
-class A
-class B extends A
-given (using A): List[Int] = List(7)
-
-given A = A()
-given B = B()
-
-
 
 
 
