@@ -1,11 +1,12 @@
 # λ Blog
-My personal blog written mostly in Scala.
+My personal blog written mostly in Scala and Java.
 Trying `finally tagless` with `extensive effects`.
 ![k-on!](./img/k-on-q.png)  
 - version: `0.1.2`
 
 ## Dependences
 - `Scala3` the programming language
+- `Java` the programming language for better performence
 - `sbt` the build tool
 - `cats` and `cats-effect` for core
 - `scala.js` and `scalatags` for front end

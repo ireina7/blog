@@ -22,21 +22,24 @@ given Parser[IO, SkeleExpr] with {
 given Parser[blog.Result, SkeleExpr] with {
   def parse(s: String) = Parser.parseSkeleExpr(s)
 }
-given Parser[blog.Result, blog.HtmlText] with {
+given (using exprParser: Parser[blog.Result, SkeleExpr])
+  : Parser[blog.Result, blog.HtmlText] with {
   def parse(s: String) = for {
-    skele <- summon[Parser[blog.Result, SkeleExpr]].parse(s)
+    skele <- exprParser.parse(s)
     htmlT <- Parser.parseSkeleExprToHtml(skele)
   } yield htmlT
 }
 
 
 import blog.core.Effect.{*, given}
-given [F[_], Env](using 
-  F: Monad[F],
-  err: MonadError[F, Throwable],
-  rawParser: Parser[blog.Result, SkeleExpr],
-): 
-  Parser[[A] =>> Injection[F, Env, A], SkeleExpr] with
+given [F[_], Env]
+  (using 
+    F: Monad[F],
+    err: MonadError[F, Throwable],
+    rawParser: Parser[blog.Result, SkeleExpr],
+  )
+  : Parser[[A] =>> Injection[F, Env, A], SkeleExpr] with
+
   def parse(s: String) = rawParser.parse(s) match
     case Left(er) => err.raiseError(Throwable(er))
     case Right(x) => F.pure(x)
@@ -47,8 +50,7 @@ end given
 
 object Parser:
   
-  
-  val identity = "[a-zA-Z0-9~\\[\\]!=-@#$+%^&*_:\";/,|\\_]+".r
+  val identity = "[a-zA-Z0-9~\\[\\]!=-@#$+%^&*_:\";/,|\\_\\.]+".r
 
   import scala.util.parsing.combinator.RegexParsers
 
@@ -61,20 +63,26 @@ object Parser:
     def real       = "[0-9]+\\.[0-9]*".r ^^ (s => Num(s.toDouble))
     def integer    = "[0-9]+".r ^^ (s => Integer(s.toInt))
     def number     = real | integer
-    def text       = identity ^^ Str.apply
+    def text       = "[^{}()\\\\]+".r ^^ Str.apply
     def lists      = ("(" ~> expr.*   <~ ")") ^^ {
       case Nil => Pass
       case f::ps => application(f, ps)
     }
     // def quote      = ("'" ~> expr) ^^ (x => Lisp(List(Var("'"), x)))
     // def string     = ("{" ~> "[^{}]*".r <~ "}") ^^ Str.apply
-    // def structList = (lists) ~ string.? ^^ {
-    //   case Lisp(xs) ~ s => Lisp(xs ++ s.map(_ :: Nil).getOrElse(Nil))
-    //   // case _ => ???//Left(blog.Error("unknown parser error"))
-    // }
+    // def inner      = ("{" ~> expr.* <~ "}") ^^ Str.apply
+    def structList = (lists) ~ ("{" ~> expr.* <~ "}").? ^^ {
+      case App(f, xs) ~ Some(es) => App(f, xs ++ es)
+      case App(f, xs) ~ _ => App(f, xs)
+      case _ => ???//Left(blog.Error("unknown parser error"))
+    }
 
     def expr: Parser[SkeleExpr] = 
-      number | variable | text | /*quote |*/ /*string | structList |*/ lists
+      number   | 
+      variable | 
+      text     | 
+      // string   | 
+      structList// | lists
 
     def read(s: String): blog.Result[SkeleExpr] =
       parse(expr, s) match
@@ -121,7 +129,7 @@ object Parser:
     import scalatags.Text.tags2.title
     import blog.page
 
-    val bodyText = ???
+    val bodyText = parseSkeleToHtml(sexpr).getOrElse(???)
 
     val htmlText = html(
       head(
@@ -138,3 +146,13 @@ object Parser:
 
 
 end Parser
+
+
+
+
+// (\section 1) {
+//   This is the first section of my new (\bold blog)!
+//   This blog is supported by \Scala.js
+// }
+
+

@@ -35,40 +35,100 @@ trait EvalExpr[F[_], Input, Output] extends
   Expr[F, Output]
 
 
+trait EvalSkeleExpr[F[_], Value] 
+  (using errDsl: MonadError[F, Throwable])
+  extends EvalExpr[F, SkeleExpr, Value]:
 
-object MarkDownEvaluator:
-
-  trait EvalSkeleExpr[F[_], Value]
-    (using errDsl: MonadError[F, Throwable])
-    extends EvalExpr[F, SkeleExpr, Value]:
-
-    val evalMarkdown: PartialFunction[SkeleExpr, F[Value]] = {
-      
-      case Var(name)  => variable(name)
-      case Integer(i) => integer(i)
-      case Num(n)     => number(n)
-      case Str(s)     => string(s)
-      case Lisp(xs)   => xs.traverse(_.eval).flatMap(list)
-      case App(f, ps) => for {
-        function   <- f.eval
-        parameters <- ps.traverse(_.eval)
-        result     <- application(function, parameters)
-      } yield result
-    }
-
-    extension (expr: SkeleExpr)
-      override def eval: F[Value] = evalMarkdown.orElse {
-        case Lambda(_, _) => errDsl.raiseError(
-          Throwable(
-            s"Evaluation error: lambda(closure) is not valid markdown value: $expr"
-          )
-        )
+  def evalSkeleLambda(lam: SkeleExpr): F[Value]
+    
+  extension (expr: SkeleExpr)
+    override def eval: F[Value] = {
+      expr match
+        case Var(name)  => variable(name)
+        case Integer(i) => integer(i)
+        case Num(n)     => number(n)
+        case Str(s)     => string(s)
+        case Lisp(xs)   => xs.traverse(_.eval).flatMap(list)
+        case App(f, ps) => for {
+          function   <- f.eval
+          parameters <- ps.traverse(_.eval)
+          result     <- application(function, parameters)
+        } yield result
+        case Lambda(_, _) => evalSkeleLambda(expr)
         case _ => errDsl.raiseError(
           Throwable(s"Evaluation error: Unknown expression: $expr")
         )
-      }(expr)
+      end match
+    }
 
-  end EvalSkeleExpr
+end EvalSkeleExpr
+
+
+
+object MarkDownEvaluator:
+
+  import blog.core.Effect.{*, given}
+  import scala.collection.mutable
+  import blog.HtmlText
+  import scalatags.Text.all.{
+    title as titleAttr,
+    *
+  }
+  // import scalatags.Text.all.raw
+  import scalatags.Text.tags2.title
+  import blog.page
+
+  type Skele[F[_], A] = 
+    Injection[F, mutable.Map[String, HtmlText], A]
+
+  given given_evalMarkDown[F[_]]
+    (using errDsl: MonadError[F, Throwable])
+    : EvalSkeleExpr[[A] =>> Skele[F, A], HtmlText] =
+    evalMarkDown
+  
+  def evalMarkDown[F[_]]
+    (using errDsl: MonadError[F, Throwable])
+    : EvalSkeleExpr[[A] =>> Skele[F, A], HtmlText] = new EvalSkeleExpr {
+    
+    given Conversion[blog.HtmlText, F[HtmlText]] = _.pure
+
+    override def evalSkeleLambda(lam: SkeleExpr) = 
+      errDsl.raiseError(
+        Throwable(
+          s"Evaluation error: lambda(closure) is not valid markdown value: $lam"
+        )
+      )
+
+    override def variable(name: String) = env ?=> {
+      env.get(name) match
+        case Some(x) => x
+        case None => errDsl.raiseError(Throwable(s"Variable not found: $name"))
+    }
+    override def integer(i: Int) = raw(i.toString)
+    override def number(n: Double) = raw(n.toString)
+    override def string(s: String) = raw(s)
+    override def list(xs: List[HtmlText]) = div(xs)
+    override def lambda(ps: List[HtmlText], expr: blog.HtmlText) = 
+      errDsl.raiseError(
+        Throwable(
+          s"Evaluation error: lambda(closure) is not valid markdown value."
+        )
+      )
+    override def bindings(binds: List[(HtmlText, HtmlText)], expr: HtmlText) = {
+      ???
+    }
+    override def application
+      (f: HtmlText, xs: List[HtmlText]): Skele[F, HtmlText] = {
+      val head = f match
+        case ff: scalatags.Text.TypedTag[_] => ff.tag
+        case _ => return errDsl.raiseError(Throwable(s"Application error."))
+      tag(head)(xs)
+    }
+
+    extension (expr: SkeleExpr)
+      override def eval: Skele[F, HtmlText] = 
+        super.eval(expr).map(div(_))
+  }
 
 end MarkDownEvaluator
 
@@ -76,32 +136,13 @@ end MarkDownEvaluator
 
 object ExprEvaluator:
 
-  trait EvalSkeleExpr[F[_], Value]
-    (using errDsl: MonadError[F, Throwable])
-    extends EvalExpr[F, SkeleExpr, Value]:
+  import blog.core.Effect.{*, given}
+  type Skele[F[_], A] = Injection[F, SkeleExpr.Env, A]
 
-    def evalSkeleLambda(lam: SkeleExpr): F[Value]
-    
-    extension (expr: SkeleExpr)
-      override def eval: F[Value] = {
-        expr match
-          case Var(name)  => variable(name)
-          case Integer(i) => integer(i)
-          case Num(n)     => number(n)
-          case Str(s)     => string(s)
-          case Lisp(xs)   => xs.traverse(_.eval).flatMap(list)
-          case App(f, ps) => for {
-            function   <- f.eval
-            parameters <- ps.traverse(_.eval)
-            result     <- application(function, parameters)
-          } yield result
-          case Lambda(_, _) => evalSkeleLambda(expr)
-          case _ => errDsl.raiseError(
-            Throwable(s"Evaluation error: Unknown expression: $expr")
-          )
-        end match
-      }
-  end EvalSkeleExpr
+  given given_evalSkeleExpr[F[_]]
+    (using err: MonadError[F, Throwable])
+    : EvalSkeleExpr[[A] =>> Skele[F, A], SkeleExpr] =
+    evalSkeleExpr
 
 end ExprEvaluator
 
@@ -160,12 +201,11 @@ type Skele[F[_], A] = Injection[F, SkeleExpr.Env, A]
     import blog.skeleton.given
     import Exprs.*
     import SkeleExpr.*
-    import blog.skeleton.EvalSkele.given
 */
-given [F[_]]
+def evalSkeleExpr[F[_]]
   (using err: MonadError[F, Throwable])
-  : ExprEvaluator.EvalSkeleExpr[[A] =>> Skele[F, A], SkeleExpr] =
-  new ExprEvaluator.EvalSkeleExpr {
+  : EvalSkeleExpr[[A] =>> Skele[F, A], SkeleExpr] =
+  new EvalSkeleExpr {
   
   import cats.syntax.apply.*
   given Conversion[SkeleExpr, F[SkeleExpr]] = _.pure
@@ -223,13 +263,13 @@ given [F[_]]
 
 
 
-object Eval:
+object SkeleEvaluator:
   // import cats.catsInstancesForId
   // def d = 0
   // val i = summon[Applicative[cats.Id]]
   import blog.core.Parser
 
-  def SkelePredef[F[_]]
+  def predef[F[_]]
     (using parser: Parser[F, SkeleExpr])
     : SkeleExpr.Env = {
     import scala.collection.mutable
@@ -243,4 +283,4 @@ object Eval:
     env
   }
 
-end Eval
+end SkeleEvaluator
