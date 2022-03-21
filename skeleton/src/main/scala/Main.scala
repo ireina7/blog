@@ -45,6 +45,27 @@ object Skeleton:
     
     skele.register(path)
   }
+
+  def main(args: Array[String]): Unit =
+    import Effect.{*, given}
+    import MarkDownEvaluator.given
+    
+    type Effect[A] = 
+      Injection[IOErr, MarkDownEvaluator.Environment, A]
+
+    given MarkDownEvaluator.Environment =
+      MarkDownEvaluator.Environment.predef
+
+    val skeleton = new Skeleton[Effect, blog.HtmlText] {}
+    val result = skeleton
+      .register("./skeleton/scripts/welcome.skele")
+      .run()
+    
+    result match
+      case Left(err) => println(s"$err")
+      case Right(ok) => println(s"Ok generated.")
+
+  end main
     
 end Skeleton
 
