@@ -91,6 +91,16 @@ object Effect:
   */
   type Injection[F[_], Env, A] = Env ?=> F[A]
 
+  /*
+  Env ?=> Injection[IOErr, Env1, A]
+  Env ?=> Env1 ?=> IOErr[A]
+
+  [A] =>> Injection[[B] =>> Injection[IOErr, env1, B], env0, A]
+  */
+
+  type AddEnv[T, Env2] = T match
+    case Injection[f, env, a] => (Env2, env) ?=> f[a]
+
   given [Env, F[_]: Functor]: 
     Functor[[A] =>> Injection[F, Env, A]] with
     override def map[A, B](ma: Injection[F, Env, A])(f: A => B) = env ?=> {
