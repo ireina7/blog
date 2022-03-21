@@ -2,7 +2,7 @@
 My personal blog written mostly in Scala and Java.
 Trying `finally tagless` with `extensive effects`.
 ![k-on!](./img/k-on-q.png)  
-- version: `0.1.2`
+- version: `0.0.3`
 
 ## Dependences
 - `Scala3` the programming language
@@ -18,8 +18,15 @@ Trying `finally tagless` with `extensive effects`.
 - Please refer to [configuration file](./doc/Configuration.md)
 
 ## Usage
+### Server mode
 0. `cd <this folder>`
 1. `sbt`
 2. `compile`
 3. `server/run`
 4. Go to [http://localhost:8080/](http://localhost:8080/)
+
+### Static Engine mode
+0. `cd <this folder>`
+1. `sbt`
+2. `compile`
+3. `skeleton/run`
