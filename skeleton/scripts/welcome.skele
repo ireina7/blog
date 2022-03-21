@@ -1,1 +1,9 @@
-hrllow
+(\document) {
+  (\* Header 1!)
+  (\** Header 2!)
+  (\*** Header 3!)
+  (\**** Header 4!)
+  (\section (\bold Dependency)) {
+    (\paragraph This blog is supported by (\italic Scala.js).)
+  }
+}

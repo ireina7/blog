@@ -70,6 +70,7 @@ object MarkDownEvaluator:
       "link"      -> a,
       "image"     -> img,
       "font"      -> span,
+      "document"  -> div(marginLeft := 50, marginRight := 50, fontSize := 20),
       // "section" -> section,
     )
   end Environment
@@ -117,11 +118,11 @@ object MarkDownEvaluator:
     }
     override def application
       (f: HtmlText, xs: List[HtmlText]): Skele[F, HtmlText] = {
-      val head = f match
-        case ff: scalatags.Text.TypedTag[_] => ff.tag
+      val (head, attrs) = f match
+        case ff: scalatags.Text.TypedTag[_] => (ff.tag, ff.modifiers)
         case _ => return errDsl.raiseError(Throwable(s"Application error."))
       // println(s"$f, $head")
-      tag(head)(xs)
+      tag(head)(attrs)(xs)
     }
 
     // extension (expr: SkeleExpr)

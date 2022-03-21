@@ -66,42 +66,33 @@ object Skeleton:
     
     type GenEffect[A] = Injection[IOErr, blog.Configuration, A]
     type Effect[A] = //blog.Configuration ?=> 
-      MarkDownEvaluator.Skele[
-        IOErr, 
-        A
-      ]
-
-    // given blog.core.Eval[Effect, Exprs.SkeleExpr, blog.HtmlText] = 
-    //   MarkDownEvaluator.evalMarkDown[Effect]
-    // println(x.eval)
-    // summon[blog.core.Eval[Effect, Exprs.SkeleExpr, blog.HtmlText]]
+      Injection[IOErr, MarkDownEvaluator.Environment, A]
+    
 
     def testCombination[F[_]: Monad, EnvA, EnvB]
-      (skeleton : Skeleton [[B] =>> EnvB ?=> F[B], blog.HtmlText])
-      (generator: Generator[[A] =>> EnvA ?=> F[A]])
       (path: String)
-      (using
-        envA: EnvA,
-        envB: EnvB,
-      ) = {
+      (using generator: Generator[[A] =>> EnvA ?=> F[A]])
+      (using skeleton : Skeleton [[B] =>> EnvB ?=> F[B], blog.HtmlText])
+      (using fileIO: FileIOString[F])
+      (using envA: EnvA, envB: EnvB) = {
 
       for
         html <- skeleton.testReg(path)
-      yield generator.generateHtml(html)
+        _    <- fileIO.writeFile(
+                  s"${blog.Path.staticPackage}/welcome.html",
+                  generator.generateHtml(html).toString
+                )
+      yield ()
     }
 
 
-    val generator = summon[Generator[GenEffect]]
-    val skeleton = new Skeleton[Effect, blog.HtmlText] {}
-    val result = 
-      testCombination
-        [IOErr, blog.Configuration, MarkDownEvaluator.Environment]
-        (skeleton)(generator)("./skeleton/scripts/welcome.skele")
-    // val result = skeleton
-    //   .register("./skeleton/scripts/welcome.skele")
-    //   .run()
+    // given generator = summon[Generator[GenEffect]]
+    given skeleton: Skeleton[Effect, blog.HtmlText] = 
+      new Skeleton[Effect, blog.HtmlText] {}
+    val exe = 
+      testCombination("./skeleton/scripts/welcome.skele")
     
-    result.run() match
+    exe.run() match
       case Left(err) => println(s"$err")
       case Right(ok) => println(s"Ok: $ok")
 
