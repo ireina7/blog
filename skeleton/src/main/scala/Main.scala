@@ -30,21 +30,32 @@ trait Skeleton
   ):
   import fileIO.{ readFile, writeFile }
   import parser.parse
+  import blog.page
 
-  def register(path: String, tag: List[String] = Nil)
+  def registerIndex(item: page.Item)
+    (using GenEnv): F[Unit] = {
+    
+    for
+      idx  <- generator.readIndex
+      _    <- generator.generateIndexFile(
+                blog.Path.items,
+                item :: idx
+              )
+    yield ()
+  }
+
+  def register(path: String, item: page.Item)
     (using ExprEnv, MarkDownEnv, GenEnv): F[Unit] = 
     for
       text <- readFile(path)
       tree <- parse(text)
       expr <- evalExpr.eval(tree)
       html <- evalMarkDown.eval(expr)
-      _    <- {
-              println(html)
-              fileIO.writeFile(
+      _    <- fileIO.writeFile(
                 s"${blog.Path.staticPackage}/welcome.html",
                 generator.generateHtml(html).toString
               )
-              }
+      _    <- registerIndex(item)
     yield ()
 
 end Skeleton
@@ -65,9 +76,9 @@ object Skeleton:
     import blog.static.given
 
     given blog.Configuration = blog.Configuration.staticBlog
-    given a: MarkDownEvaluator.Environment =
+    given markdownEnv: MarkDownEvaluator.Environment =
       MarkDownEvaluator.Environment.predef
-    given b: PreMarkDownExprEvaluator.Environment = 
+    given exprEnv: PreMarkDownExprEvaluator.Environment = 
       PreMarkDownExprEvaluator.Environment.predefForMarkDown
 
 
@@ -84,7 +95,13 @@ object Skeleton:
     val exe = 
       skeleton.register(
         "./skeleton/scripts/welcome.skele", 
-        List("default")
+        blog.page.Item(
+          title  = "Welcome",
+          link   = "./welcome.html",
+          author = "Ireina7",
+          date   = java.time.LocalTime.now.toString,
+          view   = "hidden",
+        )
       )
     
     exe.run() match

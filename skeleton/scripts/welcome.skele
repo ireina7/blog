@@ -16,7 +16,6 @@
       (\font (\set style color:red) Scala.js)!
     }
   }
-
 }
 
 

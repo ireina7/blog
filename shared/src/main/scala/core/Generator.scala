@@ -60,7 +60,19 @@ trait Generator[F[_]: Monad]
   }
 
   def toJson(index: page.Index): F[String] = {
-    ???
+    import io.circe.syntax.*
+    import io.circe.{ Decoder, Encoder, Json}, io.circe.generic.auto.*
+
+    given encodeEvent: Encoder[page.Item] = new Encoder[page.Item] {
+      final def apply(a: page.Item): Json = Json.obj(
+        ("title",  Json.fromString(a.title)),
+        ("link",   Json.fromString(a.link)),
+        ("author", Json.fromString(a.author)),
+        ("date",   Json.fromString(a.date)),
+        ("view",   Json.fromString(a.view)),
+      )
+    }
+    index.asJson.toString.pure
   }
   def generateIndexFile
     (path: String, index: page.Index): F[Unit] = {
