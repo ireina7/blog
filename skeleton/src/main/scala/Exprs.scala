@@ -138,7 +138,7 @@ object Exprs:
     case class App(f: SkeleExpr, xs: List[SkeleExpr]) extends SkeleExpr
     case class Lisp(xs: List[SkeleExpr]) extends SkeleExpr
     case class Let(bindings: List[(SkeleExpr, SkeleExpr)], expr: SkeleExpr) extends SkeleExpr
-
+    
     
     override def variable(name: String) = Var(name)
     override def integer(i: Int) = Integer(i)

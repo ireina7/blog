@@ -44,6 +44,7 @@ trait EvalSkeleExpr[F[_], Value]
    * Maybe we can add weak form term into the data structure someday.
   */
   def evalSkeleLambda(lam: SkeleExpr): F[Value]
+  def evalSkeleBindings(binds: SkeleExpr): F[Value]
   
   extension (expr: SkeleExpr)
     override def eval: F[Value] = {
@@ -53,6 +54,7 @@ trait EvalSkeleExpr[F[_], Value]
         case Num(n)     => number(n)
         case Str(s)     => string(s)
         case Lisp(xs)   => xs.traverse(_.eval).flatMap(list)
+        case Let(bs, e) => evalSkeleBindings(expr)
         case App(f, ps) => for {
           function   <- f.eval
           parameters <- ps.traverse(_.eval)

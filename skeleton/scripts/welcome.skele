@@ -1,9 +1,28 @@
+
 (\document) {
-  (\* Header 1!)
-  (\** Header 2!)
-  (\*** Header 3!)
-  (\**** Header 4!)
-  (\section (\bold Dependency)) {
-    (\paragraph This blog is supported by (\italic Scala.js).)
+
+  (\set class article)
+
+  (\image) {
+    (\set src ./k-on-q.png)
+    (\set width 700)
   }
+
+  (\* 1 . 简介)
+  (\section (\bold 猜猜这个博客是用什么写成的？)) {
+    (\strong test!)
+    (\paragraph) {
+      本博客使用 \n
+      (\font (\set style color:red) Scala.js)!
+    }
+  }
+
 }
+
+
+
+(\define (\strong \text)) {
+  (\bold \text)
+}
+
+

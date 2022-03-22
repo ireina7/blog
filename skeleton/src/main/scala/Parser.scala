@@ -12,12 +12,18 @@ import blog.skeleton.Exprs.*
 
 import cats.*
 import cats.effect.*
+import cats.data.*
 
 given Parser[Id, SkeleExpr] with {
   def parse(s: String) = Parser.parseSkeleExpr(s).getOrElse(SkeleExpr.Pass)
 }
 given Parser[IO, SkeleExpr] with {
   def parse(s: String) = IO { Parser.parseSkeleExpr(s).getOrElse(SkeleExpr.Pass) }
+}
+given Parser[IOErr, SkeleExpr] with {
+  def parse(s: String) = EitherT.right(
+    IO { Parser.parseSkeleExpr(s).getOrElse(SkeleExpr.Pass) }
+  )
 }
 given Parser[blog.Result, SkeleExpr] with {
   def parse(s: String) = Parser.parseSkeleExpr(s)
@@ -32,8 +38,7 @@ given (using exprParser: Parser[blog.Result, SkeleExpr])
 
 
 import blog.core.Effect.{*, given}
-given [F[_], Env]
-  (using 
+given [F[_], Env](using 
     F: Monad[F],
     err: MonadError[F, Throwable],
     rawParser: Parser[blog.Result, SkeleExpr],
@@ -68,6 +73,14 @@ object Parser:
       case Nil => Pass
       case f::ps => application(f, ps)
     }
+    def binding    = "(" ~> "\\let" ~> ("(" ~> expr ~ expr <~ ")").* ~ expr <~ ")" ^^ {
+      case Nil ~ exp => exp
+      case xxs ~ exp => 
+        val xs = xxs.map { case (key ~ value) =>
+          (key, value)
+        }
+        Let(xs, exp)
+    }
     // def quote      = ("'" ~> expr) ^^ (x => Lisp(List(Var("'"), x)))
     // def string     = ("{" ~> "[^{}]*".r <~ "}") ^^ Str.apply
     // def inner      = ("{" ~> expr.* <~ "}") ^^ Str.apply
@@ -77,12 +90,19 @@ object Parser:
       case _ => ???//Left(blog.Error("unknown parser error"))
     }
 
+    // def commaList = (lists) ~ (expr.*) ^^ {
+    //   case App(f, xs) ~ es => App(f, xs ++ es)
+    //   // case App(f, xs) ~ _ => App(f, xs)
+    //   case _ => ???//Left(blog.Error("unknown parser error"))
+    // }
+
     def expr: Parser[SkeleExpr] = 
       number   | 
       variable | 
       text     | 
-      // string   | 
-      structList// | lists
+      binding  |
+      // commaList | 
+      structList // | lists
 
     def read(s: String): blog.Result[SkeleExpr] =
       parse(expr, s) match

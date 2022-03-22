@@ -13,29 +13,39 @@ import blog.skeleton.Exprs.SkeleExpr
 
 
 
-trait Skeleton[F[_]: Monad, Output]
+trait Skeleton
+  [
+    F[_]: Monad, 
+    // Output,
+    MarkDownEnv,
+    ExprEnv,
+    GenEnv,
+  ]
   (using
     fileIO: FileIOString[F],
     parser: Parser[F, SkeleExpr],
-    evalIt: blog.core.Eval[F, SkeleExpr, Output],
+    evalMarkDown: blog.core.Eval[[A] =>> MarkDownEnv ?=> F[A], SkeleExpr, blog.HtmlText],
+    evalExpr: blog.core.Eval[[A] =>> ExprEnv ?=> F[A], SkeleExpr, SkeleExpr],
+    generator: Generator[[A] =>> GenEnv ?=> F[A]],
   ):
   import fileIO.{ readFile, writeFile }
   import parser.parse
 
-  def register(path: String): F[Unit] = 
+  def register(path: String, tag: List[String] = Nil)
+    (using ExprEnv, MarkDownEnv, GenEnv): F[Unit] = 
     for
       text <- readFile(path)
       tree <- parse(text)
-      html <- tree.eval
-      _    <- writeFile(path, html.toString)
+      expr <- evalExpr.eval(tree)
+      html <- evalMarkDown.eval(expr)
+      _    <- {
+              println(html)
+              fileIO.writeFile(
+                s"${blog.Path.staticPackage}/welcome.html",
+                generator.generateHtml(html).toString
+              )
+              }
     yield ()
-
-  def testReg(path: String) = 
-    for
-      text <- readFile(path)
-      tree <- parse(text)
-      html <- tree.eval
-    yield html
 
 end Skeleton
 
@@ -47,50 +57,35 @@ end Skeleton
 
 
 object Skeleton:
-  
-  def register[F[_]: Monad, Output]
-    (path: String)
-    (using skele: Skeleton[F, Output]): F[Unit] = {
-    
-    skele.register(path)
-  }
 
   def main(args: Array[String]): Unit =
     import Effect.{*, given}
     import MarkDownEvaluator.given
+    import PreMarkDownExprEvaluator.given
     import blog.static.given
 
     given blog.Configuration = blog.Configuration.staticBlog
-    given MarkDownEvaluator.Environment =
+    given a: MarkDownEvaluator.Environment =
       MarkDownEvaluator.Environment.predef
-    
-    type GenEffect[A] = Injection[IOErr, blog.Configuration, A]
-    type Effect[A] = //blog.Configuration ?=> 
-      Injection[IOErr, MarkDownEvaluator.Environment, A]
-    
-
-    def testCombination[F[_]: Monad, EnvA, EnvB]
-      (path: String)
-      (using generator: Generator[[A] =>> EnvA ?=> F[A]])
-      (using skeleton : Skeleton [[B] =>> EnvB ?=> F[B], blog.HtmlText])
-      (using fileIO: FileIOString[F])
-      (using envA: EnvA, envB: EnvB) = {
-
-      for
-        html <- skeleton.testReg(path)
-        _    <- fileIO.writeFile(
-                  s"${blog.Path.staticPackage}/welcome.html",
-                  generator.generateHtml(html).toString
-                )
-      yield ()
-    }
+    given b: PreMarkDownExprEvaluator.Environment = 
+      PreMarkDownExprEvaluator.Environment.predefForMarkDown
 
 
     // given generator = summon[Generator[GenEffect]]
-    given skeleton: Skeleton[Effect, blog.HtmlText] = 
-      new Skeleton[Effect, blog.HtmlText] {}
+    val skeleton: Skeleton[
+      IOErr,
+      // blog.HtmlText,
+      MarkDownEvaluator.Environment,
+      PreMarkDownExprEvaluator.Environment,
+      blog.Configuration,
+    ] = 
+      new Skeleton {}
+    
     val exe = 
-      testCombination("./skeleton/scripts/welcome.skele")
+      skeleton.register(
+        "./skeleton/scripts/welcome.skele", 
+        List("default")
+      )
     
     exe.run() match
       case Left(err) => println(s"$err")

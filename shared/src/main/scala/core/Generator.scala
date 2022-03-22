@@ -55,11 +55,13 @@ trait Generator[F[_]: Monad]
       _     <-  fileIO.writeFile(
                   s"${Path.staticPackage}/index.html",
                   generateHtml(index).toString
-                )
+                ) 
     } yield ()
   }
 
-  def toJson(index: page.Index): F[String] = ???
+  def toJson(index: page.Index): F[String] = {
+    ???
+  }
   def generateIndexFile
     (path: String, index: page.Index): F[Unit] = {
     

@@ -57,6 +57,8 @@ object MarkDownEvaluator:
         - link
     */
     val predef: Environment = mutable.Map(
+      "set"       -> tag("key"),
+      "n"         -> br,
       "bold"      -> b,
       "italic"    -> i,
       "*"         -> h1,
@@ -97,6 +99,9 @@ object MarkDownEvaluator:
           s"Evaluation error: lambda(closure) is not valid markdown value: $lam"
         )
       )
+    override def evalSkeleBindings(binds: SkeleExpr) = binds match
+      // case Let(bs, e) => bindings(bs, e)
+      case _ => errDsl.raiseError(Throwable(s"$binds is not valid binding"))
 
     override def variable(name: String) = env ?=> {
       env.get(name) match
@@ -113,8 +118,27 @@ object MarkDownEvaluator:
           s"Evaluation error: lambda(closure) is not valid markdown value."
         )
       )
-    override def bindings(binds: List[(HtmlText, HtmlText)], expr: HtmlText) = {
+    override def bindings
+      (binds: List[(HtmlText, HtmlText)], expr: HtmlText) = {
       ???
+    }
+    def applyKey(xs: List[HtmlText]): F[HtmlText] = {
+      val ans = tag("key")
+      // if(xs.length <= 1) {
+      //   return errDsl.raiseError(Throwable(
+      //     s"Set key error: $xs"
+      //   ))
+      // }
+      // (xs.head, xs(1)) match
+      //   case (Var(name), RawFrag(value)) => ans(attr(name) := value)
+      for(x <- xs) {
+        x match
+          case RawFrag(ss) => 
+            val (k, rv) = ss.span(_ != ' ')
+            val v = rv.trim
+            return ans(attr(k) := v)
+      }
+      ans
     }
     override def application
       (f: HtmlText, xs: List[HtmlText]): Skele[F, HtmlText] = {
@@ -122,7 +146,20 @@ object MarkDownEvaluator:
         case ff: scalatags.Text.TypedTag[_] => (ff.tag, ff.modifiers)
         case _ => return errDsl.raiseError(Throwable(s"Application error."))
       // println(s"$f, $head")
-      tag(head)(attrs)(xs)
+      if(head == "key") {
+        return applyKey(xs)
+      }
+      val ps = xs.filter { x =>
+        x match
+          case x: scalatags.Text.TypedTag[_] => x.tag != "key"
+          case _ => true
+      }
+      val keys = xs.collect {
+        case x: scalatags.Text.TypedTag[_] 
+          if x.tag == "key" => x.modifiers
+      }
+      // println(keys)
+      tag(head)(attrs, keys)(ps)
     }
 
     // extension (expr: SkeleExpr)
