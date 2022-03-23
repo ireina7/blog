@@ -53,7 +53,7 @@ object Frame {
       // println(link)
       div(`class` := "blog-item")(
         a(href := link, `class` := "blog-item-title")(title),
-        p("by ", text("blog-item-author")(author)),
+        p(i("by "), text("blog-item-author")(author)),
         p(text("blog-item-date")(date)),
         p(view),
       )

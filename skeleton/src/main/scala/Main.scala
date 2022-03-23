@@ -32,6 +32,18 @@ trait Skeleton
   import parser.parse
   import blog.page
 
+
+  def compile(path: String)
+    (using ExprEnv, MarkDownEnv): F[blog.HtmlText] = {
+    
+    for {
+      text <- readFile(path)
+      tree <- parse(text)
+      expr <- evalExpr.eval(tree)
+      html <- evalMarkDown.eval(expr)
+    } yield html
+  }
+
   def registerIndex(item: page.Item)
     (using GenEnv): F[Unit] = {
     
@@ -41,6 +53,7 @@ trait Skeleton
                 blog.Path.items,
                 item :: idx
               )
+      _    <- generator.generateIndexPage
     yield ()
   }
 
@@ -48,10 +61,7 @@ trait Skeleton
     (using ExprEnv, MarkDownEnv, GenEnv): F[Unit] = 
     // println(generator.config.blogPath)
     for
-      text <- readFile(path)
-      tree <- parse(text)
-      expr <- evalExpr.eval(tree)
-      html <- evalMarkDown.eval(expr)
+      html <- compile(path)
       _    <- fileIO.writeFile(
                 s"${generator.config.blogPath}/$fileName",
                 generator.generateHtml(html).toString
@@ -63,11 +73,12 @@ trait Skeleton
     (using ExprEnv, MarkDownEnv, GenEnv): F[Unit] = {
     
     val linkDir = generator.config.blogType.blogPath
+    val format = java.time.format.DateTimeFormatter.ofPattern("yyyy年 MM月 dd日")
     val item = page.Item(
       title  = title,
       link   = s"$linkDir/$title.html",
       author = "Ireina7",
-      date   = java.time.LocalTime.now.toString,
+      date   = java.time.LocalDateTime.now.format(format).toString,
       view   = "",
     )
     register(path, s"$title.html", item)
@@ -90,12 +101,22 @@ object Skeleton:
     import PreMarkDownExprEvaluator.given
     import Generator.given
 
-    given blog.Configuration = blog.Configuration.onlineBlog
+    given blog.Configuration = blog.Configuration.staticBlog
     given markdownEnv: MarkDownEvaluator.Environment =
       MarkDownEvaluator.Environment.predef
     given exprEnv: PreMarkDownExprEvaluator.Environment = 
       PreMarkDownExprEvaluator.Environment.predefForMarkDown
 
+    val console = summon[Console[IOErr]]
+    def log(s: String) = console.log(s).run()
+
+    if(args.length < 3) {
+      log("No command executed.")
+      return ()
+    }
+    println(args.toList)
+    val filePath = args(1)
+    val fileTitle = args(2)
 
     // given generator = summon[Generator[GenEffect]]
     val skeleton: Skeleton[
@@ -111,8 +132,8 @@ object Skeleton:
     // println(link)
     val exe = 
       skeleton.registerCmd(
-        "./skeleton/scripts/welcome.skele", 
-        "Welcome!"
+        filePath, 
+        fileTitle,
       )
     
     exe.run() match

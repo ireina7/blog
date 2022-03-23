@@ -13,7 +13,7 @@
 
   (\** 2 . 目的:)
   (\image) {
-    (\set src /assets/img/k-on-q.png)
+    (\set src ./assets/img/k-on-q.png)
     (\set width 500)
   }
   (\section (\bold 无目的)) {
@@ -29,6 +29,7 @@
   }
 
   (\** 内容)
+  (\italic This is a test!!!)
 }
 
 
