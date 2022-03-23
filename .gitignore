@@ -41,6 +41,11 @@ classes/
 !/shared/public/.gitkeep
 !/shared/public/README.md
 
+/shared/staticPackage/*
+!/shared/staticPackage/.gitkeep
+!/shared/staticPackage/README.md
+
+
 assets/
 # !/shared/staticPackage/assets/
 node_modules/
