@@ -40,6 +40,24 @@ or even
   x y z o...
 }
 ```
+#### Example
+```
+(\document) {
+  (\set class article)
+
+  (\** Head titles, the more stars, the less weigth of font)
+  (\paragraph) {
+    This is a paragraph.
+    You can make (\italic texts italic) or (\bold texts).
+  }
+
+  (\*** Lets insert image!)
+  (\image (\set src ./assets/k-on.png))
+
+  (\*** Or a link)
+  (\link (\set href www.github.com) Github)
+}
+```
 
 ### The HTTP server
 
@@ -47,13 +65,11 @@ or even
 #### Static blog generation
 Just `given` the static blog configuration, then everything done!
 ```scala
-given blog.Configuration = 
-  Configuration.staticBlog
+given blog.Configuration = Configuration.staticBlog
 ```
 #### Online dynamic blog generation
 ```scala
-given blog.Configuration = 
-  Configuration.onlineBlog
+given blog.Configuration = Configuration.onlineBlog
 ```
 
 ## Usage
