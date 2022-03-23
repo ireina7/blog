@@ -17,6 +17,45 @@ Trying `finally tagless` with `extensive effects`.
 ## Configuration
 - Please refer to [configuration file](./doc/Configuration.md)
 
+## Features
+### The **Skeleton** programming language
+#### Variable
+```
+\variable-name
+```
+#### Function application
+```
+(\f x y z o...)
+```
+It's pretty useful that you can write any part of parameters inside a pair of `{}`.
+For example, the example code above can be rewritten as:
+```
+(\f x) {
+  y z o...
+}
+```
+or even
+```
+(\f) {
+  x y z o...
+}
+```
+
+### The HTTP server
+
+### Highly extensible and scalable by using finally tagless
+#### Static blog generation
+Just `given` the static blog configuration, then everything done!
+```scala
+given blog.Configuration = 
+  Configuration.staticBlog
+```
+#### Online dynamic blog generation
+```scala
+given blog.Configuration = 
+  Configuration.onlineBlog
+```
+
 ## Usage
 ### Server mode
 0. `cd <this folder>`
@@ -29,4 +68,4 @@ Trying `finally tagless` with `extensive effects`.
 0. `cd <this folder>`
 1. `sbt`
 2. `compile`
-3. `skeleton/run`
+3. `skeleton/run register <skeleton script file path> <new blog title>`
