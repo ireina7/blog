@@ -163,6 +163,10 @@ jsPipe := {
     "./shared/assets",
     "./shared/public/assets"
   )
+  copyFolder(
+    "./shared/assets",
+    "./shared/staticPackage/assets"
+  )
 }
 
 lazy val compileOthers = taskKey[Unit]("Compile server and client")

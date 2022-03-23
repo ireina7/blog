@@ -4,7 +4,6 @@ import cats.*
 import cats.effect.*
 import blog.core.Effect.*
 import blog.core.Effect.given
-import blog.static.given
 
 
 import blog.core.*
@@ -21,7 +20,8 @@ def testGenerator[Eff[_]: Monad: Runnable]
 
 @main def main(): Unit = {
 
-  given blog.Configuration = blog.Configuration.staticBlog
+  import Generator.given
+  given blog.Configuration = blog.Configuration.onlineBlog
   type Effect[A] = Injection[IOErr, blog.Configuration, A]
 
   val console = summon[Console[Effect]]

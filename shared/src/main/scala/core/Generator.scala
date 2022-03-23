@@ -50,12 +50,13 @@ trait Generator[F[_]: Monad]
   }
 
   def generateIndexPage: F[Unit] = {
+    // println(s"${config.blogPath}/index.html")
     for {
       index <-  generateIndex
       _     <-  fileIO.writeFile(
-                  s"${Path.staticPackage}/index.html",
+                  s"${config.blogPath}/index.html",
                   generateHtml(index).toString
-                ) 
+                )
     } yield ()
   }
 
@@ -84,3 +85,21 @@ trait Generator[F[_]: Monad]
   }
 
 end Generator
+
+
+
+
+object Generator:
+
+  import Effect.*
+  import Effect.given
+  given (using conf: blog.Configuration): Generator[IOErr] with
+    def config = conf
+
+
+  given (using conf: blog.Configuration):
+    Generator[[A] =>> Injection[IOErr, blog.Configuration, A]] with
+    def config = conf
+
+end Generator
+

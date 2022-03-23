@@ -82,5 +82,10 @@ object Routes {
       StaticFile
         .fromFile(new File(s"$assets/$file"), blocker, Some(req))
         .getOrElseF(NotFound())
+
+    case req @ GET -> Root / "blog" / fileName =>
+      StaticFile
+        .fromFile(new File(s"${blog.Path.blogs}/$fileName"), blocker, Some(req))
+        .getOrElseF(NotFound())
   }
 }

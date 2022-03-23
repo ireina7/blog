@@ -10,7 +10,9 @@ import org.http4s.server.middleware.Logger
 import scala.concurrent.ExecutionContext.global
 
 object BlogServer {
-  def stream[F[_]: ConcurrentEffect](implicit T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
+  def stream[F[_]: ConcurrentEffect]
+    (using T: Timer[F], C: ContextShift[F]): Stream[F, Nothing] = {
+    
     val httpApp = Routes.mainRoutes[F].orNotFound
     val finalHttpApp = Logger.httpApp(true, true)(httpApp)
     for {

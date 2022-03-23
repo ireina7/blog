@@ -28,3 +28,27 @@ object BlogHttpServer extends IOApp {
         .resource
     } yield server
 }
+
+
+
+// def naiveEffectManagement
+//   [ F[_]: Monad, 
+//     Program1[_], Program2[_], 
+//     Cap1, Cap2, 
+//     Input1, Input2,
+//     Output1, Output2,
+//     Input, Output,
+//   ]
+//   (input: Input)
+//   (using program1: Program1[[A] =>> Cap1 ?=> F[A], Input1, Output1])
+//   (using program2: Program2[[A] =>> Cap2 ?=> F[A], Input2, Output2])
+//   : (Cap1, Cap2) ?=> F[Output] = {
+  
+//   for
+//     x <- program1.run(input)
+//     y <- program2.run(x)
+//   yield y
+// }
+
+
+

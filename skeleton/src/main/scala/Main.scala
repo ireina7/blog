@@ -44,19 +44,34 @@ trait Skeleton
     yield ()
   }
 
-  def register(path: String, item: page.Item)
+  def register(path: String, fileName: String, item: page.Item)
     (using ExprEnv, MarkDownEnv, GenEnv): F[Unit] = 
+    // println(generator.config.blogPath)
     for
       text <- readFile(path)
       tree <- parse(text)
       expr <- evalExpr.eval(tree)
       html <- evalMarkDown.eval(expr)
       _    <- fileIO.writeFile(
-                s"${blog.Path.staticPackage}/welcome.html",
+                s"${generator.config.blogPath}/$fileName",
                 generator.generateHtml(html).toString
               )
       _    <- registerIndex(item)
     yield ()
+
+  def registerCmd(path: String, title: String)
+    (using ExprEnv, MarkDownEnv, GenEnv): F[Unit] = {
+    
+    val linkDir = generator.config.blogType.blogPath
+    val item = page.Item(
+      title  = title,
+      link   = s"$linkDir/$title.html",
+      author = "Ireina7",
+      date   = java.time.LocalTime.now.toString,
+      view   = "",
+    )
+    register(path, s"$title.html", item)
+  }
 
 end Skeleton
 
@@ -73,9 +88,9 @@ object Skeleton:
     import Effect.{*, given}
     import MarkDownEvaluator.given
     import PreMarkDownExprEvaluator.given
-    import blog.static.given
+    import Generator.given
 
-    given blog.Configuration = blog.Configuration.staticBlog
+    given blog.Configuration = blog.Configuration.onlineBlog
     given markdownEnv: MarkDownEvaluator.Environment =
       MarkDownEvaluator.Environment.predef
     given exprEnv: PreMarkDownExprEvaluator.Environment = 
@@ -92,16 +107,12 @@ object Skeleton:
     ] = 
       new Skeleton {}
     
+    val link = summon[blog.Configuration].blogType.blogPath
+    // println(link)
     val exe = 
-      skeleton.register(
+      skeleton.registerCmd(
         "./skeleton/scripts/welcome.skele", 
-        blog.page.Item(
-          title  = "Welcome",
-          link   = "./welcome.html",
-          author = "Ireina7",
-          date   = java.time.LocalTime.now.toString,
-          view   = "hidden",
-        )
+        "Welcome!"
       )
     
     exe.run() match

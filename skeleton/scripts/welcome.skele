@@ -11,9 +11,9 @@
     }
   }
 
-  (\** 2 . 目的)
+  (\** 2 . 目的:)
   (\image) {
-    (\set src ./k-on-q.png)
+    (\set src /assets/img/k-on-q.png)
     (\set width 500)
   }
   (\section (\bold 无目的)) {
@@ -23,10 +23,12 @@
       常见的方法包括：(\italic free monad, tagless final)和capabilities，但是三种方法各有优缺点。
     }
     (\paragraph) {
-      详细解释参见 
+      详细解释可参见 
       (\link (\set href https://dl.acm.org/doi/10.1145/3158130) Scala论文)。
     }
   }
+
+  (\** 内容)
 }
 
 
