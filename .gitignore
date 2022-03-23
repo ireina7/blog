@@ -42,4 +42,5 @@ classes/
 !/shared/public/README.md
 
 assets/
+!/shared/staticPackage/assets/
 node_modules/
