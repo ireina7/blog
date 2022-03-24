@@ -6,23 +6,34 @@ import cats.implicits.*
 import org.http4s.server.staticcontent.*
 import org.http4s.syntax.kleisli.*
 import org.http4s.server.Server
-import org.http4s.server.blaze.BlazeServerBuilder
+// import org.http4s.HttpServer
+import org.http4s.blaze.server.BlazeServerBuilder
 import scala.concurrent.ExecutionContext.global
+// import org.http4s.HttpApp
+// import org.http4s.server.Server
 
-// object Main extends IOApp {
-//     def run(args: List[String]) =
-//         Server.stream[IO].compile.drain.as(ExitCode.Success)
-// }
+
+
+// object JavaServer:
+
+//   def main(args: Array[String]): Unit = {
+//     import blog.MioServer
+//     val server = new MioServer()
+//     server.serve()
+//   }
+
+// end JavaServer
+
 
 object BlogHttpServer extends IOApp {
   
   override def run(args: List[String]): IO[ExitCode] =
     app.use(_ => IO.never).as(ExitCode.Success)
 
-  val app: Resource[IO, Server[IO]] =
+  val app: Resource[IO, Server] =
     for {
       blocker <- Blocker[IO]
-      server  <- BlazeServerBuilder[IO](global)
+      server  <- BlazeServerBuilder.apply[IO](global)
         .bindHttp(8080)
         .withHttpApp((Routes.mainRoutes[IO] <+> Routes.ioRoutes).orNotFound)
         .resource
@@ -30,6 +41,14 @@ object BlogHttpServer extends IOApp {
 }
 
 
+
+
+
+
+// object Main extends IOApp {
+//     def run(args: List[String]) =
+//         Server.stream[IO].compile.drain.as(ExitCode.Success)
+// }
 
 // def naiveEffectManagement
 //   [ F[_]: Monad, 
