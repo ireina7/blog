@@ -150,7 +150,7 @@ object Effect:
     }
     def raiseError[A](e: Throwable): Injection[F, Env, A] = {
       println(s"raise error: $e")
-      ???
+      errF.raiseError(e)
     }
     
     export monad.*

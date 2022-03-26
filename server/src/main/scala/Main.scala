@@ -9,6 +9,7 @@ import org.http4s.server.Server
 // import org.http4s.HttpServer
 import org.http4s.blaze.server.BlazeServerBuilder
 import scala.concurrent.ExecutionContext.global
+import specs2.run
 // import org.http4s.HttpApp
 // import org.http4s.server.Server
 
@@ -25,12 +26,33 @@ import scala.concurrent.ExecutionContext.global
 // end JavaServer
 
 
-object BlogHttpServer extends IOApp {
-  
-  override def run(args: List[String]): IO[ExitCode] =
-    app.use(_ => IO.never).as(ExitCode.Success)
+object Application extends IOApp:
 
-  val app: Resource[IO, Server] =
+  override def run(args: List[String]): IO[ExitCode] =
+    BlogHttpServer
+      .app.use(_ => IO.never).as(ExitCode.Success)
+
+  extension (io: IO.type)
+    def println[A](a: A): IO[Unit] = IO(scala.Predef.println(a))
+  
+  def test: IO[Unit] = 
+    IO.println("This is a effect testing...")
+      >> IO.println(Thread.currentThread)
+      >> IO.shift
+      >> IO.println(Thread.currentThread)
+      >> IO.println("End test.")
+    
+  end test
+
+end Application
+
+
+object BlogHttpServer {
+  
+  // override def run(args: List[String]): IO[ExitCode] =
+  //   app.use(_ => IO.never).as(ExitCode.Success)
+  given Timer[IO] = IO.timer(global)
+  val app: ConcurrentEffect[IO] ?=> Resource[IO, Server] =
     for {
       blocker <- Blocker[IO]
       server  <- BlazeServerBuilder.apply[IO](global)

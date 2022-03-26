@@ -1,0 +1,12 @@
+(\document) {
+  (\set class article)
+
+  (\** 这是什么奇怪的名字？？)
+  (\*** (\font (\set style color:purple) 计算效应))
+  (\paragraph) {
+    (\italic 计算效应就是除了函数返回值之外的一切。)
+  }
+
+  (\**** 计算效应举例)
+  (\italic IO, List, Future, etc)
+}

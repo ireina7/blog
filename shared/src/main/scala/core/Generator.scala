@@ -15,10 +15,45 @@ import cats.syntax.applicative.*
 
 
 
+trait Generator_[F[_]: Monad, Path, Thing] extends
+  Reader[F, Path, Thing],
+  Writer[F, Path, Thing]
+
+
+
+object Generator_ :
+  
+  given given_indexGenerator[F[_]: Monad, Path](using
+      fileIO: FileIO[F, Path, String],
+      parser: Parser[F, page.Index],
+      decoder: Decoder[F, page.Index],
+    )
+    : Generator_[F, Path, page.Index] = new Generator_ {
+    
+    override def read(path: Path): F[page.Index] = {
+      for {
+        raw <- fileIO.readFile(path)
+        res <- parser.parse(raw)
+      } yield res
+    }
+
+    override def write(x: page.Index)(path: Path) = {
+      for {
+        json <- decoder.decode(x)
+        _    <- fileIO.writeFile(path, json)
+      } yield ()
+    }
+  }
+
+end Generator_
+
+
+
 trait Generator[F[_]: Monad]
   (using
     fileIO: FileIOString[F],
-    parser: Parser[F, page.Index]
+    parser: Parser[F, page.Index],
+    decoder: Decoder[F, page.Index],
   ):
   
   def config: blog.Configuration
@@ -60,26 +95,12 @@ trait Generator[F[_]: Monad]
     } yield ()
   }
 
-  def toJson(index: page.Index): F[String] = {
-    import io.circe.syntax.*
-    import io.circe.{ Decoder, Encoder, Json}, io.circe.generic.auto.*
-
-    given encodeEvent: Encoder[page.Item] = new Encoder[page.Item] {
-      final def apply(a: page.Item): Json = Json.obj(
-        ("title",  Json.fromString(a.title)),
-        ("link",   Json.fromString(a.link)),
-        ("author", Json.fromString(a.author)),
-        ("date",   Json.fromString(a.date)),
-        ("view",   Json.fromString(a.view)),
-      )
-    }
-    index.asJson.toString.pure
-  }
+  
   def generateIndexFile
     (path: String, index: page.Index): F[Unit] = {
     
     for {
-      json <- toJson(index)
+      json <- decoder.decode(index)
       _    <- fileIO.writeFile(path, json)
     } yield ()
   }
