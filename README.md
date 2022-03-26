@@ -2,7 +2,7 @@
 My personal blog written mostly in Scala and Java.
 Trying `finally tagless` with `extensive effects`.
 ![k-on!](./img/k-on-q.png)  
-- version: `0.0.5`
+- version: `0.0.10`
 
 ## Dependences
 - `Scala3` the programming language
@@ -62,6 +62,10 @@ or even
 ### The HTTP server
 
 ### Highly extensible and scalable by using finally tagless
+All trait are parameterized with computation effects (e.g. `F[_]`).
+One can easily extend more implementations of 
+the program **without** changing any existed code.
+
 #### Static blog generation
 Just `given` the static blog configuration, then everything done!
 ```scala
