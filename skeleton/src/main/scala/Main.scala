@@ -26,7 +26,8 @@ trait Skeleton
     parser: Parser[F, SkeleExpr],
     evalMarkDown: blog.core.Eval[[A] =>> MarkDownEnv ?=> F[A], SkeleExpr, blog.HtmlText],
     evalExpr: blog.core.Eval[[A] =>> ExprEnv ?=> F[A], SkeleExpr, SkeleExpr],
-    generator: Generator[[A] =>> GenEnv ?=> F[A]],
+    generator: BlogIndexGenerator[[A] =>> GenEnv ?=> F[A]],
+    htmlWriter: blog.core.Writer[F, String, blog.HtmlText],
   ):
   import fileIO.{ readFile, writeFile }
   import parser.parse
@@ -62,10 +63,9 @@ trait Skeleton
     // println(generator.config.blogPath)
     for
       html <- compile(path)
-      _    <- fileIO.writeFile(
-                s"${generator.config.blogPath}/$fileName",
-                generator.generateHtml(html).toString
-              )
+      _    <- htmlWriter.write
+                (generator.indexPage(html))
+                (s"${generator.config.blogPath}/$fileName")
       _    <- registerIndex(item)
     yield ()
 

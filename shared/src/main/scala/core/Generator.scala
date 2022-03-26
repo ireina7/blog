@@ -23,21 +23,21 @@ trait Generator_[F[_]: Monad, Path, Thing] extends
 
 object Generator_ :
   
-  given given_indexGenerator[F[_]: Monad, Path](using
+  given given_defaultGenerator[F[_]: Monad, Path, Thing](using
       fileIO: FileIO[F, Path, String],
-      parser: Parser[F, page.Index],
-      decoder: Decoder[F, page.Index],
+      parser: Parser[F, Thing],
+      decoder: Decoder[F, Thing],
     )
-    : Generator_[F, Path, page.Index] = new Generator_ {
+    : Generator_[F, Path, Thing] = new Generator_ {
     
-    override def read(path: Path): F[page.Index] = {
+    override def read(path: Path): F[Thing] = {
       for {
         raw <- fileIO.readFile(path)
         res <- parser.parse(raw)
       } yield res
     }
 
-    override def write(x: page.Index)(path: Path) = {
+    override def write(x: Thing)(path: Path) = {
       for {
         json <- decoder.decode(x)
         _    <- fileIO.writeFile(path, json)
@@ -49,11 +49,10 @@ end Generator_
 
 
 
-trait Generator[F[_]: Monad]
+trait BlogIndexGenerator[F[_]: Monad]
   (using
-    fileIO: FileIOString[F],
-    parser: Parser[F, page.Index],
-    decoder: Decoder[F, page.Index],
+    gen: Generator_[F, String, page.Index],
+    htmlWriter: Writer[F, String, blog.HtmlText],
   ):
   
   def config: blog.Configuration
@@ -63,49 +62,37 @@ trait Generator[F[_]: Monad]
   // type FileIOParser[F[_], A] = 
   //   (FileIOString[F], Parser[F, Index]) ?=> F[A]
 
-  def readIndex: F[page.Index] = {
-    
-    for {
-      raw <- fileIO.readFile(Path.items)
-      res <- parser.parse(raw)
-    } yield res
-  }
+  def readIndex: F[page.Index] = 
+    gen.read(Path.items)
 
-  def generateIndex: F[HtmlText] = {
+  def readIndexHtml: F[HtmlText] = {
     
     for {
       index <- readIndex
     } yield div(index.map(page.Frame.item(_)))
   }
 
-  def generateHtml(content: HtmlText = div()): HtmlText = {
-    val index = page.Frame.index(content)
-    // println(index)
-    index
-  }
+  def indexPage(content: HtmlText = div()): HtmlText = 
+    page.Frame.index(content)
 
+  
   def generateIndexPage: F[Unit] = {
     // println(s"${config.blogPath}/index.html")
     for {
-      index <-  generateIndex
-      _     <-  fileIO.writeFile(
-                  s"${config.blogPath}/index.html",
-                  generateHtml(index).toString
-                )
+      index <-  readIndexHtml
+      _     <-  htmlWriter.write
+                  (indexPage(index))
+                  (s"${config.blogPath}/index.html")
     } yield ()
   }
-
   
   def generateIndexFile
     (path: String, index: page.Index): F[Unit] = {
     
-    for {
-      json <- decoder.decode(index)
-      _    <- fileIO.writeFile(path, json)
-    } yield ()
+    gen.write(index)(path)
   }
 
-end Generator
+end BlogIndexGenerator
 
 
 
@@ -114,12 +101,12 @@ object Generator:
 
   import Effect.*
   import Effect.given
-  given (using conf: blog.Configuration): Generator[IOErr] with
+  given (using conf: blog.Configuration): BlogIndexGenerator[IOErr] with
     def config = conf
 
 
   given (using conf: blog.Configuration):
-    Generator[[A] =>> Injection[IOErr, blog.Configuration, A]] with
+    BlogIndexGenerator[[A] =>> Injection[IOErr, blog.Configuration, A]] with
     def config = conf
 
 end Generator

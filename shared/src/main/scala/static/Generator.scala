@@ -20,9 +20,9 @@ import cats.syntax.applicative.*
 */
 import Effect.*
 import Effect.given
-given Generator[IOErr] with
+given BlogIndexGenerator[IOErr] with
   def config = blog.Configuration.staticBlog
 
 
-given Generator[[A] =>> Injection[IOErr, blog.Configuration, A]] with
+given BlogIndexGenerator[[A] =>> Injection[IOErr, blog.Configuration, A]] with
   def config = blog.Configuration.staticBlog

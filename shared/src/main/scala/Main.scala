@@ -9,7 +9,7 @@ import blog.core.Effect.given
 import blog.core.*
 def testGenerator[Eff[_]: Monad: Runnable]
   (using 
-    generator: Generator[Eff],
+    generator: BlogIndexGenerator[Eff],
     console: Console[Eff],
   ) = {
   import cats.syntax.flatMap.catsSyntaxFlatMapOps

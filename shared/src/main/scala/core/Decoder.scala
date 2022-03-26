@@ -39,6 +39,14 @@ object Decoder:
     override def decode(idx: page.Index) = 
       toJson(idx)
   }
+
+
+  given given_htmlDecoder[F[_]: Applicative]
+    : Decoder[F, blog.HtmlText] = new Decoder {
+    
+    override def decode(html: blog.HtmlText) =
+      html.toString.pure
+  }
   
 end Decoder
 

@@ -8,5 +8,5 @@
   }
 
   (\**** 计算效应举例)
-  (\italic IO, List, Future, etc)
+  (\italic IO, List, Future, Option, Either[Throwable, _], Config ?=> A, etc)
 }
