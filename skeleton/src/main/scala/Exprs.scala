@@ -7,28 +7,61 @@ import blog.core.Eval
 
 
 
-trait MarkDownLanguage[F[_], E]:
+trait MarkDownLanguage[F[_], E] {
   def integer(i: Int)       : F[E]
   def number(value: Double) : F[E]
   def string(s: String)     : F[E]
   def list(xs: List[E])     : F[E]
-end MarkDownLanguage
+}
 
-trait LambdaCalculus[F[_], E]:
+trait LambdaCalculus[F[_], E] {
   def lambda(ps: List[E], expr: E)  : F[E]
   def application(f: E, xs: List[E]): F[E]
-end LambdaCalculus
+}
 
-trait BindingDsl[F[_], E]:
+trait BindingDsl[F[_], E] {
   def variable(name: String): F[E]
+  def pattern(pat: E): F[E]
   def bindings(binds: List[(E, E)], expr: E): F[E]
-end BindingDsl
+}
 
+/** The imperative language dsl (optional)
+ * Currently only support assignment.
+*/
+trait Imperative[F[_], E] {
+  /** The [[Set]] operation
+   * To reassign variables with [[value]].
+   * @param pattern the pattern to be reassigned
+   * @param value the value
+   * @return The effect
+  */
+  def set(pattern: E, value: E): F[E]
+}
 
+/** The definition language dsl
+ * Currently only support variable and function definition.
+*/
+trait Declaration[F[_], E] {
+  def define(name: E, params: List[E], expr: E): F[E]
+}
+
+/** Language dsl which support statements */
+trait Statement[F[_], E] extends
+  Imperative[F, E],
+  Declaration[F, E] {
+  
+  def block(statements: List[E]): F[E]
+}
+
+/** The expression */
 trait Expr[F[_], E] extends 
   LambdaCalculus[F, E], 
   MarkDownLanguage[F, E],
   BindingDsl[F, E]
+
+
+
+
 
 
 object Expr:
@@ -39,7 +72,7 @@ object Expr:
   ): Expr[F, E] = new Expr {
     export markDown.{integer, number, string, list}
     export lambdaCal.{lambda, application}
-    export bindDsl.{variable, bindings}
+    export bindDsl.{variable, pattern, bindings}
   }
 end Expr
 
@@ -97,6 +130,42 @@ end Match
 
 
 
+object Trees:
+
+  trait SkeleTree {
+    def code: String = toString
+  }
+
+  object SkeleTree extends Statement[cats.Id, SkeleTree]:
+
+    case object Pass extends SkeleTree
+
+    case class Set(
+      pattern: SkeleTree, 
+      value: SkeleTree
+    ) extends SkeleTree
+
+    case class Define(
+      name: SkeleTree, 
+      params: List[SkeleTree], 
+      expr: SkeleTree
+    ) extends SkeleTree
+
+    case class Block
+      (statements: List[SkeleTree]) extends SkeleTree
+    override def set(pattern: SkeleTree, value: SkeleTree) = {
+      Set(pattern, value)
+    }
+    override def define
+      (name: SkeleTree, params: List[SkeleTree], expr: SkeleTree) = {
+      Define(name, params, expr)
+    }
+    override def block(statements: List[SkeleTree]) = {
+      Block(statements)
+    }
+  end SkeleTree
+
+end Trees
 
 
 
@@ -121,14 +190,14 @@ object Exprs:
    * The data type for interal expression tree
   */
   // type SkeleExpr = MyExpr[?]
-  trait SkeleExpr {
-    def code: String = toString
+  trait SkeleExpr extends Trees.SkeleTree {
+    override def code: String = toString
   }
   object SkeleExpr extends Expr[cats.Id, SkeleExpr]:
 
     type Env = collection.mutable.Map[String, SkeleExpr]
 
-    object Pass extends SkeleExpr
+    object Void extends SkeleExpr
     case class Var(name: String) extends SkeleExpr
     case class Integer(i: Int) extends SkeleExpr
     case class Num(n: Double) extends SkeleExpr
@@ -138,6 +207,7 @@ object Exprs:
     case class App(f: SkeleExpr, xs: List[SkeleExpr]) extends SkeleExpr
     case class Lisp(xs: List[SkeleExpr]) extends SkeleExpr
     case class Let(bindings: List[(SkeleExpr, SkeleExpr)], expr: SkeleExpr) extends SkeleExpr
+    case class Pattern(e: SkeleExpr) extends SkeleExpr
     
     
     override def variable(name: String) = Var(name)
@@ -153,6 +223,7 @@ object Exprs:
     }
     override def bindings(binds: List[(SkeleExpr, SkeleExpr)], expr: SkeleExpr) =
       Let(binds, expr)
+    override def pattern(pat: SkeleExpr) = Pattern(pat)
     def closure(ps: List[SkeleExpr], expr: SkeleExpr, env: Env) = Closure(ps, expr, env)
   end SkeleExpr
   

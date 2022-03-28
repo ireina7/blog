@@ -15,14 +15,14 @@ import cats.effect.*
 import cats.data.*
 
 given Parser[Id, SkeleExpr] with {
-  def parse(s: String) = Parser.parseSkeleExpr(s).getOrElse(SkeleExpr.Pass)
+  def parse(s: String) = Parser.parseSkeleExpr(s).getOrElse(SkeleExpr.Void)
 }
 given Parser[IO, SkeleExpr] with {
-  def parse(s: String) = IO { Parser.parseSkeleExpr(s).getOrElse(SkeleExpr.Pass) }
+  def parse(s: String) = IO { Parser.parseSkeleExpr(s).getOrElse(SkeleExpr.Void) }
 }
 given Parser[IOErr, SkeleExpr] with {
   def parse(s: String) = EitherT.right(
-    IO { Parser.parseSkeleExpr(s).getOrElse(SkeleExpr.Pass) }
+    IO { Parser.parseSkeleExpr(s).getOrElse(SkeleExpr.Void) }
   )
 }
 given Parser[blog.Result, SkeleExpr] with {
@@ -68,19 +68,24 @@ object Parser:
     def real       = "[0-9]+\\.[0-9]*".r ^^ (s => Num(s.toDouble))
     def integer    = "[0-9]+".r ^^ (s => Integer(s.toInt))
     def number     = real | integer
+    def symbol     = "'" ~ identity  ^^ {
+      case _ ~ name => Var.apply(name)
+    }
+    def pattern    = symbol | lists
     def text       = "[^{}()\\\\]+".r ^^ Str.apply
     def lists      = ("(" ~> expr.*   <~ ")") ^^ {
-      case Nil => Pass
+      case Nil => Void
       case f::ps => application(f, ps)
     }
-    def binding    = "(" ~> "\\let" ~> ("(" ~> expr ~ expr <~ ")").* ~ expr <~ ")" ^^ {
-      case Nil ~ exp => exp
-      case xxs ~ exp => 
-        val xs = xxs.map { case (key ~ value) =>
-          (key, value)
-        }
-        Let(xs, exp)
-    }
+    // def definiton  = "(" ~> "\\define" ~> ("(" ~> variable ~ pattern.* <~ ")")
+    // def binding    = "(" ~> "\\let" ~> ("(" ~> expr ~ expr <~ ")").* ~ expr <~ ")" ^^ {
+    //   case Nil ~ exp => exp
+    //   case xxs ~ exp => 
+    //     val xs = xxs.map { case (key ~ value) =>
+    //       (key, value)
+    //     }
+    //     Let(xs, exp)
+    // }
     // def quote      = ("'" ~> expr) ^^ (x => Lisp(List(Var("'"), x)))
     // def string     = ("{" ~> "[^{}]*".r <~ "}") ^^ Str.apply
     // def inner      = ("{" ~> expr.* <~ "}") ^^ Str.apply
@@ -100,15 +105,19 @@ object Parser:
       number   | 
       variable | 
       text     | 
-      binding  |
+      // binding  |
       // commaList | 
       structList // | lists
+
+    def process(expr: SkeleExpr): blog.Result[SkeleExpr] = {
+      ???
+    }
 
     def read(s: String): blog.Result[SkeleExpr] =
       parse(expr, s) match
         case Success(res, _) => Right(res)
         case Failure(msg, _) => Left(blog.Error(msg))
-        case Error(msg, _)   => ??? //error("Error: ", Var(msg))
+        case Error(msg, _)   => Left(blog.Error(msg))
   }
 
   def parseSkeleExpr(src: String): blog.Result[SkeleExpr] = {

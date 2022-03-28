@@ -8,6 +8,8 @@ import cats.{
 import blog.core.Eval
 import blog.skeleton.Exprs.SkeleExpr.*
 import blog.skeleton.Exprs.*
+import blog.skeleton.Trees.*
+import blog.skeleton.Trees.SkeleTree.*
 
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
@@ -30,6 +32,11 @@ import cats.MonadError
 trait EvalExpr[F[_], Input, Output] extends
   Eval[F, Input, Output],
   Expr[F, Output]
+
+trait EvalStatement[F[_], Input, Output] extends
+  Eval[F, Input, Output],
+  Statement[F, Output]
+
 
 
 trait EvalSkeleExpr[F[_], Value] 
@@ -70,6 +77,47 @@ trait EvalSkeleExpr[F[_], Value]
 end EvalSkeleExpr
 
 
+trait EvalSkeleTree[F[_], Value]
+  (using 
+    exprEvaluator: EvalSkeleExpr[F, Value],
+    errDsl: MonadError[F, Throwable],
+  ) extends EvalStatement[F, SkeleTree, Value]:
+
+  import cats.implicits.*
+  import cats.syntax.apply.*
+
+  def pass: F[Value]
+  override def block(states: List[Value]) = 
+    ???
+
+  extension (tree: SkeleTree)
+    override def eval: F[Value] = {
+      tree match
+        case Pass => pass
+        case Pattern(pat) => ???
+        case Set(pat, v) => for {
+          p <- pat.eval
+          x <- v.eval
+          r <- set(p, x)
+        } yield r
+        case Define(name, params, expr) => for {
+          func  <- name.eval
+          ps    <- params.traverse(_.eval)
+          value <- expr.eval
+          res   <- define(func, ps, value)
+        } yield res
+        case Block(states) => states.foldLeft(Pass.eval)(_ *> _.eval)
+        case expr: SkeleExpr => exprEvaluator.eval(expr)
+        case _ => errDsl.raiseError(
+          Throwable(s"Evaluation error: Unknown statement: $tree")
+        )
+    }
+
+end EvalSkeleTree
+
+
+
+
 
 
 import blog.core.Parser
@@ -94,27 +142,24 @@ given [F[_]: Monad, Value](using
 
 
 
+// object SkeleEvaluator:
+//   // import cats.catsInstancesForId
+//   // def d = 0
+//   // val i = summon[Applicative[cats.Id]]
+//   import blog.core.Parser
 
+//   def predef[F[_]]
+//     (using parser: Parser[F, SkeleExpr])
+//     : SkeleExpr.Env = {
+//     import scala.collection.mutable
+//     import blog.skeleton.Exprs.*
+//     import SkeleExpr.*
 
+//     val env0: SkeleExpr.Env = mutable.Map()
+//     val env : SkeleExpr.Env = mutable.Map(
+//       "+1" -> Closure(List(Var("x")), Integer(2), env0)
+//     )
+//     env
+//   }
 
-object SkeleEvaluator:
-  // import cats.catsInstancesForId
-  // def d = 0
-  // val i = summon[Applicative[cats.Id]]
-  import blog.core.Parser
-
-  def predef[F[_]]
-    (using parser: Parser[F, SkeleExpr])
-    : SkeleExpr.Env = {
-    import scala.collection.mutable
-    import blog.skeleton.Exprs.*
-    import SkeleExpr.*
-
-    val env0: SkeleExpr.Env = mutable.Map()
-    val env : SkeleExpr.Env = mutable.Map(
-      "+1" -> Closure(List(Var("x")), Integer(2), env0)
-    )
-    env
-  }
-
-end SkeleEvaluator
+// end SkeleEvaluator

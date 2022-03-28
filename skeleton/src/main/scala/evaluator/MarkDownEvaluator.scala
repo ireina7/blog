@@ -122,6 +122,8 @@ object MarkDownEvaluator:
       (binds: List[(HtmlText, HtmlText)], expr: HtmlText) = {
       ???
     }
+    override def pattern(e: HtmlText) = e.pure
+
     def applyKey(xs: List[HtmlText]): F[HtmlText] = {
       val ans = tag("key")
       // if(xs.length <= 1) {

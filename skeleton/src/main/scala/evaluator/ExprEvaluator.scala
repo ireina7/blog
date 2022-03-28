@@ -79,6 +79,9 @@ object ExprEvaluator:
     override def lambda(ps: List[SkeleExpr], expr: SkeleExpr) = env ?=> {
       Closure(ps, expr, env).pure
     }
+    override def pattern(e: SkeleExpr) = env ?=> {
+      e
+    }
     override def bindings
       (binds: List[(SkeleExpr, SkeleExpr)], expr: SkeleExpr) = env ?=> {
       
@@ -216,6 +219,9 @@ object PreMarkDownExprEvaluator:
     override def list(xs: List[SkeleExpr]) = Lisp(xs)
     override def lambda(ps: List[SkeleExpr], expr: SkeleExpr) = env ?=> {
       Closure(ps, expr, env).pure
+    }
+    override def pattern(e: SkeleExpr) = env ?=> {
+      e
     }
     override def bindings
       (binds: List[(SkeleExpr, SkeleExpr)], expr: SkeleExpr) = env ?=> {
