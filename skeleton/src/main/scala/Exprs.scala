@@ -201,7 +201,7 @@ object Exprs:
 
     type Env = collection.mutable.Map[String, SkeleExpr]
 
-    object Void extends SkeleExpr
+    case object Void extends SkeleExpr
     case class Var(name: String) extends SkeleExpr
     case class Integer(i: Int) extends SkeleExpr
     case class Num(n: Double) extends SkeleExpr

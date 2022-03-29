@@ -21,9 +21,10 @@ given Parser[IO, SkeleExpr] with {
   def parse(s: String) = IO { Parser.parseSkeleExpr(s).getOrElse(SkeleExpr.Void) }
 }
 given Parser[IOErr, SkeleExpr] with {
-  def parse(s: String) = EitherT.right(
-    IO { Parser.parseSkeleExpr(s).getOrElse(SkeleExpr.Void) }
-  )
+  def parse(s: String) = 
+    Parser.parseSkeleExpr(s) match 
+      case Right(exp) => EitherT.right(IO(exp))
+      case Left (err) => EitherT.left (IO(err))
 }
 given Parser[blog.Result, SkeleExpr] with {
   def parse(s: String) = Parser.parseSkeleExpr(s)
@@ -55,7 +56,8 @@ end given
 
 object Parser:
   
-  val identity = "[a-zA-Z0-9~\\[\\]!=-@#$+%^&*_:\";/,|\\_\\.]+".r
+  // val identity = "[a-zA-Z0-9~\\[\\]!=-@#$+%^&*_:\";/,|\\_\\.]+".r
+  val identity = "[^{}()\\\\\\s]+".r
 
   import scala.util.parsing.combinator.RegexParsers
 
