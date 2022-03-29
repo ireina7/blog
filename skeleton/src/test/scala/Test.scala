@@ -8,21 +8,21 @@ import org.scalacheck.Gen
 import blog.skeleton.Exprs.SkeleExpr
 
 
-object StringSpecification extends Properties("String"):
+// object StringSpecification extends Properties("String"):
 
-  property("startsWith") = 
-    forAll { (a: String, b: String) =>
-      (a + b).startsWith(a)
-    }
+//   property("startsWith") = 
+//     forAll { (a: String, b: String) =>
+//       (a + b).startsWith(a)
+//     }
 
-  property("concatenate") = 
-    forAll { (a: String, b: String) =>
-      (a + b).length >= a.length && (a + b).length >= b.length
-    }
+//   property("concatenate") = 
+//     forAll { (a: String, b: String) =>
+//       (a + b).length >= a.length && (a + b).length >= b.length
+//     }
 
-  property("one case") = 1 == 1
+//   property("one case") = 1 == 1
   
-end StringSpecification
+// end StringSpecification
 
 
 
@@ -43,6 +43,24 @@ package laws {
         parser.parse(src).run() == Right(result)
       }
     }
+    def shouldNotBeEqual[F[_]: blog.core.Runnable]
+      (cases: (String, SkeleExpr)*)
+      (using parser: Parser[F, SkeleExpr]) = {
+      
+      cases.forall { case (src, result) =>
+        parser.parse(src).run() != Right(result)
+      }
+    }
+    def shouldFail[F[_]: blog.core.Runnable]
+      (cases: String*)
+      (using parser: Parser[F, SkeleExpr]) = {
+      
+      cases.forall { src =>
+        parser.parse(src).run() match
+          case Left(_) => true
+          case _ => false
+      }
+    }
 
     def `variable`[F[_]: blog.core.Runnable]
       (using parser: Parser[F, SkeleExpr]) = shouldBeEqual(
@@ -60,6 +78,9 @@ package laws {
       """(\title hello, world)""" -> 
         App(Var("title"), List(Str("hello, world"))),
       
+      /** We expect the white space after `x` 
+        * should be included in as normal text.
+       */
       """(\f x (\g y))""" -> 
         App(Var("f"), List(Str("x "), App(Var("g"), List(Str("y")))))
     )
@@ -68,8 +89,10 @@ package laws {
 
 }
 
+
+
 object SkeletonTests 
-  extends Properties("Skeleton Evaluator"):
+  extends Properties("Skeleton tests"):
   import Effect.{*, given}
 
   property("`simple function application`[IOErr]") = 
