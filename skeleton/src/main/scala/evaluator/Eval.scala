@@ -89,7 +89,7 @@ trait EvalSkeleTree[F[_], Value]
   def pass: F[Value]
   override def block(states: List[Value]) = 
     ???
-
+  
   extension (tree: SkeleTree)
     override def eval: F[Value] = {
       tree match

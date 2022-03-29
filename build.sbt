@@ -134,7 +134,8 @@ lazy val skeleton = (project in file("skeleton"))
     libraryDependencies ++= Seq(
       scalatags,
       scalaParser,
-      scalaCheck,
+      scalaCheck % Test,
+      catsLaws % Test,
     ).map(_.cross(CrossVersion.for3Use2_13))
   )
 

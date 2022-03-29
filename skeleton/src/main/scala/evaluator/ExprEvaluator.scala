@@ -82,6 +82,9 @@ object ExprEvaluator:
     override def pattern(e: SkeleExpr) = env ?=> {
       e
     }
+    override def matching(expr: SkeleExpr, branches: List[(SkeleExpr, SkeleExpr)]) = {
+      ???
+    }
     override def bindings
       (binds: List[(SkeleExpr, SkeleExpr)], expr: SkeleExpr) = env ?=> {
       
@@ -220,8 +223,9 @@ object PreMarkDownExprEvaluator:
     override def lambda(ps: List[SkeleExpr], expr: SkeleExpr) = env ?=> {
       Closure(ps, expr, env).pure
     }
-    override def pattern(e: SkeleExpr) = env ?=> {
-      e
+    override def pattern(e: SkeleExpr) = env ?=> e.pure
+    override def matching(expr: SkeleExpr, branches: List[(SkeleExpr, SkeleExpr)]) = {
+      ???
     }
     override def bindings
       (binds: List[(SkeleExpr, SkeleExpr)], expr: SkeleExpr) = env ?=> {

@@ -123,6 +123,9 @@ object MarkDownEvaluator:
       ???
     }
     override def pattern(e: HtmlText) = e.pure
+    override def matching(expr: HtmlText, branches: List[(HtmlText, HtmlText)]) = {
+      ???
+    }
 
     def applyKey(xs: List[HtmlText]): F[HtmlText] = {
       val ans = tag("key")

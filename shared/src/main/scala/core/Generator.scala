@@ -81,7 +81,7 @@ trait BlogIndexGenerator[F[_]: Monad]
     for {
       index <-  readIndexHtml
       _     <-  htmlWriter.write
-                  (indexPage(index))
+                  (page.Frame.index(index))
                   (s"${config.blogPath}/index.html")
     } yield ()
   }

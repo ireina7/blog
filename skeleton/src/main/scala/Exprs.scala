@@ -19,9 +19,13 @@ trait LambdaCalculus[F[_], E] {
   def application(f: E, xs: List[E]): F[E]
 }
 
-trait BindingDsl[F[_], E] {
-  def variable(name: String): F[E]
+trait PatternMatching[F[_], E] {
   def pattern(pat: E): F[E]
+  def matching(expr: E, branches: List[(E, E)]): F[E]
+}
+
+trait BindingDsl[F[_], E] extends PatternMatching[F, E] {
+  def variable(name: String): F[E]
   def bindings(binds: List[(E, E)], expr: E): F[E]
 }
 
@@ -72,7 +76,7 @@ object Expr:
   ): Expr[F, E] = new Expr {
     export markDown.{integer, number, string, list}
     export lambdaCal.{lambda, application}
-    export bindDsl.{variable, pattern, bindings}
+    export bindDsl.{variable, pattern, matching, bindings}
   }
 end Expr
 
@@ -224,6 +228,9 @@ object Exprs:
     override def bindings(binds: List[(SkeleExpr, SkeleExpr)], expr: SkeleExpr) =
       Let(binds, expr)
     override def pattern(pat: SkeleExpr) = Pattern(pat)
+    override def matching(expr: SkeleExpr, branches: List[(SkeleExpr, SkeleExpr)]) = {
+      ???
+    }
     def closure(ps: List[SkeleExpr], expr: SkeleExpr, env: Env) = Closure(ps, expr, env)
   end SkeleExpr
   
