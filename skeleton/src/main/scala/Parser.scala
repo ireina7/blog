@@ -13,12 +13,13 @@ import blog.skeleton.Exprs.*
 import cats.*
 import cats.effect.*
 import cats.data.*
+import cats.syntax.traverse.*
 
 given Parser[Id, SkeleExpr] with {
-  def parse(s: String) = Parser.parseSkeleExpr(s).getOrElse(SkeleExpr.Void)
+  def parse(s: String) = Parser.parseSkeleExpr(s).getOrElse(SkeleExpr.Pass)
 }
 given Parser[IO, SkeleExpr] with {
-  def parse(s: String) = IO { Parser.parseSkeleExpr(s).getOrElse(SkeleExpr.Void) }
+  def parse(s: String) = IO { Parser.parseSkeleExpr(s).getOrElse(SkeleExpr.Pass) }
 }
 given Parser[IOErr, SkeleExpr] with {
   def parse(s: String) = 
@@ -64,6 +65,7 @@ object Parser:
   object Combinators extends RegexParsers {
     import SkeleExpr.*
 
+
     def variable   = "\\" ~ identity ^^ {
       case _ ~ name => Var.apply(name)
     }
@@ -75,8 +77,14 @@ object Parser:
     }
     def pattern    = symbol | lists
     def text       = "[^{}()\\\\]+".r ^^ Str.apply
+    def lambda     = "(\\" ~> lists ~ expr <~ ")" ^^ {
+      case App(x, xs) ~ e => Lambda(
+        (x :: xs).map(o => Quote(o.asInstanceOf[Pattern])), 
+        Quote(e)
+      )
+    }
     def lists      = ("(" ~> expr.*   <~ ")") ^^ {
-      case Nil => Void
+      case Nil => Pass
       case f::ps => application(f, ps)
     }
     // def definiton  = "(" ~> "\\define" ~> ("(" ~> variable ~ pattern.* <~ ")")
@@ -94,6 +102,7 @@ object Parser:
     def structList = (lists) ~ ("{" ~> expr.* <~ "}").? ^^ {
       case App(f, xs) ~ Some(es) => App(f, xs ++ es)
       case App(f, xs) ~ _ => App(f, xs)
+      case Pass ~ _ => Pass
       case _ => ???//Left(blog.Error("unknown parser error"))
     }
 
@@ -107,17 +116,44 @@ object Parser:
       number   | 
       variable | 
       text     | 
-      // binding  |
-      // commaList | 
+      lambda   |
       structList // | lists
 
     def process(expr: SkeleExpr): blog.Result[SkeleExpr] = {
-      ???
+      // println(expr)
+      val res = expr match
+        case App(Var("set"), List(App(f, xs), expr)) => {
+          for {
+            e <- process(expr)
+          } yield Set(
+            Quote(f), 
+            Lambda(xs.map(x => Quote(x.asInstanceOf[Pattern])), Quote(e))
+          )
+        }
+        case App(Var("set"), List(x, v)) => 
+          for {
+          vv <- process(v)
+        } yield Set(Quote(x), vv)
+        case App(Var("set"), List(x)) => 
+          Left(Throwable(s"Parser error: wrong set invoke."))
+        // case App(Var("define"), List(name, ps, e)) => 
+        //   Right(Define(Quote(name), ps.map(Quote.apply), Quote(e)))
+        case App(f, xs) => for {
+          ff <- process(f)
+          ys <- xs.traverse(process)
+        } yield App(ff, ys)
+        case Lambda(ps, expr) => for {
+          ee <- process(expr)
+        } yield Lambda(ps, ee)
+        case Quote(e) => process(e).flatMap(x => Right(Quote(x)))
+        case _ => Right(expr)
+      // println(res)
+      res
     }
 
     def read(s: String): blog.Result[SkeleExpr] =
       parse(expr, s) match
-        case Success(res, _) => Right(res)
+        case Success(res, _) => process(res)
         case Failure(msg, _) => Left(blog.Error(msg))
         case Error(msg, _)   => Left(blog.Error(msg))
   }

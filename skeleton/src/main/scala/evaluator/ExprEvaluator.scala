@@ -64,24 +64,25 @@ object ExprEvaluator:
         case Some(x) => err.pure(x)
         case None => err.raiseError(Throwable(s"Variable not found: $name"))
     }
-    override def evalSkeleLambda(lam: SkeleExpr) = lam match
-      case Lambda(_, _) => lam.pure
-      case _ => err.raiseError(Throwable(s"$lam is not valid lambda"))
+    override def evalQuote(expr: SkeleExpr) = expr.pure
+    // override def evalPattern(pat: SkeleExpr) = pat.pure
+    // override def evalSkeleLambda(lam: SkeleExpr) = lam match
+    //   case Lambda(_, _) => lam.pure
+    //   case _ => err.raiseError(Throwable(s"$lam is not valid lambda"))
 
-    override def evalSkeleBindings(binds: SkeleExpr) = binds match
-      case Let(bs, e) => bindings(bs, e)
-      case _ => err.raiseError(Throwable(s"$binds is not valid binding"))
+    // override def evalSkeleBindings(binds: SkeleExpr) = binds match
+    //   case Let(bs, e) => bindings(bs, e)
+    //   case _ => err.raiseError(Throwable(s"$binds is not valid binding"))
     
     override def integer(i: Int) = Integer(i)
     override def number(n: Double) = Num(n)
     override def string(s: String) = Str(s)
     override def list(xs: List[SkeleExpr]) = Lisp(xs)
     override def lambda(ps: List[SkeleExpr], expr: SkeleExpr) = env ?=> {
-      Closure(ps, expr, env).pure
+      Closure(ps.map(_.asInstanceOf[Pattern]), expr, env.clone()).pure
     }
-    override def pattern(e: SkeleExpr) = env ?=> {
-      e
-    }
+    // override def pattern(e: SkeleExpr) = env ?=> e
+    override def quote(e: SkeleExpr) = env ?=> e
     override def matching(expr: SkeleExpr, branches: List[(SkeleExpr, SkeleExpr)]) = {
       ???
     }
@@ -130,6 +131,16 @@ object ExprEvaluator:
           )
       end match
     }
+    override def set(pat: SkeleExpr, v: SkeleExpr): Skele[F, SkeleExpr] = {
+      ???
+    }
+    override def define
+      (name: String, ps: List[SkeleExpr], expr: SkeleExpr): Skele[F, SkeleExpr] = {
+      ???
+    }
+    override def block(states: List[SkeleExpr]): Skele[F, SkeleExpr] = {
+      ???
+    }
   }
 
 end ExprEvaluator
@@ -152,9 +163,12 @@ object PreMarkDownExprEvaluator:
     def empty: Environment = mutable.Map.empty
     def primitives: Environment = mutable.Map(
       "set"       -> Primitive,
+      "block"     -> Primitive,
+      "code"      -> Primitive,
       "n"         -> Primitive,
       "bold"      -> Primitive,
       "italic"    -> Primitive,
+      "-"         -> Primitive,
       "*"         -> Primitive,
       "**"        -> Primitive,
       "***"       -> Primitive,
@@ -166,6 +180,8 @@ object PreMarkDownExprEvaluator:
       "link"      -> Primitive,
       "image"     -> Primitive,
       "font"      -> Primitive,
+      "line"      -> Primitive,
+      "list"      -> Primitive,
       "document"  -> Primitive,
     )
     /** Predefined environment for markdown evaluation
@@ -201,29 +217,32 @@ object PreMarkDownExprEvaluator:
     
     import cats.syntax.apply.*
     given Conversion[SkeleExpr, F[SkeleExpr]] = _.pure
-
+    
+    override def evalQuote(expr: SkeleExpr) = expr.pure
     override def variable(name: String) = env ?=> {
       env.get(name) match
         case Some(Primitive) => Var(name).pure
         case Some(x) => err.pure(x)
         case None => err.raiseError(Throwable(s"Variable not found: $name"))
     }
-    override def evalSkeleLambda(lam: SkeleExpr) = lam match
-      case Lambda(ps, exp) => lambda(ps, exp)
-      case _ => err.raiseError(Throwable(s"$lam is not valid lambda"))
+    // override def evalPattern(pat: SkeleExpr) = pat.pure
+    // override def evalSkeleLambda(lam: SkeleExpr) = lam match
+    //   case Lambda(ps, exp) => lambda(ps, exp)
+    //   case _ => err.raiseError(Throwable(s"$lam is not valid lambda"))
 
-    override def evalSkeleBindings(binds: SkeleExpr) = binds match
-      case Let(bs, e) => bindings(bs, e)
-      case _ => err.raiseError(Throwable(s"$binds is not valid binding"))
+    // override def evalSkeleBindings(binds: SkeleExpr) = binds match
+    //   case Let(bs, e) => bindings(bs, e)
+    //   case _ => err.raiseError(Throwable(s"$binds is not valid binding"))
     
     override def integer(i: Int) = Integer(i)
     override def number(n: Double) = Num(n)
     override def string(s: String) = Str(s)
     override def list(xs: List[SkeleExpr]) = Lisp(xs)
     override def lambda(ps: List[SkeleExpr], expr: SkeleExpr) = env ?=> {
-      Closure(ps, expr, env).pure
+      Closure(ps.map(_.asInstanceOf[Pattern]), expr, env.clone()).pure
     }
-    override def pattern(e: SkeleExpr) = env ?=> e.pure
+    // override def pattern(e: SkeleExpr) = env ?=> e.pure
+    override def quote(e: SkeleExpr) = env ?=> e.pure
     override def matching(expr: SkeleExpr, branches: List[(SkeleExpr, SkeleExpr)]) = {
       ???
     }
@@ -273,6 +292,20 @@ object PreMarkDownExprEvaluator:
             Throwable(s"Application error: found $f")
           )
       end match
+    }
+    override def set(pat: SkeleExpr, v: SkeleExpr): Skele[F, SkeleExpr] = env ?=> {
+      pat match
+        case Var(s) => env += (s -> v)
+        case _ => err.raiseError(Throwable("set error"))
+      
+      Set(Quote(pat), v)
+    }
+    override def define
+      (name: String, ps: List[SkeleExpr], expr: SkeleExpr): Skele[F, SkeleExpr] = {
+      ???
+    }
+    override def block(states: List[SkeleExpr]): Skele[F, SkeleExpr] = {
+      Pass.pure
     }
   }
 

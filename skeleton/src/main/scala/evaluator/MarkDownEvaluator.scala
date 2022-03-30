@@ -58,6 +58,8 @@ object MarkDownEvaluator:
     */
     val predef: Environment = mutable.Map(
       "set"       -> tag("key"),
+      "block"     -> div,
+      "code"      -> pre,
       "n"         -> br,
       "bold"      -> b,
       "italic"    -> i,
@@ -72,6 +74,9 @@ object MarkDownEvaluator:
       "link"      -> a,
       "image"     -> img,
       "font"      -> span,
+      "line"      -> hr,
+      "list"      -> ul,
+      "-"         -> li,
       "document"  -> div(marginLeft := 50, marginRight := 50, fontSize := 20),
       // "section" -> section,
     )
@@ -92,21 +97,25 @@ object MarkDownEvaluator:
     : EvalSkeleExpr[[A] =>> Skele[F, A], HtmlText] = new EvalSkeleExpr {
     
     given Conversion[blog.HtmlText, F[HtmlText]] = _.pure
-
-    override def evalSkeleLambda(lam: SkeleExpr) = 
-      errDsl.raiseError(
-        Throwable(
-          s"Evaluation error: lambda(closure) is not valid markdown value: $lam"
-        )
-      )
-    override def evalSkeleBindings(binds: SkeleExpr) = binds match
-      // case Let(bs, e) => bindings(bs, e)
-      case _ => errDsl.raiseError(Throwable(s"$binds is not valid binding"))
+    
+    override def evalQuote(expr: SkeleExpr) = expr match
+      case Var(s) => string(s)
+      case _ => string(expr.toString)
+    // override def evalPattern(pat: SkeleExpr) = string(pat.toString)
+    // override def evalSkeleLambda(lam: SkeleExpr) = 
+    //   errDsl.raiseError(
+    //     Throwable(
+    //       s"Evaluation error: lambda(closure) is not valid markdown value: $lam"
+    //     )
+    //   )
+    // override def evalSkeleBindings(binds: SkeleExpr) = binds match
+    //   // case Let(bs, e) => bindings(bs, e)
+    //   case _ => errDsl.raiseError(Throwable(s"$binds is not valid binding"))
 
     override def variable(name: String) = env ?=> {
       env.get(name) match
         case Some(x) => x
-        case None => errDsl.raiseError(Throwable(s"Variable not found: $name"))
+        case None => errDsl.raiseError(Throwable(s"Markdown: Variable not found: $name"))
     }
     override def integer(i: Int) = raw(i.toString)
     override def number(n: Double) = raw(n.toString)
@@ -118,16 +127,18 @@ object MarkDownEvaluator:
           s"Evaluation error: lambda(closure) is not valid markdown value."
         )
       )
+    override def quote(e: HtmlText) = e
     override def bindings
       (binds: List[(HtmlText, HtmlText)], expr: HtmlText) = {
       ???
     }
-    override def pattern(e: HtmlText) = e.pure
+    // override def pattern(e: HtmlText) = e.pure
     override def matching(expr: HtmlText, branches: List[(HtmlText, HtmlText)]) = {
       ???
     }
 
-    def applyKey(xs: List[HtmlText]): F[HtmlText] = {
+    private def applyKey(key: HtmlText, value: HtmlText): F[HtmlText] = {
+      // println(xs)
       val ans = tag("key")
       // if(xs.length <= 1) {
       //   return errDsl.raiseError(Throwable(
@@ -136,35 +147,46 @@ object MarkDownEvaluator:
       // }
       // (xs.head, xs(1)) match
       //   case (Var(name), RawFrag(value)) => ans(attr(name) := value)
-      for(x <- xs) {
-        x match
-          case RawFrag(ss) => 
-            val (k, rv) = ss.span(_ != ' ')
-            val v = rv.trim
-            return ans(attr(k) := v)
-      }
-      ans
+      val k = key match
+        case RawFrag(x) => x
+        case _ => 
+          return errDsl.raiseError(Throwable(s"applyKey error: found key $key"))
+      val v = value match
+        case RawFrag(x) => x
+        case _ => value.toString
+      ans(attr(k) := v)
     }
     override def application
       (f: HtmlText, xs: List[HtmlText]): Skele[F, HtmlText] = {
       val (head, attrs) = f match
         case ff: scalatags.Text.TypedTag[_] => (ff.tag, ff.modifiers)
         case _ => return errDsl.raiseError(Throwable(s"Application error."))
-      // println(s"$f, $head")
-      if(head == "key") {
-        return applyKey(xs)
-      }
+      
       val ps = xs.filter { x =>
         x match
           case x: scalatags.Text.TypedTag[_] => x.tag != "key"
           case _ => true
       }
+      // println(ps)
       val keys = xs.collect {
         case x: scalatags.Text.TypedTag[_] 
           if x.tag == "key" => x.modifiers
       }
-      // println(keys)
+      // println(xs)
+      // println(s"app:$keys")
+      // println(tag(head)(attrs, keys)(ps))
       tag(head)(attrs, keys)(ps)
+    }
+    override def set(pat: HtmlText, v: HtmlText): Skele[F, HtmlText] = {
+      // println(v)
+      applyKey(pat, v)
+    }
+    override def define
+      (name: String, ps: List[HtmlText], expr: HtmlText): Skele[F, HtmlText] = {
+      ???
+    }
+    override def block(states: List[HtmlText]): Skele[F, HtmlText] = {
+      div(states)
     }
 
     // extension (expr: SkeleExpr)

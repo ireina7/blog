@@ -3,6 +3,7 @@ package blog.skeleton
 import scala.language.implicitConversions
 import blog.skeleton.Types.*
 import blog.core.Eval
+import blog.skeleton.Exprs.SkeleExpr
 
 
 
@@ -20,13 +21,19 @@ trait LambdaCalculus[F[_], E] {
 }
 
 trait PatternMatching[F[_], E] {
-  def pattern(pat: E): F[E]
+  // def pattern(pat: E): F[E]
   def matching(expr: E, branches: List[(E, E)]): F[E]
 }
 
 trait BindingDsl[F[_], E] extends PatternMatching[F, E] {
   def variable(name: String): F[E]
   def bindings(binds: List[(E, E)], expr: E): F[E]
+}
+
+trait Meta[F[_], E] {
+  def quote(e: E): F[E]
+  extension (e: E)
+    def quoted: F[E] = quote(e)
 }
 
 /** The imperative language dsl (optional)
@@ -46,7 +53,7 @@ trait Imperative[F[_], E] {
  * Currently only support variable and function definition.
 */
 trait Declaration[F[_], E] {
-  def define(name: E, params: List[E], expr: E): F[E]
+  def define(name: String, params: List[E], expr: E): F[E]
 }
 
 /** Language dsl which support statements */
@@ -61,7 +68,9 @@ trait Statement[F[_], E] extends
 trait Expr[F[_], E] extends 
   LambdaCalculus[F, E], 
   MarkDownLanguage[F, E],
-  BindingDsl[F, E]
+  BindingDsl[F, E],
+  Meta[F, E],
+  Statement[F, E]
 
 
 
@@ -73,10 +82,14 @@ object Expr:
     markDown: MarkDownLanguage[F, E],
     lambdaCal: LambdaCalculus[F, E],
     bindDsl: BindingDsl[F, E],
+    meta: Meta[F, E],
+    states: Statement[F, E],
   ): Expr[F, E] = new Expr {
     export markDown.{integer, number, string, list}
     export lambdaCal.{lambda, application}
-    export bindDsl.{variable, pattern, matching, bindings}
+    export bindDsl.{variable, matching, bindings}
+    export meta.quote
+    export states.{set, define, block}
   }
 end Expr
 
@@ -134,42 +147,45 @@ end Match
 
 
 
-object Trees:
+// object Trees:
 
-  trait SkeleTree {
-    def code: String = toString
-  }
+//   trait SkeleTree {
+//     def code: String = toString
+//   }
 
-  object SkeleTree extends Statement[cats.Id, SkeleTree]:
+//   object SkeleTree extends Statement[cats.Id, SkeleTree]:
 
-    case object Pass extends SkeleTree
+//     case object Pass extends SkeleTree
 
-    case class Set(
-      pattern: SkeleTree, 
-      value: SkeleTree
-    ) extends SkeleTree
+//     case class Set(
+//       pattern: SkeleTree, 
+//       value: SkeleTree
+//     ) extends SkeleTree
 
-    case class Define(
-      name: SkeleTree, 
-      params: List[SkeleTree], 
-      expr: SkeleTree
-    ) extends SkeleTree
+//     case class Define(
+//       name: SkeleTree, 
+//       params: List[SkeleTree], 
+//       expr: SkeleTree
+//     ) extends SkeleTree
 
-    case class Block
-      (statements: List[SkeleTree]) extends SkeleTree
-    override def set(pattern: SkeleTree, value: SkeleTree) = {
-      Set(pattern, value)
-    }
-    override def define
-      (name: SkeleTree, params: List[SkeleTree], expr: SkeleTree) = {
-      Define(name, params, expr)
-    }
-    override def block(statements: List[SkeleTree]) = {
-      Block(statements)
-    }
-  end SkeleTree
+//     case class Block
+//       (statements: List[SkeleTree]) extends SkeleTree
 
-end Trees
+//     case class Quote(e: SkeleTree) extends SkeleTree
+//     override def set(pattern: SkeleTree, value: SkeleTree) = {
+//       Set(pattern, value)
+//     }
+//     override def define
+//       (name: SkeleTree, params: List[SkeleTree], expr: SkeleTree) = {
+//       Define(name, params, expr)
+//     }
+//     override def block(statements: List[SkeleTree]) = {
+//       Block(statements)
+//     }
+//     override def quote(e: SkeleTree) = Quote(e)
+//   end SkeleTree
+
+// end Trees
 
 
 
@@ -194,24 +210,32 @@ object Exprs:
    * The data type for interal expression tree
   */
   // type SkeleExpr = MyExpr[?]
-  trait SkeleExpr extends Trees.SkeleTree {
-    override def code: String = toString
+  trait SkeleExpr {
+    def code: String = toString
   }
   object SkeleExpr extends Expr[cats.Id, SkeleExpr]:
 
     type Env = collection.mutable.Map[String, SkeleExpr]
 
-    case object Void extends SkeleExpr
-    case class Var(name: String) extends SkeleExpr
-    case class Integer(i: Int) extends SkeleExpr
-    case class Num(n: Double) extends SkeleExpr
-    case class Str(s: String) extends SkeleExpr
-    case class Lambda(ps: List[SkeleExpr], expr: SkeleExpr) extends SkeleExpr
-    case class Closure(ps: List[SkeleExpr], expr: SkeleExpr, env: Env) extends SkeleExpr
-    case class App(f: SkeleExpr, xs: List[SkeleExpr]) extends SkeleExpr
+    case object Pass extends SkeleExpr
+    enum Pattern extends SkeleExpr {
+      case Var(name: String)
+      case Integer(i: Int)
+      case Num(n: Double)
+      case Str(s: String)
+      case Quote(e: SkeleExpr)
+      case App(f: SkeleExpr, xs: List[SkeleExpr])
+    }
+    export Pattern.*
+    case class Lambda(ps: List[Pattern], expr: SkeleExpr) extends SkeleExpr
+    case class Closure(ps: List[Pattern], expr: SkeleExpr, env: Env) extends SkeleExpr {
+      override def toString = "[Closure]"
+    }
     case class Lisp(xs: List[SkeleExpr]) extends SkeleExpr
-    case class Let(bindings: List[(SkeleExpr, SkeleExpr)], expr: SkeleExpr) extends SkeleExpr
-    case class Pattern(e: SkeleExpr) extends SkeleExpr
+    case class Let(bindings: List[(Pattern, SkeleExpr)], expr: SkeleExpr) extends SkeleExpr
+    case class Set(pattern: Pattern, value: SkeleExpr) extends SkeleExpr
+    case class Define(name: String, params: List[Pattern], expr: SkeleExpr) extends SkeleExpr
+    case class Block(statements: List[SkeleExpr]) extends SkeleExpr
     
     
     override def variable(name: String) = Var(name)
@@ -220,18 +244,33 @@ object Exprs:
     override def string(s: String) = Str(s)
     override def list(xs: List[SkeleExpr]) = Lisp(xs)
     def list(xs: SkeleExpr*) = Lisp(xs.toList)
-    override def lambda(ps: List[SkeleExpr], expr: SkeleExpr) = Lambda(ps, expr)
+    override def lambda(ps: List[SkeleExpr], expr: SkeleExpr) = 
+      Lambda(ps.map(_.asInstanceOf[Pattern]), expr)
     override def application(f: SkeleExpr, xs: List[SkeleExpr]) = {
       // val cl = f.asInstanceOf[Closure] // Since we are in the Id effect, we have to check...
       App(f, xs)
     }
+    override def quote(e: SkeleExpr) = Quote(e)
     override def bindings(binds: List[(SkeleExpr, SkeleExpr)], expr: SkeleExpr) =
-      Let(binds, expr)
-    override def pattern(pat: SkeleExpr) = Pattern(pat)
+      Let(binds.map((p, v) => (p.asInstanceOf[Pattern], v)), expr)
+    // override def pattern(pat: SkeleExpr) = Pattern(pat)
     override def matching(expr: SkeleExpr, branches: List[(SkeleExpr, SkeleExpr)]) = {
       ???
     }
-    def closure(ps: List[SkeleExpr], expr: SkeleExpr, env: Env) = Closure(ps, expr, env)
+    override def set(pattern: SkeleExpr, value: SkeleExpr) = {
+      pattern match
+        case pat: Pattern => Set(pat, value)
+        case _ => throw Throwable(s"set must accept patterns, found: $pattern")
+    }
+    override def define
+      (name: String, params: List[SkeleExpr], expr: SkeleExpr) = {
+      Define(name, params.map(_.asInstanceOf[Pattern]), expr)
+    }
+    override def block(statements: List[SkeleExpr]) = {
+      Block(statements)
+    }
+    def closure(ps: List[SkeleExpr], expr: SkeleExpr, env: Env) = 
+      Closure(ps.map(_.asInstanceOf[Pattern]), expr, env)
   end SkeleExpr
   
   

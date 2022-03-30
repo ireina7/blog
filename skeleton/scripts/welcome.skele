@@ -1,20 +1,20 @@
 
 (\document) {
-  (\set class article)
+  (\set \class article)
 
   (\** 1 . 简介)
   (\section (\bold 猜猜这个语言是用什么写成的？)) {
     (\strong Guess!)
     (\paragraph) {
       本程序使用 \n
-      (\font (\set style color:red) Scala.js)!
+      (\font (\set \style color:red) Scala.js)!
     }
   }
 
   (\** 2 . 目的:)
   (\image) {
-    (\set src ./assets/img/k-on-q.png)
-    (\set width 500)
+    (\set \src ./assets/img/k-on-q.png)
+    (\set \width 500)
   }
   (\section (\bold 无目的)) {
     (\paragraph) {
@@ -23,8 +23,16 @@
       常见的方法包括：(\italic free monad, tagless final)和capabilities，但是三种方法各有优缺点。
     }
     (\paragraph) {
-      详细解释可参见 
-      (\link (\set href https://dl.acm.org/doi/10.1145/3158130) Scala论文)。
+      (\set \lang (\font (\set \style color:red) Scala3))
+      (\set (\red-bold \x)) {
+        (\bold haha (\font (\set \style color:red) \x))
+      }
+      详细解释可参见 (\red-bold test)
+      (\list) {
+        (\- first)
+        (\- second)
+      }
+      (\link (\set \href https://dl.acm.org/doi/10.1145/3158130) Scala论文)。
     }
   }
 

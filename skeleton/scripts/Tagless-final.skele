@@ -1,12 +1,48 @@
 (\document) {
-  (\set class article)
+  (\set \class article)
+  (\set \blog) {
+    (\font (\set \style color:purple) blog)
+  }
+  (\set \Scala) {
+    (\italic (\font (\set \style color:red) Scala))
+  }
+  (\set (\title \x)) { (\block) {
+    (\italic (\* \x)) \line\n
+  }}
+  (\set (\p \x)) {
+    (\paragraph) {
+      (\set \style text-indent:1em)
+      \x
+    }
+  }
+
+  (\title Tagless final 设计模式)
 
   (\** 这是什么奇怪的名字？？)
-  (\*** (\font (\set style color:purple) 计算效应))
+  (\paragraph) {
+    本 \blog 全面使用了 \Scala 作为主力语言，这是因为 \Scala 支持 Tagless final 的设计模式。
+    所谓 Tagless final，就是不再使用有tag的数据结构来构造程序，转而使用函数来约束数据结构，使得tag不再成为必须。
+  }
+
+  (\*** (\font (\set \style color:purple) 计算效应))
   (\paragraph) {
     (\italic 计算效应就是除了函数返回值之外的一切。)
   }
 
   (\**** 计算效应举例)
+  (\list) {
+    (\- IO)
+    (\- List)
+    (\- Future)
+    (\- Option)
+    (\- Either[Throwable, _])
+    (\- Config ?=> _)
+  }
+  (\code) {
+    //Scala code
+    def program[F[_]]: F[ExitCode] = 
+      val x = 1
+    
+  }
   (\italic IO, List, Future, Option, Either[Throwable, _], Config ?=> A, etc)
 }

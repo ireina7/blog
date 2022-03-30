@@ -8,8 +8,8 @@ import cats.{
 import blog.core.Eval
 import blog.skeleton.Exprs.SkeleExpr.*
 import blog.skeleton.Exprs.*
-import blog.skeleton.Trees.*
-import blog.skeleton.Trees.SkeleTree.*
+// import blog.skeleton.Trees.*
+// import blog.skeleton.Trees.SkeleTree.*
 
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
@@ -50,24 +50,51 @@ trait EvalSkeleExpr[F[_], Value]
    * currently in Skele.
    * Maybe we can add weak form term into the data structure someday.
   */
-  def evalSkeleLambda(lam: SkeleExpr): F[Value]
-  def evalSkeleBindings(binds: SkeleExpr): F[Value]
+  import cats.implicits.*
   
+  def evalQuote(expr: SkeleExpr): F[Value]
+
   extension (expr: SkeleExpr)
     override def eval: F[Value] = {
       expr match
         case Var(name)  => variable(name)
+        case Quote(e)   => evalQuote(e)
         case Integer(i) => integer(i)
         case Num(n)     => number(n)
         case Str(s)     => string(s)
         case Lisp(xs)   => xs.traverse(_.eval).flatMap(list)
-        case Let(bs, e) => evalSkeleBindings(expr)
+        case Let(bs, e) => for {
+          binds <- bs.traverse { case (v, exp) =>
+            for {
+              p <- v.eval
+              e <- exp.eval
+            } yield (p, e)
+          }
+          exp <- e.eval
+          res <- bindings(binds, exp)
+        } yield res
+        case Closure(_, _, _) => evalQuote(expr)
+        case Lambda(ps, e) => for {
+          arg <- ps.traverse(p => p.eval)
+          exp <- e.eval
+          lam <- lambda(arg, exp)
+        } yield lam
+        case Set(pat, e) => for {
+          p <- pat.eval
+          v <- e.eval
+          s <- set(p, v)
+        } yield s
+        case Define(name, ps, e) => for {
+          params <- ps.traverse(p => p.eval)
+          exp    <- e.eval
+          definition <- define(name, params, exp)
+        } yield definition
+        case Block(states) => states.foldLeft(Pass.eval)(_ *> _.eval)
         case App(f, ps) => for {
-          function   <- f.eval
-          parameters <- ps.traverse(_.eval)
-          result     <- application(function, parameters)
-        } yield result
-        case Lambda(_, _) => evalSkeleLambda(expr)
+          func  <- f.eval
+          param <- ps.traverse(_.eval)
+          res   <- application(func, param)
+        } yield res
         case _ => errDsl.raiseError(
           Throwable(s"Evaluation error: Unknown expression: $expr")
         )
@@ -77,43 +104,45 @@ trait EvalSkeleExpr[F[_], Value]
 end EvalSkeleExpr
 
 
-trait EvalSkeleTree[F[_], Value]
-  (using 
-    exprEvaluator: EvalSkeleExpr[F, Value],
-    errDsl: MonadError[F, Throwable],
-  ) extends EvalStatement[F, SkeleTree, Value]:
+// trait EvalSkeleTree[F[_], Value]
+//   (using 
+//     exprEvaluator: EvalSkeleExpr[F, Value],
+//     errDsl: MonadError[F, Throwable],
+//   ) extends EvalStatement[F, SkeleTree, Value]:
 
-  import cats.implicits.*
-  import cats.syntax.apply.*
+//   import cats.implicits.*
+//   import cats.syntax.apply.*
 
-  def pass: F[Value]
-  override def block(states: List[Value]) = 
-    ???
+//   def pass: F[Value]
   
-  extension (tree: SkeleTree)
-    override def eval: F[Value] = {
-      tree match
-        case Pass => pass
-        case Pattern(pat) => ???
-        case Set(pat, v) => for {
-          p <- pat.eval
-          x <- v.eval
-          r <- set(p, x)
-        } yield r
-        case Define(name, params, expr) => for {
-          func  <- name.eval
-          ps    <- params.traverse(_.eval)
-          value <- expr.eval
-          res   <- define(func, ps, value)
-        } yield res
-        case Block(states) => states.foldLeft(Pass.eval)(_ *> _.eval)
-        case expr: SkeleExpr => exprEvaluator.eval(expr)
-        case _ => errDsl.raiseError(
-          Throwable(s"Evaluation error: Unknown statement: $tree")
-        )
-    }
+//   extension (tree: SkeleTree)
+//     override def eval: F[Value] = {
+//       tree match
+//         case Pass => pass
+//         case Set(pat, v) => for {
+//           p <- pat.quoted.eval
+//           x <- v.eval
+//           r <- set(p, x)
+//         } yield r
+//         case Define(name, params, expr) => for {
+//           func  <- name.quoted.eval
+//           ps    <- params.traverse(_.quoted.eval)
+//           value <- expr.quoted.eval
+//           res   <- define(func, ps, value)
+//         } yield res
+//         case Block(states) => states.foldLeft(Pass.eval)(_ *> _.eval)
+//         case App(f, ps) => for {
+//           func  <- f.eval
+//           param <- ps.traverse(_.eval)
+//           res   <- exprEvaluator.application(func, param)
+//         } yield res
+//         case expr: SkeleExpr => exprEvaluator.eval(expr)
+//         case _ => errDsl.raiseError(
+//           Throwable(s"Evaluation error: Unknown statement: $tree")
+//         )
+//     }
 
-end EvalSkeleTree
+// end EvalSkeleTree
 
 
 
