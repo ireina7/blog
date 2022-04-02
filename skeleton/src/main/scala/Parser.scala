@@ -30,13 +30,7 @@ given Parser[IOErr, SkeleExpr] with {
 given Parser[blog.Result, SkeleExpr] with {
   def parse(s: String) = Parser.parseSkeleExpr(s)
 }
-given (using exprParser: Parser[blog.Result, SkeleExpr])
-  : Parser[blog.Result, blog.HtmlText] with {
-  def parse(s: String) = for {
-    skele <- exprParser.parse(s)
-    htmlT <- Parser.parseSkeleExprToHtml(skele)
-  } yield htmlT
-}
+
 
 
 import blog.core.Effect.{*, given}
@@ -58,7 +52,7 @@ end given
 object Parser:
   
   // val identity = "[a-zA-Z0-9~\\[\\]!=-@#$+%^&*_:\";/,|\\_\\.]+".r
-  val identity = "[^{}()\\\\\\s]+".r
+  val identity = "[^{}()\\s\\\\]+".r //more general
 
   import scala.util.parsing.combinator.RegexParsers
 
@@ -69,148 +63,117 @@ object Parser:
     def variable   = "\\" ~ identity ^^ {
       case _ ~ name => Var.apply(name)
     }
-    def real       = "[0-9]+\\.[0-9]*".r ^^ (s => Num(s.toDouble))
-    def integer    = "[0-9]+".r ^^ (s => Integer(s.toInt))
+    def real       = "[0-9]+\\.[0-9]*".r ^^ (s => SkeleExpr.number(s.toDouble))
+    def integer    = "[0-9]+".r ^^ (s => SkeleExpr.integer(s.toInt))
     def number     = real | integer
     def symbol     = "'" ~ identity  ^^ {
-      case _ ~ name => Var.apply(name)
+      case _ ~ name => SkeleExpr.variable(name)
     }
+    def space      = "\\ " ^^ (_ => Str(" "))
+    def quoted     = ("'" ~> "[^']+".r <~ "'") ^^ Str.apply.compose(_.stripMargin)
     def pattern    = symbol | lists
-    def text       = "[^{}()\\\\]+".r ^^ Str.apply
+    def text       = "[^{}()\\\\]+".r ^^ SkeleExpr.string
     def lambda     = "(\\" ~> lists ~ expr <~ ")" ^^ {
-      case App(x, xs) ~ e => Lambda(
+      case App(x, xs) ~ e => SkeleExpr.lambda(
         (x :: xs).map(o => Quote(o.asInstanceOf[Pattern])), 
         Quote(e)
       )
+    }
+    def bracketBoxed = ("(\\box " ~> expr.* <~ ")") ~ ("{" ~> expr.* <~ "}").? ^^ {
+      case xs ~ None => Box(xs)
+      case xs ~ Some(ys) => Box(xs ++ ys)
+    }
+    def braceBoxed = "{" ~> expr.* <~ "}" ^^ Box.apply
+    def boxed = bracketBoxed | braceBoxed
+
+    def comments   = ("(\\doc " ~> expr.* <~ ")") ~ ("{" ~> expr.* <~ "}").? ^^ {
+      case _ ~ _ => Box(Str(""):: Nil)
+    }
+    // def structLambda = ("(\\" ~> lists ~ expr <~ ")") ~ ("{" ~> expr.* <~ "}").?
+    def simpleAssignment = ("(\\set " ~> variable ~ expr.+ <~ ")") ^^ {
+      case key ~ es => Set(Quote(key), Box(es))
+    }
+    def structAssign = ("(\\set " ~> variable ~ expr.* <~ ")") ~ ("{" ~> expr.+ <~ "}") ^^ {
+      case key ~ xs ~ es => Set(Quote(key), Box(xs ++ es))
+    }
+    def assignment = structAssign | simpleAssignment
+    def simpleDef = ("(\\set " ~> lists ~ expr.+ <~ ")") ^^ {
+      case App(f, xs) ~ es => 
+        Set(
+          Quote(f),
+          Lambda(
+            xs.map(x => Quote(x.asInstanceOf[Pattern])), 
+            Quote(Box(es))
+          )
+        )
+      case _ => Pass // bad!
+    }
+    def structDef = ("(\\set " ~> lists ~ expr.* <~ ")") ~ ("{" ~> expr.+ <~ "}") ^^ {
+      case App(f, ps) ~ xs ~ ys => 
+        Set(
+          Quote(f),
+          Lambda(
+            ps.map(p => Quote(p.asInstanceOf[Pattern])), 
+            Quote(Box(xs ++ ys))
+          )
+        )
+      case _ => Pass // bad!
+    }
+    def definition = simpleDef | structDef
+    // def codes      = ("(\\code" ~> ??? <~ ")") ^^ {
+    //   case code => App(Var("code"), "[.]")
+    // }
+    def brackets   = ("(\\bracket " ~> expr.* <~ ")") ~ ("{" ~> expr.* <~ "}").? ^^ {
+      case xs ~ None => Box(List(Str("(")) ++ xs ++ List(Str(")")))
+      case xs ~ Some(ys) => Box(List(Str("(")) ++ xs ++ ys ++ List(Str(")")))
+    }
+    def braces   = ("(\\brace " ~> expr.* <~ ")") ~ ("{" ~> expr.* <~ "}").? ^^ {
+      case xs ~ None => Box(List(Str("{")) ++ xs ++ List(Str("}")))
+      case xs ~ Some(ys) => Box(List(Str("{")) ++ xs ++ ys ++ List(Str("}")))
     }
     def lists      = ("(" ~> expr.*   <~ ")") ^^ {
       case Nil => Pass
       case f::ps => application(f, ps)
     }
-    // def definiton  = "(" ~> "\\define" ~> ("(" ~> variable ~ pattern.* <~ ")")
-    // def binding    = "(" ~> "\\let" ~> ("(" ~> expr ~ expr <~ ")").* ~ expr <~ ")" ^^ {
-    //   case Nil ~ exp => exp
-    //   case xxs ~ exp => 
-    //     val xs = xxs.map { case (key ~ value) =>
-    //       (key, value)
-    //     }
-    //     Let(xs, exp)
-    // }
-    // def quote      = ("'" ~> expr) ^^ (x => Lisp(List(Var("'"), x)))
-    // def string     = ("{" ~> "[^{}]*".r <~ "}") ^^ Str.apply
-    // def inner      = ("{" ~> expr.* <~ "}") ^^ Str.apply
+    
     def structList = (lists) ~ ("{" ~> expr.* <~ "}").? ^^ {
-      case App(f, xs) ~ Some(es) => App(f, xs ++ es)
-      case App(f, xs) ~ _ => App(f, xs)
+      case App(f, xs) ~ Some(es) => SkeleExpr.application(f, xs ++ es)
+      // case App(f, xs) ~ Some(es) => SkeleExpr.application(f, xs ++ List(App(Var("block"), es)))
+      case App(f, xs) ~ _ => SkeleExpr.application(f, xs)
       case Pass ~ _ => Pass
       case _ => ???//Left(blog.Error("unknown parser error"))
     }
-
-    // def commaList = (lists) ~ (expr.*) ^^ {
-    //   case App(f, xs) ~ es => App(f, xs ++ es)
-    //   // case App(f, xs) ~ _ => App(f, xs)
-    //   case _ => ???//Left(blog.Error("unknown parser error"))
-    // }
+    
 
     def expr: Parser[SkeleExpr] = 
-      number   | 
-      variable | 
-      text     | 
-      lambda   |
-      structList // | lists
+      number     | 
+      space      |
+      quoted     |
+      variable   | 
+      text       | 
+      boxed      |
+      comments   |
+      brackets   |
+      braces     |
+      lambda     |
+      assignment |
+      definition |
+      structList // end
 
-    def process(expr: SkeleExpr): blog.Result[SkeleExpr] = {
-      // println(expr)
-      val res = expr match
-        case App(Var("set"), List(App(f, xs), expr)) => {
-          for {
-            e <- process(expr)
-          } yield Set(
-            Quote(f), 
-            Lambda(xs.map(x => Quote(x.asInstanceOf[Pattern])), Quote(e))
-          )
-        }
-        case App(Var("set"), List(x, v)) => 
-          for {
-          vv <- process(v)
-        } yield Set(Quote(x), vv)
-        case App(Var("set"), List(x)) => 
-          Left(Throwable(s"Parser error: wrong set invoke."))
-        // case App(Var("define"), List(name, ps, e)) => 
-        //   Right(Define(Quote(name), ps.map(Quote.apply), Quote(e)))
-        case App(f, xs) => for {
-          ff <- process(f)
-          ys <- xs.traverse(process)
-        } yield App(ff, ys)
-        case Lambda(ps, expr) => for {
-          ee <- process(expr)
-        } yield Lambda(ps, ee)
-        case Quote(e) => process(e).flatMap(x => Right(Quote(x)))
-        case _ => Right(expr)
-      // println(res)
-      res
-    }
 
     def read(s: String): blog.Result[SkeleExpr] =
       parse(expr, s) match
-        case Success(res, _) => process(res)
+        case Success(res, _) => Right(res)
         case Failure(msg, _) => Left(blog.Error(msg))
         case Error(msg, _)   => Left(blog.Error(msg))
   }
 
   def parseSkeleExpr(src: String): blog.Result[SkeleExpr] = {
     import scala.util.parsing.combinator.*
-    Combinators.read(src)
+    val res = Combinators.read(src)
+    // println(res)
+    res
   }
-
-
-  // type SkeleEnvironment = 
-  //   scala.collection.mutable.Map[String, SkeleExpr]
-
-  def parseSkeleToHtml(expr: SkeleExpr): blog.Result[blog.HtmlText] = {
-    import scalatags.Text.all.{
-      title as titleAttr,
-      *
-    }
-    // import scalatags.Text.all.raw
-    import scalatags.Text.tags2.title
-    import blog.page
-    import SkeleExpr.*
-
-    expr match {
-      case Integer(i) => Right(raw(i.toString))
-      case Num(n) => Right(raw(n.toString))
-      case Str(s) => Right(raw(s))
-      case Var(s) => ???
-      case Closure(ps, expr, env) => ???
-      case App(f, xs) => ???
-      case Lisp(xs) => ???
-    }
-  }
-
-  def parseSkeleExprToHtml(sexpr: SkeleExpr): blog.Result[blog.HtmlText] = {
-    import scalatags.Text.all.{
-      title as titleAttr,
-      *
-    }
-    import scalatags.Text.tags2.title
-    import blog.page
-
-    val bodyText = parseSkeleToHtml(sexpr).getOrElse(???)
-
-    val htmlText = html(
-      head(
-        page.Component.configurations,
-        title("Ireina's magic"),
-      ),
-      body(
-        bodyText
-      )
-    )
-    Right(htmlText)
-  }
-
-
 
 end Parser
 

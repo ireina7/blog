@@ -1,0 +1,74 @@
+(\document) {
+  (\set \class guide)
+
+  (\set (\color \c)) {
+    (\font (\set \style color:\c) \self)
+  }
+
+  (\set \Skeleton (\color 'purple' Skeleton))
+  (\set (\title)) {
+    (\** (\bold \self))\line
+  }
+
+  (\doc to generate indented paragraph)
+  (\set (\p)) {
+    (\paragraph) {
+      (\set \style text-indent:2em)
+      \self
+    }
+  }
+
+  (\title \Skeleton\ User Guide（使用手册）)
+  欢迎来到 \Skeleton\ !\n\n\n
+
+  (\*** 1 . \Skeleton\ 是什么？)
+  (\p) {
+    \Skeleton\ 是一门用于文本与笔记撰写的编程语言（(\italic A programming language for text typesetting)）。
+    \Skeleton\ 既可以用于简单的markdown文本撰写，也可以用于通用的编程（这里的编程大多指在文本排版领域）。
+    你可以使用 \Skeleton\ 来：
+    (\list) {
+      (\- 日常的个人笔记撰写)
+      (\- 复杂的文本排版与template编程)
+      (\- 使用不同的后端模块生成多种文本格式（e.g. html, pdf, markdown, etc）)
+    }
+  }
+
+  (\*** 2 . 基本元素)
+  (\p) {
+    \Skeleton\ 是一门十分精简的语言。语言主体包括如下几种不可分割的最基本的元素：
+    (\list) {
+      (\- 变量 variable)
+      (\- 数字 number)
+      (\- 文本 text)
+      (\- 函数 function)
+      (\- 定义 definition)
+    }
+  }
+  (\**** 2.1\ 变量)
+  (\p) {
+    在 \Skeleton\ 中，所有的变量以 "\slash " 开头。
+    比如我们需要写 "\slash " 这个符号，
+    在\Skeleton\ 中需要写作：(\code '\slash')（因为反斜杠在\Skeleton\ 会被自动识别为变量开头）。
+  }
+  (\**** 2.2\ 数字)
+  (\p) {
+    \Skeleton\ 支持两种形式的数字：整数（integers）和浮点数（real number）。
+  }
+  (\**** 2.3\ 文本)
+  (\p) {
+    文本在\Skeleton\ 中是第一等公民。
+    你可以在任何地方任意书写普通文本（与大部分编程语言不同的是\Skeleton\ 不需要添加引号）。
+  }
+  (\**** 2.4\ 函数)
+  (\p) {
+    \Skeleton\ 与markdown类型的标记语言最大的不同点在于 \Skeleton\ 支持函数定义与调用。
+  }
+  (\**** 2.5\ 定义)
+  (\p) {
+    
+  }
+
+
+  (\*** 3 . 组合)
+  (\*** 4 . 面向文本对象)
+}

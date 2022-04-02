@@ -52,13 +52,14 @@ trait EvalSkeleExpr[F[_], Value]
   */
   import cats.implicits.*
   
-  def evalQuote(expr: SkeleExpr): F[Value]
+  def quoted(expr: SkeleExpr): F[Value]
 
   extension (expr: SkeleExpr)
     override def eval: F[Value] = {
+      // println(expr)
       expr match
         case Var(name)  => variable(name)
-        case Quote(e)   => evalQuote(e)
+        case Quote(e)   => quoted(e)
         case Integer(i) => integer(i)
         case Num(n)     => number(n)
         case Str(s)     => string(s)
@@ -73,7 +74,7 @@ trait EvalSkeleExpr[F[_], Value]
           exp <- e.eval
           res <- bindings(binds, exp)
         } yield res
-        case Closure(_, _, _) => evalQuote(expr)
+        case Closure(_, _, _) => quoted(expr)
         case Lambda(ps, e) => for {
           arg <- ps.traverse(p => p.eval)
           exp <- e.eval
@@ -96,7 +97,7 @@ trait EvalSkeleExpr[F[_], Value]
           res   <- application(func, param)
         } yield res
         case _ => errDsl.raiseError(
-          Throwable(s"Evaluation error: Unknown expression: $expr")
+          blog.Error(s"Evaluation error: Unknown expression: $expr")
         )
       end match
     }

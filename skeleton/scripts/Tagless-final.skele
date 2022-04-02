@@ -1,32 +1,44 @@
 (\document) {
   (\set \class article)
+  (\set (\color \x)) {
+    (\font (\set \style color:\x) \self)
+  }
   (\set \blog) {
-    (\font (\set \style color:purple) blog)
+    (\font (\color 'purple' blog))
   }
   (\set \Scala) {
-    (\italic (\font (\set \style color:red) Scala))
+    (\italic (\color {red} Scala))
   }
-  (\set (\title \x)) { (\block) {
-    (\italic (\* \x)) \line\n
-  }}
-  (\set (\p \x)) {
+  (\set (\title)) { 
+    (\italic (\* \self)) \line\n
+  }
+  
+  (\set (\p)) {
     (\paragraph) {
-      (\set \style text-indent:1em)
-      \x
+      (\set \style text-indent:2em)
+      \self
+    }
+  }
+  (\set (\test \i)) {
+    (\paragraph) {
+      (\set \style text-indent:\i em)
+      \self
     }
   }
 
   (\title Tagless final 设计模式)
 
   (\** 这是什么奇怪的名字？？)
-  (\paragraph) {
-    本 \blog 全面使用了 \Scala 作为主力语言，这是因为 \Scala 支持 Tagless final 的设计模式。
+  (\p) {
+    本\blog 全面使用了\Scala\_ 作为主力语言，这是因为\Scala 支持 Tagless final 的设计模式。(\title)
     所谓 Tagless final，就是不再使用有tag的数据结构来构造程序，转而使用函数来约束数据结构，使得tag不再成为必须。
+    在了解 Tagless final 之前，我们首先需要了解什么是计算效应(\bracket (\italic Computation effects))。
   }
 
-  (\*** (\font (\set \style color:purple) 计算效应))
+  (\*** (\color (\box purple) 计算效应))
   (\paragraph) {
     (\italic 计算效应就是除了函数返回值之外的一切。)
+    (\bracket <b> gggg </b>)
   }
 
   (\**** 计算效应举例)
@@ -38,11 +50,17 @@
     (\- Either[Throwable, _])
     (\- Config ?=> _)
   }
-  (\code) {
-    //Scala code
-    def program[F[_]]: F[ExitCode] = 
-      val x = 1
-    
+  (\pure) {'
+    |//Scala code
+    |def program[F[_]]: F[ExitCode] = {
+    |  val x = 1
+    |}
+    '
   }
   (\italic IO, List, Future, Option, Either[Throwable, _], Config ?=> A, etc)
+
+  \n\n\n
+  (\*** (\color (\box brown) 参数化抽象))
+
+
 }

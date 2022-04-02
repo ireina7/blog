@@ -32,8 +32,6 @@ trait BindingDsl[F[_], E] extends PatternMatching[F, E] {
 
 trait Meta[F[_], E] {
   def quote(e: E): F[E]
-  extension (e: E)
-    def quoted: F[E] = quote(e)
 }
 
 /** The imperative language dsl (optional)
@@ -236,6 +234,7 @@ object Exprs:
     case class Set(pattern: Pattern, value: SkeleExpr) extends SkeleExpr
     case class Define(name: String, params: List[Pattern], expr: SkeleExpr) extends SkeleExpr
     case class Block(statements: List[SkeleExpr]) extends SkeleExpr
+    case class Box(exprs: List[SkeleExpr]) extends SkeleExpr
     
     
     override def variable(name: String) = Var(name)
@@ -251,6 +250,7 @@ object Exprs:
       App(f, xs)
     }
     override def quote(e: SkeleExpr) = Quote(e)
+    def pattern(p: SkeleExpr) = quote(p)
     override def bindings(binds: List[(SkeleExpr, SkeleExpr)], expr: SkeleExpr) =
       Let(binds.map((p, v) => (p.asInstanceOf[Pattern], v)), expr)
     // override def pattern(pat: SkeleExpr) = Pattern(pat)

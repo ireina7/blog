@@ -62,9 +62,9 @@ object ExprEvaluator:
     override def variable(name: String) = env ?=> {
       env.get(name) match
         case Some(x) => err.pure(x)
-        case None => err.raiseError(Throwable(s"Variable not found: $name"))
+        case None => err.raiseError(blog.Error(s"Variable not found: $name"))
     }
-    override def evalQuote(expr: SkeleExpr) = expr.pure
+    override def quoted(expr: SkeleExpr) = expr.pure
     // override def evalPattern(pat: SkeleExpr) = pat.pure
     // override def evalSkeleLambda(lam: SkeleExpr) = lam match
     //   case Lambda(_, _) => lam.pure
@@ -114,7 +114,7 @@ object ExprEvaluator:
           pairs.foreach {
             case (Var(name), v) => env += (name -> v)
             case (x, _) => err.raiseError(
-              Throwable(s"""
+              blog.Error(s"""
                 |Only application of variable is supported currently: 
                 |found $x
               """.stripMargin)
@@ -127,7 +127,7 @@ object ExprEvaluator:
         }
         case _ => 
           err.raiseError(
-            Throwable(s"Application error: found $f")
+            blog.Error(s"Application error: found $f")
           )
       end match
     }
@@ -164,10 +164,14 @@ object PreMarkDownExprEvaluator:
     def primitives: Environment = mutable.Map(
       "set"       -> Primitive,
       "block"     -> Primitive,
+      "space"     -> Primitive,
+      "slash"     -> Primitive,
       "code"      -> Primitive,
+      "pure"      -> Primitive,
       "n"         -> Primitive,
       "bold"      -> Primitive,
       "italic"    -> Primitive,
+      "_"         -> Primitive,
       "-"         -> Primitive,
       "*"         -> Primitive,
       "**"        -> Primitive,
@@ -180,6 +184,7 @@ object PreMarkDownExprEvaluator:
       "link"      -> Primitive,
       "image"     -> Primitive,
       "font"      -> Primitive,
+      "span"      -> Primitive,
       "line"      -> Primitive,
       "list"      -> Primitive,
       "document"  -> Primitive,
@@ -190,6 +195,7 @@ object PreMarkDownExprEvaluator:
     def predefForMarkDown: Environment = primitives ++ 
       mutable.Map(
         "strong" -> Closure(List(Var("n")), App(Var("bold"), List(Var("n"))), primitives),
+        // "box"    -> Closure(List(Var("x")), )
       )
   end Environment
 
@@ -218,12 +224,14 @@ object PreMarkDownExprEvaluator:
     import cats.syntax.apply.*
     given Conversion[SkeleExpr, F[SkeleExpr]] = _.pure
     
-    override def evalQuote(expr: SkeleExpr) = expr.pure
+    override def quoted(expr: SkeleExpr) = expr.pure
     override def variable(name: String) = env ?=> {
       env.get(name) match
         case Some(Primitive) => Var(name).pure
         case Some(x) => err.pure(x)
-        case None => err.raiseError(Throwable(s"Variable not found: $name"))
+        case None => 
+          // env.foreach(println)
+          err.raiseError(blog.Error(s"Variable not found: $name"))
     }
     // override def evalPattern(pat: SkeleExpr) = pat.pure
     // override def evalSkeleLambda(lam: SkeleExpr) = lam match
@@ -268,35 +276,50 @@ object PreMarkDownExprEvaluator:
       (f: SkeleExpr, xs: List[SkeleExpr]): Skele[F, SkeleExpr] = {
       
       f match
-        /**Primitive case, no change!*/
+        /**Primitive case, no change! very dirty!*/
         case Var(name) => App(f, xs)
-        case Closure(ps, expr, env) => {
+        case Closure(params, expr, environment) => {
+          // println(s"$ps, $expr, $env")
+          val env = environment.clone()
+          var ps = params
+          
           val pairs = (ps zip xs)
           val lefts = ps diff pairs.map(_._1)
+          val rights = xs diff pairs.map(_._2)
           pairs.foreach {
             case (Var(name), v) => env += (name -> v)
             case (x, _) => err.raiseError(
-              Throwable(s"""
+              blog.Error(s"""
                 |Only application of variable is supported currently: 
                 |found $x
               """.stripMargin)
             )
           }
+          // println(s"$ps, $expr")
+          // env.foreach(println)
+          // println(ps)
           if !lefts.isEmpty then
             lambda(lefts, expr)(using env)
-          else
+          else if !rights.isEmpty then
+            env += ("self" -> App(Var("span"), rights))
             expr.eval(using env)
+          else
+            // Auto currying
+            if ps.isEmpty || ps.last != Var("self") then
+              lambda(List(Var("self")), expr)
+            else
+              expr.eval(using env)
         }
         case _ => 
           err.raiseError(
-            Throwable(s"Application error: found $f")
+            blog.Error(s"Application error: found $f")
           )
       end match
     }
     override def set(pat: SkeleExpr, v: SkeleExpr): Skele[F, SkeleExpr] = env ?=> {
       pat match
         case Var(s) => env += (s -> v)
-        case _ => err.raiseError(Throwable("set error"))
+        case _ => err.raiseError(blog.Error("set error"))
       
       Set(Quote(pat), v)
     }
@@ -307,6 +330,12 @@ object PreMarkDownExprEvaluator:
     override def block(states: List[SkeleExpr]): Skele[F, SkeleExpr] = {
       Pass.pure
     }
+    extension (expr: SkeleExpr)
+      override def eval = expr match
+        case Box(xs) => for {
+          ys <- xs.traverse(_.eval)
+        } yield Box(ys)
+        case _ => super.eval(expr)
   }
 
 end PreMarkDownExprEvaluator

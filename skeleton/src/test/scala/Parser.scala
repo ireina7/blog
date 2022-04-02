@@ -89,6 +89,14 @@ package laws:
   object Parser:
 
     val variableGen: Gen[String] = Gen.identifier
+    val skeleVarGen: Gen[String] = Gen.nonEmptyListOf(
+      arbitrary[Char].suchThat(c =>
+        "[^{}()\\\\\\s]+".r.matches(s"$c")
+      )
+    ).map(_.mkString)
+    // val applyGen: Gen[String] = for {
+
+    // }
 
     /** Testing variable parsing
      * @tparam F the effect
@@ -96,17 +104,11 @@ package laws:
     */
     def `variable`[F[_]: blog.core.Runnable]
       (using parser: Parser[F, SkeleExpr]) = 
-
-      val varGen: Gen[String] = Gen.nonEmptyListOf(
-        arbitrary[Char].suchThat(c =>
-          "[^{}()\\\\\\s]+".r.matches(s"$c")
-        )
-      ).map(_.mkString)
       
       val alphaVar = forAll(Gen.identifier) { s =>
         shouldBeEqual(s"\\$s" -> Var(s))
       }
-      val allVar = forAll(varGen) { s =>
+      val allVar = forAll(skeleVarGen) { s =>
         shouldBeEqual(s"\\$s" -> Var(s))
       }
       val simpleVar = forAll { (i: Int) => 
@@ -124,8 +126,15 @@ package laws:
     def `simple function application`[F[_]: blog.core.Runnable]
       (using parser: Parser[F, SkeleExpr]) = 
       
+
       true
     end `simple function application`
+
+    def `structured function application`[F[_]: blog.core.Runnable]
+      (using parser: Parser[F, SkeleExpr]) = 
+
+      true
+    end `structured function application`
 
   end Parser
 

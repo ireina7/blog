@@ -15,6 +15,7 @@ import cats.syntax.applicative.*
 import cats.syntax.traverse.*
 import cats.MonadError
 import blog.skeleton.EvalSkeleExpr
+import scalatags.generic.TypedTag
 
 
 
@@ -58,8 +59,12 @@ object MarkDownEvaluator:
     */
     val predef: Environment = mutable.Map(
       "set"       -> tag("key"),
+      // "box"       -> ???,
       "block"     -> div,
-      "code"      -> pre,
+      "space"     -> raw("&nbsp;"),
+      "slash"     -> raw("\\"),
+      "code"      -> code,
+      "pure"      -> pre,
       "n"         -> br,
       "bold"      -> b,
       "italic"    -> i,
@@ -74,9 +79,11 @@ object MarkDownEvaluator:
       "link"      -> a,
       "image"     -> img,
       "font"      -> span,
+      "span"      -> span,
       "line"      -> hr,
       "list"      -> ul,
       "-"         -> li,
+      "_"         -> u,
       "document"  -> div(marginLeft := 50, marginRight := 50, fontSize := 20),
       // "section" -> section,
     )
@@ -98,8 +105,9 @@ object MarkDownEvaluator:
     
     given Conversion[blog.HtmlText, F[HtmlText]] = _.pure
     
-    override def evalQuote(expr: SkeleExpr) = expr match
+    override def quoted(expr: SkeleExpr) = expr match
       case Var(s) => string(s)
+      case Closure(_, _, _) => raw("???")
       case _ => string(expr.toString)
     // override def evalPattern(pat: SkeleExpr) = string(pat.toString)
     // override def evalSkeleLambda(lam: SkeleExpr) = 
@@ -115,7 +123,7 @@ object MarkDownEvaluator:
     override def variable(name: String) = env ?=> {
       env.get(name) match
         case Some(x) => x
-        case None => errDsl.raiseError(Throwable(s"Markdown: Variable not found: $name"))
+        case None => errDsl.raiseError(blog.Error(s"Markdown: Variable not found: $name"))
     }
     override def integer(i: Int) = raw(i.toString)
     override def number(n: Double) = raw(n.toString)
@@ -123,7 +131,7 @@ object MarkDownEvaluator:
     override def list(xs: List[HtmlText]) = div(xs)
     override def lambda(ps: List[HtmlText], expr: blog.HtmlText) = 
       errDsl.raiseError(
-        Throwable(
+        blog.Error(
           s"Evaluation error: lambda(closure) is not valid markdown value."
         )
       )
@@ -150,9 +158,12 @@ object MarkDownEvaluator:
       val k = key match
         case RawFrag(x) => x
         case _ => 
-          return errDsl.raiseError(Throwable(s"applyKey error: found key $key"))
+          return errDsl.raiseError(blog.Error(s"applyKey error: found key $key"))
       val v = value match
         case RawFrag(x) => x
+        // case box: scalatags.Text.TypedTag[_] if box.tag == "box" =>
+        //   // println(box.modifiers.head.head.head)
+        //   box.modifiers.head.mkString
         case _ => value.toString
       ans(attr(k) := v)
     }
@@ -160,13 +171,17 @@ object MarkDownEvaluator:
       (f: HtmlText, xs: List[HtmlText]): Skele[F, HtmlText] = {
       val (head, attrs) = f match
         case ff: scalatags.Text.TypedTag[_] => (ff.tag, ff.modifiers)
-        case _ => return errDsl.raiseError(Throwable(s"Application error."))
+        case _ => return errDsl.raiseError(blog.Error(s"Application error."))
       
-      val ps = xs.filter { x =>
-        x match
-          case x: scalatags.Text.TypedTag[_] => x.tag != "key"
-          case _ => true
-      }
+      val ps = xs
+        .filter { x =>
+          x match
+            case x: scalatags.Text.TypedTag[_] => x.tag != "key"
+            case _ => true
+        }
+        // .map {
+        //   case Box(xs) => List[]
+        // }
       // println(ps)
       val keys = xs.collect {
         case x: scalatags.Text.TypedTag[_] 
@@ -189,9 +204,13 @@ object MarkDownEvaluator:
       div(states)
     }
 
-    // extension (expr: SkeleExpr)
-    //   override def eval: Skele[F, HtmlText] = 
-    //     super.eval(expr).map(div(_))
+    extension (expr: SkeleExpr)
+      override def eval: Skele[F, HtmlText] = expr match
+        case Box(xs) => //debox!
+          xs.traverse(_.eval).map {
+            xs => xs.map(_.render).mkString
+          }.map(x => raw(x))
+        case _ => super.eval(expr)
   }
 
 end MarkDownEvaluator
