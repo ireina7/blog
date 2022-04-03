@@ -2,7 +2,7 @@
 My personal blog written mostly in Scala and Java.
 Trying `finally tagless` with `extensive effects`.
 ![k-on!](./img/k-on-q.png)  
-- version: `0.0.10`
+- version: `0.1.0`
 
 ## Dependences
 - `Scala3` the programming language
@@ -43,7 +43,7 @@ or even
 #### Example
 ```
 (\document) {
-  (\set class article)
+  (\set \class article)
 
   (\** Head titles, the more stars, the less weigth of font)
   (\paragraph) {
@@ -52,10 +52,10 @@ or even
   }
 
   (\*** Lets insert image!)
-  (\image (\set src ./assets/k-on.png))
+  (\image (\set \src ./assets/k-on.png))
 
   (\*** Or a link)
-  (\link (\set href www.github.com) Github)
+  (\link (\set \href www.github.com) Github)
 }
 ```
 

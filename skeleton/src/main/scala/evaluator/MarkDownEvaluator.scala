@@ -179,10 +179,7 @@ object MarkDownEvaluator:
             case x: scalatags.Text.TypedTag[_] => x.tag != "key"
             case _ => true
         }
-        // .map {
-        //   case Box(xs) => List[]
-        // }
-      // println(ps)
+      
       val keys = xs.collect {
         case x: scalatags.Text.TypedTag[_] 
           if x.tag == "key" => x.modifiers

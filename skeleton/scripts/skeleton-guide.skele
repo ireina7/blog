@@ -6,7 +6,7 @@
   }
 
   (\set \Skeleton (\color 'purple' Skeleton))
-  (\set (\title)) {
+  (\set (\titleOf)) {
     (\** (\bold \self))\line
   }
 
@@ -18,7 +18,7 @@
     }
   }
 
-  (\title \Skeleton\ User Guide（使用手册）)
+  (\titleOf \Skeleton\ User Guide（使用手册）)
   欢迎来到 \Skeleton\ !\n\n\n
 
   (\*** 1 . \Skeleton\ 是什么？)
@@ -65,6 +65,13 @@
   }
   (\**** 2.5\ 定义)
   (\p) {
+    \Skeleton\ 支持两种最基本的定义方式：变量定义与函数定义。
+    变量定义的格式为：
+    (\pure) {
+      '
+      |(\set [variable] [expression])
+      '
+    }
     
   }
 
