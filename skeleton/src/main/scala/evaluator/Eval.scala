@@ -96,9 +96,10 @@ trait EvalSkeleExpr[F[_], Value]
           param <- ps.traverse(_.eval)
           res   <- application(func, param)
         } yield res
-        case _ => errDsl.raiseError(
-          blog.Error(s"Evaluation error: Unknown expression: $expr")
-        )
+        case _ => 
+          errDsl.raiseError(
+            blog.Error(s"Evaluation error: Unknown expression: $expr")
+          )
       end match
     }
 

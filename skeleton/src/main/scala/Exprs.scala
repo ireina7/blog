@@ -216,15 +216,14 @@ object Exprs:
     type Env = collection.mutable.Map[String, SkeleExpr]
 
     case object Pass extends SkeleExpr
-    enum Pattern extends SkeleExpr {
-      case Var(name: String)
-      case Integer(i: Int)
-      case Num(n: Double)
-      case Str(s: String)
-      case Quote(e: SkeleExpr)
-      case App(f: SkeleExpr, xs: List[SkeleExpr])
-    }
-    export Pattern.*
+    trait Pattern extends SkeleExpr 
+    case class Var(name: String) extends Pattern
+    case class Integer(i: Int) extends Pattern
+    case class Num(n: Double) extends Pattern
+    case class Str(s: String) extends Pattern
+    case class Quote(e: SkeleExpr) extends Pattern
+    case class App(f: SkeleExpr, xs: List[SkeleExpr]) extends Pattern
+    
     case class Lambda(ps: List[Pattern], expr: SkeleExpr) extends SkeleExpr
     case class Closure(ps: List[Pattern], expr: SkeleExpr, env: Env) extends SkeleExpr {
       override def toString = "[Closure]"

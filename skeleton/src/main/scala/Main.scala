@@ -41,7 +41,10 @@ trait Skeleton
       text <- readFile(path)
       tree <- parse(text)
       expr <- evalExpr.eval(tree)
-      html <- evalMarkDown.eval(expr)
+      html <- { 
+        // println(expr)
+        evalMarkDown.eval(expr)
+      }
     } yield html
   }
 
@@ -136,7 +139,7 @@ object Skeleton:
         filePath, 
         fileTitle,
       )
-    
+    // println("end exe")
     exe.run() match
       case Left(err) => println(s"$err")
       case Right(ok) => println(s"Ok: $ok")

@@ -42,11 +42,11 @@ or even
 ```
 #### Example
 ```
-(\document) {
+\document {
   (\set \class article)
 
   (\** Head titles, the more stars, the less weigth of font)
-  (\paragraph) {
+  \paragraph {
     This is a paragraph.
     You can make (\italic texts italic) or (\bold texts).
   }

@@ -1,7 +1,18 @@
-(\document) {
+\document {
   (\set \class guide)
 
-  (\set (\color \c)) {
+  (\set (\testParam \a \b \c)) {
+    Hello, this is \a , \b , \c .
+  }
+  (\testParam '_' '_' '_') {
+    (\set \a Scala)
+    (\set \b Scala)
+    (\set \c Scala)
+    xxx
+  }
+
+  \set {
+    (\color \c)
     (\font (\set \style color:\c) \self)
   }
 
@@ -17,65 +28,133 @@
       \self
     }
   }
+  (\set (\ref \h)) {
+    (\link (\set \href \h) \self)
+  }
+  (\set \vert (\bold |))
+  (\set \count 0)
+  
 
   (\titleOf \Skeleton\ User Guide（使用手册）)
-  欢迎来到 \Skeleton\ !\n\n\n
+  欢迎来到 \Skeleton\ !\n
+  \space | (\ref 'https://github.com/ireina7/blog' Github)
+  \space | (\ref 'https://github.com/ireina7/blog' Document)
+  \space | (\ref 'https://github.com/ireina7/blog' API)
+  \space |
+  \n\n\n
 
   (\*** 1 . \Skeleton\ 是什么？)
-  (\p) {
-    \Skeleton\ 是一门用于文本与笔记撰写的编程语言（(\italic A programming language for text typesetting)）。
+  \p {
+    \Skeleton\ 是一门用于(\_ 文本与笔记撰写排版)的编程语言（(\italic A programming language for text typesetting)）。
     \Skeleton\ 既可以用于简单的markdown文本撰写，也可以用于通用的编程（这里的编程大多指在文本排版领域）。
-    你可以使用 \Skeleton\ 来：
+    你可以将 \Skeleton\ 用于：
     (\list) {
       (\- 日常的个人笔记撰写)
       (\- 复杂的文本排版与template编程)
-      (\- 使用不同的后端模块生成多种文本格式（e.g. html, pdf, markdown, etc）)
+      (\- 使用不同的后端模块生成多种文本格式（(\italic e.g.) \ html, pdf, markdown, etc）)
     }
   }
 
   (\*** 2 . 基本元素)
-  (\p) {
+  \p {
     \Skeleton\ 是一门十分精简的语言。语言主体包括如下几种不可分割的最基本的元素：
     (\list) {
-      (\- 变量 variable)
-      (\- 数字 number)
+      (\- (\color 'orange' 变量 variable))
+      (\- (\color 'green' 数字 number))
       (\- 文本 text)
-      (\- 函数 function)
-      (\- 定义 definition)
     }
   }
   (\**** 2.1\ 变量)
-  (\p) {
+  \p {
     在 \Skeleton\ 中，所有的变量以 "\slash " 开头。
     比如我们需要写 "\slash " 这个符号，
     在\Skeleton\ 中需要写作：(\code '\slash')（因为反斜杠在\Skeleton\ 会被自动识别为变量开头）。
   }
   (\**** 2.2\ 数字)
-  (\p) {
+  \p {
     \Skeleton\ 支持两种形式的数字：整数（integers）和浮点数（real number）。
+    所有数字支持基本的算术运算。
   }
   (\**** 2.3\ 文本)
-  (\p) {
+  \p {
     文本在\Skeleton\ 中是第一等公民。
     你可以在任何地方任意书写普通文本（与大部分编程语言不同的是\Skeleton\ 不需要添加引号）。
   }
-  (\**** 2.4\ 函数)
-  (\p) {
-    \Skeleton\ 与markdown类型的标记语言最大的不同点在于 \Skeleton\ 支持函数定义与调用。
-  }
-  (\**** 2.5\ 定义)
-  (\p) {
-    \Skeleton\ 支持两种最基本的定义方式：变量定义与函数定义。
-    变量定义的格式为：
-    (\pure) {
-      '
-      |(\set [variable] [expression])
-      '
-    }
-    
-  }
+  
 
 
   (\*** 3 . 组合)
-  (\*** 4 . 面向文本对象)
+  \p {
+    有了基本元素，下一步的目标就是组合这些元素来构造我们需要的新元素。
+  }
+
+  \*** {4 . 抽象}
+  \pure {抽象，抽象，再抽象！}
+  \**** {4.1\ 函数}
+  \p {
+    \Skeleton\ 与markdown类型的标记语言最大的不同点在于 \Skeleton\ 支持函数定义与调用。
+  }
+  (\**** 4.2\ 定义)
+  \p {
+    \Skeleton\ 支持两种最基本的定义方式：变量定义与函数定义。
+    变量定义的格式为：
+    \pure {
+      '
+      |(\set \[variable-name] [expression])
+      '
+    }
+  }
+  \p {
+    函数定义的语法只是在变量的位置引入括号调用语法（这十分直观！）：
+    (\pure) {
+      '
+      |(\set (\[function-name] \x \y)) {
+      |  [expression]
+      |}
+      '
+    }
+  }
+
+  (\*** 5 . 面向文本对象)
+  \p {
+    在 \Skeleton\ 中，你可以认为所有的方法都是面向文本对象的，
+    即所有的函数的最后一个参数都是绑定待操作文本的 (\code '\self')\ 参数。
+  }
+
+  (\*** 6 . 嵌入 HTML 与引入 CSS & JavaScript)
+
+  (\*** 7 . 附录：本指南代码)
+  \pure {
+    '
+(\doc The source code of this guide)
+\document {
+  (\set \class guide)
+
+  (\set (\color \c)) {
+    (\font (\set \style color:\c) \self)
+  }
+
+  (\set (\titleOf)) {
+    (\** (\bold \self))\line
+  }
+
+  (\doc to generate indented paragraph)
+  (\set (\p)) {
+    (\paragraph) {
+      (\set \style text-indent:2em)
+      \self
+    }
+  }
+
+  (\titleOf \Skeleton\ User Guide（使用手册）)
+  欢迎来到 \Skeleton\ !\n
+  \space | (\link (\set \href https://github.com/ireina7/blog) Github)
+  \space | (\link (\set \href https://github.com/ireina7/blog) Document)
+  \space | (\link (\set \href https://github.com/ireina7/blog) API)
+  \space |
+  \n\n\n
+}
+
+    '
+  }
 }

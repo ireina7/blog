@@ -96,7 +96,10 @@ object Parser:
     def structAssign = ("(\\set " ~> variable ~ expr.* <~ ")") ~ ("{" ~> expr.+ <~ "}") ^^ {
       case key ~ xs ~ es => Set(Quote(key), Box(xs ++ es))
     }
-    def assignment = structAssign | simpleAssignment
+    def setAssign = "\\set" ~> ("{" ~> variable ~ expr.+ <~ "}") ^^ {
+      case key ~ es => Set(Quote(key), Box(es))
+    }
+    def assignment = structAssign | simpleAssignment | setAssign
     def simpleDef = ("(\\set " ~> lists ~ expr.+ <~ ")") ^^ {
       case App(f, xs) ~ es => 
         Set(
@@ -119,7 +122,17 @@ object Parser:
         )
       case _ => Pass // bad!
     }
-    def definition = simpleDef | structDef
+    def setDef = "\\set" ~> ("{" ~> lists ~ expr.+ <~ "}") ^^ {
+      case App(f, ps) ~ es => Set(
+        Quote(f),
+        Lambda(
+          ps.map(x => Quote(x.asInstanceOf[Pattern])), 
+          Quote(Box(es))
+        )
+      )
+      case _ => Pass
+    }
+    def definition = simpleDef | structDef | setDef
     // def codes      = ("(\\code" ~> ??? <~ ")") ^^ {
     //   case code => App(Var("code"), "[.]")
     // }
@@ -135,6 +148,9 @@ object Parser:
       case Nil => Pass
       case f::ps => application(f, ps)
     }
+    def variableList = variable ~ ("{" ~> expr.* <~"}") ^^ {
+      case f ~ xs => App(f, xs)
+    }
     
     def structList = (lists) ~ ("{" ~> expr.* <~ "}").? ^^ {
       case App(f, xs) ~ Some(es) => SkeleExpr.application(f, xs ++ es)
@@ -142,14 +158,13 @@ object Parser:
       case App(f, xs) ~ _ => SkeleExpr.application(f, xs)
       case Pass ~ _ => Pass
       case _ => ???//Left(blog.Error("unknown parser error"))
-    }
+    } | variableList
     
 
     def expr: Parser[SkeleExpr] = 
       number     | 
       space      |
       quoted     |
-      variable   | 
       text       | 
       boxed      |
       comments   |
@@ -158,7 +173,9 @@ object Parser:
       lambda     |
       assignment |
       definition |
-      structList // end
+      structList |
+      variable   //| 
+      // structList // end
 
 
     def read(s: String): blog.Result[SkeleExpr] =
