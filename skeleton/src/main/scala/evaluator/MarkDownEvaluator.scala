@@ -60,6 +60,7 @@ object MarkDownEvaluator:
     val predef: Environment = mutable.Map(
       "set"       -> tag("key"),
       // "box"       -> ???,
+      "html"      -> tag("html"),
       "block"     -> div,
       "space"     -> raw("&nbsp;"),
       "slash"     -> raw("\\"),

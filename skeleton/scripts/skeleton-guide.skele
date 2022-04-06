@@ -1,18 +1,7 @@
 \document {
   (\set \class guide)
 
-  (\set (\testParam \a \b \c)) {
-    Hello, this is \a , \b , \c .
-  }
-  (\testParam '_' '_' '_') {
-    (\set \a Scala)
-    (\set \b Scala)
-    (\set \c Scala)
-    xxx
-  }
-
-  \set {
-    (\color \c)
+  (\set (\color \c)) {
     (\font (\set \style color:\c) \self)
   }
 
@@ -21,12 +10,17 @@
     (\** (\bold \self))\line
   }
 
-  (\doc to generate indented paragraph)
+  \doc {
+    to generate indented paragraph
+  }
   (\set (\p)) {
-    (\paragraph) {
+    \paragraph {
       (\set \style text-indent:2em)
       \self
     }
+  }
+  (\set (\part)) {
+    \n\*** {\self}\line
   }
   (\set (\ref \h)) {
     (\link (\set \href \h) \self)
@@ -40,25 +34,25 @@
   \space | (\ref 'https://github.com/ireina7/blog' Github)
   \space | (\ref 'https://github.com/ireina7/blog' Document)
   \space | (\ref 'https://github.com/ireina7/blog' API)
-  \space |
-  \n\n\n
+  \space | \n\n
 
-  (\*** 1 . \Skeleton\ 是什么？)
+  (\part 1 . \Skeleton\ 是什么？)
   \p {
-    \Skeleton\ 是一门用于(\_ 文本与笔记撰写排版)的编程语言（(\italic A programming language for text typesetting)）。
+    \Skeleton\ 是一门用于(\_ 文本与笔记撰写排版)的编程语言
+    （(\italic A programming language for text typesetting)）。
     \Skeleton\ 既可以用于简单的markdown文本撰写，也可以用于通用的编程（这里的编程大多指在文本排版领域）。
     你可以将 \Skeleton\ 用于：
-    (\list) {
+    \list {
       (\- 日常的个人笔记撰写)
       (\- 复杂的文本排版与template编程)
       (\- 使用不同的后端模块生成多种文本格式（(\italic e.g.) \ html, pdf, markdown, etc）)
     }
   }
 
-  (\*** 2 . 基本元素)
+  (\part 2 . 基本元素)
   \p {
     \Skeleton\ 是一门十分精简的语言。语言主体包括如下几种不可分割的最基本的元素：
-    (\list) {
+    \list {
       (\- (\color 'orange' 变量 variable))
       (\- (\color 'green' 数字 number))
       (\- 文本 text)
@@ -83,12 +77,24 @@
   
 
 
-  (\*** 3 . 组合)
+  (\part 3 . 组合)
   \p {
     有了基本元素，下一步的目标就是组合这些元素来构造我们需要的新元素。
   }
+  (\**** 3.1\ 文本组合)
+  \p {
+    文本组合是 \Skeleton\ 提供的最基本的组合方式之一。假设我们有了文本 (\code A) 和 (\code B)，
+    组合两者只需要简单写作：(\code A B)。需要注意的是，当组合变量与文本时，变量与文本的连接处需要加上符号进行分隔。
+    比如：(\code '\Skeleton\ is great') or (\code '{\Skeleton} is great')。
+  }
+  (\**** 3.2\ 函数组合)
+  \p {
+    函数组合是 \Skeleton\ 的重要特性。在 \Skeleton\ 中，你可以自由组合各种函数来生成你需要的文本与样式。
+    函数组合（调用）的最基本语法是：
+    \pure {'(\f x y z...)'}
+  }
 
-  \*** {4 . 抽象}
+  \part {4 . 抽象}
   \pure {抽象，抽象，再抽象！}
   \**** {4.1\ 函数}
   \p {
@@ -115,15 +121,15 @@
     }
   }
 
-  (\*** 5 . 面向文本对象)
+  (\part 5 . 面向文本对象)
   \p {
     在 \Skeleton\ 中，你可以认为所有的方法都是面向文本对象的，
     即所有的函数的最后一个参数都是绑定待操作文本的 (\code '\self')\ 参数。
   }
 
-  (\*** 6 . 嵌入 HTML 与引入 CSS & JavaScript)
+  (\part 6 . 嵌入 HTML 与引入 CSS & JavaScript)
 
-  (\*** 7 . 附录：本指南代码)
+  (\part 7 . 附录：本指南代码)
   \pure {
     '
 (\doc The source code of this guide)

@@ -2,7 +2,7 @@
 My personal blog written mostly in Scala and Java.
 Trying `finally tagless` with `extensive effects`.
 ![k-on!](./img/k-on-q.png)  
-- version: `0.1.0`
+- version: `0.1.5`
 
 ## Dependences
 - `Scala3` the programming language
@@ -36,7 +36,7 @@ For example, the example code above can be rewritten as:
 ```
 or even
 ```
-(\f) {
+\f {
   x y z o...
 }
 ```

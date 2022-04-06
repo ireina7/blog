@@ -86,9 +86,13 @@ object Parser:
     def braceBoxed = "{" ~> expr.* <~ "}" ^^ Box.apply
     def boxed = bracketBoxed | braceBoxed
 
-    def comments   = ("(\\doc " ~> expr.* <~ ")") ~ ("{" ~> expr.* <~ "}").? ^^ {
+    def commonComments   = ("(\\doc " ~> expr.* <~ ")") ~ ("{" ~> expr.* <~ "}").? ^^ {
       case _ ~ _ => Box(Str(""):: Nil)
     }
+    def structComments = "\\doc" ~> ("{" ~> expr.* <~ "}") ^^ {
+      case _ => Box(Str(""):: Nil)
+    }
+    def comments = commonComments | structComments
     // def structLambda = ("(\\" ~> lists ~ expr <~ ")") ~ ("{" ~> expr.* <~ "}").?
     def simpleAssignment = ("(\\set " ~> variable ~ expr.+ <~ ")") ^^ {
       case key ~ es => Set(Quote(key), Box(es))
