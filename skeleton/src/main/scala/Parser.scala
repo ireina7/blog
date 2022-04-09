@@ -52,7 +52,7 @@ end given
 object Parser:
   
   // val identity = "[a-zA-Z0-9~\\[\\]!=-@#$+%^&*_:\";/,|\\_\\.]+".r
-  val identity = "[^{}()\\s\\\\]+".r //more general
+  val identity = "[^{}()\\[\\]\\s\\\\]+".r //more general
 
   import scala.util.parsing.combinator.RegexParsers
 
@@ -72,7 +72,7 @@ object Parser:
     def space      = "\\ " ^^ (_ => Str(" "))
     def quoted     = ("'" ~> "[^']+".r <~ "'") ^^ Str.apply.compose(_.stripMargin)
     def pattern    = symbol | lists
-    def text       = "[^{}()\\\\\"]+".r ^^ SkeleExpr.string
+    def text       = "[^{}()\\[\\]\\\\\"]+".r ^^ SkeleExpr.string
     def lambda     = "(\\" ~> lists ~ expr <~ ")" ^^ {
       case App(x, xs) ~ e => SkeleExpr.lambda(
         (x :: xs).map(o => Quote(o.asInstanceOf[Pattern])), 
@@ -148,6 +148,9 @@ object Parser:
       case xs ~ None => Box(List(Str("{")) ++ xs ++ List(Str("}")))
       case xs ~ Some(ys) => Box(List(Str("{")) ++ xs ++ ys ++ List(Str("}")))
     }
+    def squares = "[" ~> expr.* <~ "]" ^^ {
+      case xs => App(Var("square"), xs)
+    }
     def slash = "\\\\" ^^ {
       case _ => Str("\\")
     }
@@ -157,8 +160,15 @@ object Parser:
     def leftBrace  = "\\{" ^^ { case _ => Str("{") }
     def rightBrace = "\\}" ^^ { case _ => Str("}") }
     def braceEscaped = leftBrace | rightBrace
+    def singleQuote = "\\'" ^^ { case _ => Str("'") }
+    def doubleQuote = "\\\"" ^^ { case _ => Str("\"") }
+    def quotesEscaped = singleQuote | doubleQuote
     def escapes =
-      slash | bracketEscaped | braceEscaped
+      slash 
+      | space
+      | bracketEscaped 
+      | braceEscaped 
+      | quotesEscaped
     def lists      = ("(" ~> expr.*   <~ ")") ^^ {
       case Nil => Pass
       case f::ps => application(f, ps)
@@ -179,8 +189,8 @@ object Parser:
     def expr: Parser[SkeleExpr] = 
       escapes    |
       number     | 
-      space      |
       quoted     |
+      squares    |
       text       | 
       boxed      |
       comments   |

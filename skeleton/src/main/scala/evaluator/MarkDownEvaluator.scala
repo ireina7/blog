@@ -69,6 +69,7 @@ object MarkDownEvaluator:
       "n"         -> br,
       "bold"      -> b,
       "italic"    -> i,
+      "square"    -> span,
       "#"         -> h1,
       "##"        -> h2,
       "###"       -> h3,

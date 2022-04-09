@@ -392,6 +392,13 @@ object PreMarkDownExprEvaluator:
         case Box(xs) => 
           xs.traverse(_.eval).map(Box.apply)
 
+        case App(Var("square"), xs) => {
+          env.get("square") match
+            case None => Box(xs).eval
+            case Some(Ref(f)) => application(f, xs)
+            case Some(f) => application(f, xs)
+        }
+
         case App(Var("+"), List(a, b)) => for {
           x <- a.eval
           y <- b.eval
