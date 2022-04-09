@@ -185,13 +185,13 @@ object PreMarkDownExprEvaluator:
       "bold"      -> Primitive,
       "italic"    -> Primitive,
       "_"         -> Primitive,
-      "-"         -> Primitive,
-      "*"         -> Primitive,
-      "**"        -> Primitive,
-      "***"       -> Primitive,
-      "****"      -> Primitive,
-      "*****"     -> Primitive,
-      "******"    -> Primitive,
+      "@"         -> Primitive,
+      "#"         -> Primitive,
+      "##"        -> Primitive,
+      "###"       -> Primitive,
+      "####"      -> Primitive,
+      "#####"     -> Primitive,
+      "######"    -> Primitive,
       "section"   -> Primitive,
       "paragraph" -> Primitive,
       "link"      -> Primitive,
@@ -369,6 +369,22 @@ object PreMarkDownExprEvaluator:
     override def block(states: List[SkeleExpr]): Skele[F, SkeleExpr] = {
       Pass.pure
     }
+
+    private def arithmetic
+      (f: (Double, Double) => Double)(x: SkeleExpr, y: SkeleExpr)
+      : Skele[F, SkeleExpr] = {
+      
+      (x, y) match 
+        case (Integer(i), Integer(j)) => Integer(f(i, j).toInt).pure
+        case (Num(n), Num(m))         => Num(f(n ,m)).pure
+        case (Integer(i), Num(j))     => Num(f(i, j)).pure
+        case (Num(n), Integer(m))     => Num(f(n, m)).pure
+        case (Box(List(x)), y)        => App(Var("+"), List(x, y)).eval
+        case (x, Box(List(y)))        => App(Var("+"), List(x, y)).eval
+        case _ => err.raiseError(blog.Error(
+          s"Addition error: operating $x and $y"
+        ))
+    }
     extension (expr: SkeleExpr)
       override def eval: Skele[F, SkeleExpr] = env ?=>
         // println(s"eval env: ${env.##}, $expr")
@@ -379,16 +395,22 @@ object PreMarkDownExprEvaluator:
         case App(Var("+"), List(a, b)) => for {
           x <- a.eval
           y <- b.eval
-          z <- (x, y) match 
-            case (Integer(i), Integer(j)) => Integer(i + j).pure
-            case (Num(n), Num(m))         => Num(n + m).pure
-            case (Integer(i), Num(j))     => Num(i + j).pure
-            case (Num(n), Integer(m))     => Num(n + m).pure
-            case (Box(List(x)), y)        => App(Var("+"), List(x, y)).eval
-            case (x, Box(List(y)))        => App(Var("+"), List(x, y)).eval
-            case _ => err.raiseError(blog.Error(
-              s"Addition error: Adding $x and $y"
-            ))
+          z <- arithmetic(_ + _)(x, y)
+        } yield z
+        case App(Var("-"), List(a, b)) => for {
+          x <- a.eval
+          y <- b.eval
+          z <- arithmetic(_ - _)(x, y)
+        } yield z
+        case App(Var("*"), List(a, b)) => for {
+          x <- a.eval
+          y <- b.eval
+          z <- arithmetic(_ * _)(x, y)
+        } yield z
+        case App(Var("/"), List(a, b)) => for {
+          x <- a.eval
+          y <- b.eval
+          z <- arithmetic(_ / _)(x, y)
         } yield z
         
         case App(f, ps) => {

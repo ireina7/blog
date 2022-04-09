@@ -7,12 +7,10 @@
 
   (\set \Skeleton (\color 'purple' Skeleton))
   (\set (\titleOf \self)) {
-    (\** (\bold \self))\line
+    (\## (\bold \self))\line
   }
 
-  \doc {
-    to generate indented paragraph
-  }
+  \doc { to generate indented paragraph }
   (\set (\p \self)) {
     \paragraph {
       (\set \style text-indent:2em)
@@ -23,7 +21,7 @@
   (\set \count 0)
   (\set (\part \self)) {
     (\set \count (\+ 1 \count))
-    \n\*** {\count . \self}\line
+    \n\### {\count . \self}\line
   }
   (\set (\ref \h \self)) {
     (\link (\set \href \h) \self)
@@ -46,9 +44,9 @@
     \Skeleton\ 既可以用于简单的markdown文本撰写，也可以用于通用的编程（这里的编程大多指在文本排版领域）。
     你可以将 \Skeleton\ 用于：
     \list {
-      (\- 日常的个人笔记撰写)
-      (\- 复杂的文本排版与template编程)
-      (\- 使用不同的后端模块生成多种文本格式（(\italic e.g.) \ html, pdf, markdown, etc）)
+      (\@ 日常的个人笔记撰写)
+      (\@ 复杂的文本排版与template编程)
+      (\@ 使用不同的后端模块生成多种文本格式（(\italic e.g.) \ html, pdf, markdown, etc）)
     }
   }
 
@@ -56,23 +54,23 @@
   \p {
     \Skeleton\ 是一门十分精简的语言。语言主体包括如下几种不可分割的最基本的元素：
     \list {
-      (\- (\color 'orange' 变量 variable))
-      (\- (\color 'green' 数字 number))
-      (\- 文本 text)
+      (\@ (\color 'orange' 变量 variable))
+      (\@ (\color 'green' 数字 number))
+      (\@ 文本 text)
     }
   }
-  (\**** 2.1\ 变量)
+  (\#### 2.1\ 变量)
   \p {
     在 \Skeleton\ 中，所有的变量以 "\\ " 开头。
     比如我们需要写 "\\ " 这个符号，
     在\Skeleton\ 中需要写作：(\code '\slash')\ or (\code '\\')（因为反斜杠在\Skeleton\ 会被自动识别为变量开头）。
   }
-  (\**** 2.2\ 数字)
+  (\#### 2.2\ 数字)
   \p {
     \Skeleton\ 支持两种形式的数字：整数（integers）和浮点数（real number）。
     所有数字支持基本的算术运算。
   }
-  (\**** 2.3\ 文本)
+  (\#### 2.3\ 文本)
   \p {
     文本在\Skeleton\ 中是第一等公民。
     你可以在任何地方任意书写普通文本（与大部分编程语言不同的是\Skeleton\ 不需要添加引号）。
@@ -84,13 +82,13 @@
   \p {
     有了基本元素，下一步的目标就是组合这些元素来构造我们需要的新元素。
   }
-  (\**** 3.1\ 文本组合)
+  (\#### 3.1\ 文本组合)
   \p {
     文本组合是 \Skeleton\ 提供的最基本的组合方式之一。假设我们有了文本 (\code A) 和 (\code B)，
     组合两者只需要简单写作：(\code A B)。需要注意的是，当组合变量与文本时，变量与文本的连接处需要加上符号进行分隔。
     比如：(\code '\Skeleton\ is great') or (\code '{\Skeleton} is great')。
   }
-  (\**** 3.2\ 函数组合)
+  (\#### 3.2\ 函数组合)
   \p {
     函数组合是 \Skeleton\ 的重要特性。在 \Skeleton\ 中，你可以自由组合各种函数来生成你需要的文本与样式。
     函数组合（调用）的最基本语法是：
@@ -102,11 +100,11 @@
   函数（(\italic function)）是 \Skeleton\ 最基本的抽象元素。
 
   \n\n
-  \**** {4.1\ 函数}
+  \#### {4.1\ 函数}
   \p {
     \Skeleton\ 与markdown类型的标记语言最大的不同点在于 \Skeleton\ 支持函数定义与调用。
   }
-  (\**** 4.2\ 定义)
+  (\#### 4.2\ 定义)
   \p {
     \Skeleton\ 支持两种最基本的定义方式：变量定义与函数定义。
     变量定义的格式为：
@@ -147,7 +145,7 @@
   }
 
   (\set (\titleOf)) {
-    (\** (\bold \self))\line
+    (\## (\bold \self))\line
   }
 
   (\doc to generate indented paragraph)
