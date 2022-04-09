@@ -72,7 +72,7 @@ object Parser:
     def space      = "\\ " ^^ (_ => Str(" "))
     def quoted     = ("'" ~> "[^']+".r <~ "'") ^^ Str.apply.compose(_.stripMargin)
     def pattern    = symbol | lists
-    def text       = "[^{}()\\\\]+".r ^^ SkeleExpr.string
+    def text       = "[^{}()\\\\\"]+".r ^^ SkeleExpr.string
     def lambda     = "(\\" ~> lists ~ expr <~ ")" ^^ {
       case App(x, xs) ~ e => SkeleExpr.lambda(
         (x :: xs).map(o => Quote(o.asInstanceOf[Pattern])), 
@@ -83,7 +83,7 @@ object Parser:
       case xs ~ None => Box(xs)
       case xs ~ Some(ys) => Box(xs ++ ys)
     }
-    def braceBoxed = "{" ~> expr.* <~ "}" ^^ Box.apply
+    def braceBoxed = "\"" ~> expr.* <~ "\"" ^^ Box.apply
     def boxed = bracketBoxed | braceBoxed
 
     def commonComments   = ("(\\doc " ~> expr.* <~ ")") ~ ("{" ~> expr.* <~ "}").? ^^ {
@@ -148,6 +148,17 @@ object Parser:
       case xs ~ None => Box(List(Str("{")) ++ xs ++ List(Str("}")))
       case xs ~ Some(ys) => Box(List(Str("{")) ++ xs ++ ys ++ List(Str("}")))
     }
+    def slash = "\\\\" ^^ {
+      case _ => Str("\\")
+    }
+    def leftBracket  = "\\(" ^^ { case _ => Str("(") }
+    def rightBracket = "\\)" ^^ { case _ => Str(")") }
+    def bracketEscaped = leftBracket | rightBracket
+    def leftBrace  = "\\{" ^^ { case _ => Str("{") }
+    def rightBrace = "\\}" ^^ { case _ => Str("}") }
+    def braceEscaped = leftBrace | rightBrace
+    def escapes =
+      slash | bracketEscaped | braceEscaped
     def lists      = ("(" ~> expr.*   <~ ")") ^^ {
       case Nil => Pass
       case f::ps => application(f, ps)
@@ -166,6 +177,7 @@ object Parser:
     
 
     def expr: Parser[SkeleExpr] = 
+      escapes    |
       number     | 
       space      |
       quoted     |
@@ -184,7 +196,7 @@ object Parser:
 
     def read(s: String): blog.Result[SkeleExpr] =
       parse(expr, s) match
-        case Success(res, _) => Right(res)
+        case Success(res, _) => println(res); Right(res)
         case Failure(msg, _) => Left(blog.Error(msg))
         case Error(msg, _)   => Left(blog.Error(msg))
   }

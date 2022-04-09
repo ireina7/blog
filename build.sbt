@@ -1,5 +1,5 @@
 ThisBuild / organization := "blog"
-ThisBuild / version := "0.1.5"
+ThisBuild / version := "0.1.11"
 ThisBuild / scalaVersion := V.scala3
 
 import Dependencies._

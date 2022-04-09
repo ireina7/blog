@@ -154,11 +154,14 @@ object PreMarkDownExprEvaluator:
 
   import blog.core.Effect.{*, given}
   import scala.collection.mutable
-  case class Ref[A](var value: A) {
-    def update(x: A): this.type = {value = x; this}
+  /** Reference of values
+   * We have to use ref to refer to values stored in the environment.
+  */
+  case class Ref(var value: SkeleExpr) extends SkeleExpr {
+    def update(x: SkeleExpr): this.type = {value = x; this}
   }
-  given Conversion[SkeleExpr, Ref[SkeleExpr]] = Ref.apply
-  given Conversion[Ref[SkeleExpr], SkeleExpr] = _.value
+  // given Conversion[SkeleExpr, Ref[SkeleExpr]] = Ref.apply
+  // given Conversion[Ref[SkeleExpr], SkeleExpr] = _.value
   type Environment = SkeleExpr.Env//mutable.Map[String, Ref[SkeleExpr]]
   type Skele[F[_], A] = Injection[F, Environment, A]
 
@@ -237,13 +240,14 @@ object PreMarkDownExprEvaluator:
     new EvalSkeleExpr {
     
     import cats.syntax.apply.*
-    given Conversion[SkeleExpr, F[SkeleExpr]] = _.pure
+    // given Conversion[SkeleExpr, F[SkeleExpr]] = _.pure
     
     override def quoted(expr: SkeleExpr) = expr.pure
     override def variable(name: String) = env ?=> {
       env.get(name) match
         case Some(Primitive) => Var(name).pure
-        case Some(x) => err.pure(x)
+        case Some(Ref(x)) => x.pure
+        case Some(x) => x.pure
         case None => 
           // println(s"!!! $name")
           // env.foreach(println)
@@ -259,10 +263,10 @@ object PreMarkDownExprEvaluator:
     //   case Let(bs, e) => bindings(bs, e)
     //   case _ => err.raiseError(Throwable(s"$binds is not valid binding"))
     
-    override def integer(i: Int) = Integer(i)
-    override def number(n: Double) = Num(n)
-    override def string(s: String) = Str(s)
-    override def list(xs: List[SkeleExpr]) = Lisp(xs)
+    override def integer(i: Int) = Integer(i).pure
+    override def number(n: Double) = Num(n).pure
+    override def string(s: String) = Str(s).pure
+    override def list(xs: List[SkeleExpr]) = Lisp(xs).pure
     override def lambda(ps: List[SkeleExpr], expr: SkeleExpr) = env ?=> {
       Closure(ps.map(_.asInstanceOf[Pattern]), expr, env.clone).pure
     }
@@ -290,11 +294,11 @@ object PreMarkDownExprEvaluator:
       } yield result
     }
     override def application
-      (f: SkeleExpr, xs: List[SkeleExpr]): Skele[F, SkeleExpr] = {
+      (f: SkeleExpr, xs: List[SkeleExpr]): Skele[F, SkeleExpr] = env ?=> {
       
       f match
         /**Primitive case, no change! very dirty!*/
-        case Var(name) => App(f, xs)
+        case Var(name) => App(f, xs).pure
         case Closure(params, expr, environment) => {
           // println(s"$ps, $expr, $env")
           val env = environment.clone()
@@ -325,15 +329,18 @@ object PreMarkDownExprEvaluator:
           if !lefts.isEmpty then
             lambda(lefts, expr)(using env)
           else if !rights.isEmpty then
-            env += ("self" -> App(Var("span"), rights))
+            if env.contains("self") 
+            then env("self") = App(Var("span"), env("self") :: rights)
+            else env += ("self" -> App(Var("span"), rights))
             expr.eval(using env)
           else
+            expr.eval(using env)
             // Auto currying
-            if ps.isEmpty || ps.last != Var("self") then
-              lambda(List(Var("self")), expr)(using env)
-            else 
-              expr.eval(using env)
-            end if
+            // if ps.isEmpty || ps.last != Var("self") then
+            //   lambda(List(Var("self")), expr)(using env)
+            // else 
+            //   expr.eval(using env)
+            // end if
         }
         case _ => 
           err.raiseError(
@@ -341,9 +348,14 @@ object PreMarkDownExprEvaluator:
           )
       end match
     }
-    override def set(pat: SkeleExpr, v: SkeleExpr): Skele[F, SkeleExpr] = env ?=> {
+    override def set(pat: SkeleExpr, v: SkeleExpr): Skele[F, SkeleExpr] = env ?=> err.pure {
       pat match
-        case Var(s) => env += (s -> v)
+        case Var(s) => 
+          if env.contains(s) 
+          then env(s) match
+            case ref: Ref => ref.update(v)
+            case _ => env += (s -> Ref(v))
+          else env += (s -> Ref(v))
         case _ => err.raiseError(blog.Error("set error"))
       
       // env.foreach(println)
@@ -363,10 +375,25 @@ object PreMarkDownExprEvaluator:
         val ans = expr match
         case Box(xs) => 
           xs.traverse(_.eval).map(Box.apply)
+
+        case App(Var("+"), List(a, b)) => for {
+          x <- a.eval
+          y <- b.eval
+          z <- (x, y) match 
+            case (Integer(i), Integer(j)) => Integer(i + j).pure
+            case (Num(n), Num(m))         => Num(n + m).pure
+            case (Integer(i), Num(j))     => Num(i + j).pure
+            case (Num(n), Integer(m))     => Num(n + m).pure
+            case (Box(List(x)), y)        => App(Var("+"), List(x, y)).eval
+            case (x, Box(List(y)))        => App(Var("+"), List(x, y)).eval
+            case _ => err.raiseError(blog.Error(
+              s"Addition error: Adding $x and $y"
+            ))
+        } yield z
         
         case App(f, ps) => {
           val env1 = env.clone() // to prevent polluting environment
-          val ans: F[SkeleExpr] = for {
+          for {
             func  <- f.eval(using env)
             param <- ps.foldLeft(List.empty[SkeleExpr].pure) {
               (ps, p) =>
@@ -378,7 +405,6 @@ object PreMarkDownExprEvaluator:
             // param <- ps.traverse(_.eval(using env)) //bad bad bad! never use abstractions you do not familiar with
             res   <- application(func, param)(using env)
           } yield res
-          ans
         }
         
         case _ => super.eval(expr)

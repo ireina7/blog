@@ -1,42 +1,45 @@
 \document {
   (\set \class guide)
 
-  (\set (\color \c)) {
+  (\set (\color \c \self)) {
     (\font (\set \style color:\c) \self)
   }
 
   (\set \Skeleton (\color 'purple' Skeleton))
-  (\set (\titleOf)) {
+  (\set (\titleOf \self)) {
     (\** (\bold \self))\line
   }
 
   \doc {
     to generate indented paragraph
   }
-  (\set (\p)) {
+  (\set (\p \self)) {
     \paragraph {
       (\set \style text-indent:2em)
       \self
     }
   }
-  (\set (\part)) {
-    \n\*** {\self}\line
+
+  (\set \count 0)
+  (\set (\part \self)) {
+    (\set \count (\+ 1 \count))
+    \n\*** {\count . \self}\line
   }
-  (\set (\ref \h)) {
+  (\set (\ref \h \self)) {
     (\link (\set \href \h) \self)
   }
   (\set \vert (\bold |))
-  (\set \count 0)
+
   
 
-  (\titleOf \Skeleton\ User Guide（使用手册）)
+  \titleOf {\Skeleton\ User Guide（使用手册）}
   欢迎来到 \Skeleton\ !\n
   \space | (\ref 'https://github.com/ireina7/blog' Github)
   \space | (\ref 'https://github.com/ireina7/blog' Document)
   \space | (\ref 'https://github.com/ireina7/blog' API)
   \space | \n\n
 
-  (\part 1 . \Skeleton\ 是什么？)
+  \part {"\Skeleton\ 是什么？"}
   \p {
     \Skeleton\ 是一门用于(\_ 文本与笔记撰写排版)的编程语言
     （(\italic A programming language for text typesetting)）。
@@ -49,7 +52,7 @@
     }
   }
 
-  (\part 2 . 基本元素)
+  \part {基本元素}
   \p {
     \Skeleton\ 是一门十分精简的语言。语言主体包括如下几种不可分割的最基本的元素：
     \list {
@@ -60,9 +63,9 @@
   }
   (\**** 2.1\ 变量)
   \p {
-    在 \Skeleton\ 中，所有的变量以 "\slash " 开头。
-    比如我们需要写 "\slash " 这个符号，
-    在\Skeleton\ 中需要写作：(\code '\slash')（因为反斜杠在\Skeleton\ 会被自动识别为变量开头）。
+    在 \Skeleton\ 中，所有的变量以 "\\ " 开头。
+    比如我们需要写 "\\ " 这个符号，
+    在\Skeleton\ 中需要写作：(\code '\slash')\ or (\code '\\')（因为反斜杠在\Skeleton\ 会被自动识别为变量开头）。
   }
   (\**** 2.2\ 数字)
   \p {
@@ -77,7 +80,7 @@
   
 
 
-  (\part 3 . 组合)
+  \part {组合}
   \p {
     有了基本元素，下一步的目标就是组合这些元素来构造我们需要的新元素。
   }
@@ -94,8 +97,11 @@
     \pure {'(\f x y z...)'}
   }
 
-  \part {4 . 抽象}
+  \part {抽象}
   \pure {抽象，抽象，再抽象！}
+  函数（(\italic function)）是 \Skeleton\ 最基本的抽象元素。
+
+  \n\n
   \**** {4.1\ 函数}
   \p {
     \Skeleton\ 与markdown类型的标记语言最大的不同点在于 \Skeleton\ 支持函数定义与调用。
@@ -121,15 +127,15 @@
     }
   }
 
-  (\part 5 . 面向文本对象)
+  \part {面向文本对象}
   \p {
     在 \Skeleton\ 中，你可以认为所有的方法都是面向文本对象的，
     即所有的函数的最后一个参数都是绑定待操作文本的 (\code '\self')\ 参数。
   }
 
-  (\part 6 . 嵌入 HTML 与引入 CSS & JavaScript)
+  \part {嵌入 HTML 与引入 CSS & JavaScript}
 
-  (\part 7 . 附录：本指南代码)
+  \part {附录：本指南代码}
   \pure {
     '
 (\doc The source code of this guide)
@@ -164,3 +170,7 @@
     '
   }
 }
+
+
+4， 10
+1   30min

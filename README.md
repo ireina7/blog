@@ -2,7 +2,7 @@
 My personal blog written mostly in Scala and Java.
 Trying `finally tagless` with `extensive effects`.
 ![k-on!](./img/k-on-q.png)  
-- version: `0.1.5`
+- version: `0.1.11`
 
 ## Dependences
 - `Scala3` the programming language
