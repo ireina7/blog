@@ -38,7 +38,7 @@ lazy val blog = (project in file("."))
   )
 
 lazy val server = (project in file("server"))
-  .dependsOn(shared)
+  .dependsOn(shared, skeleton)
   .settings(
     name := "server",
     scalaVersion := V.scala3,//"2.13.6",
@@ -69,7 +69,7 @@ lazy val server = (project in file("server"))
       // Doobie functional JDBC layer
       Doobie.core,
       Doobie.postgres,
-      Doobie.specs2,
+      // Doobie.specs2,
 
       // For test
       Munit.munit      % Test,

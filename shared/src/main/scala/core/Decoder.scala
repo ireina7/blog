@@ -42,11 +42,7 @@ object Decoder:
 
 
   given given_htmlDecoder[F[_]: Applicative]
-    : Decoder[F, blog.HtmlText] = new Decoder {
-    
-    override def decode(html: blog.HtmlText) =
-      html.toString.pure
-  }
+    : Decoder[F, blog.HtmlText] = _.toString.pure
   
 end Decoder
 

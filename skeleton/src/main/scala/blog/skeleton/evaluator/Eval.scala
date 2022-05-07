@@ -1,4 +1,4 @@
-package blog.skeleton
+package blog.skeleton.evaluator
 
 import cats.{
   Monad,
@@ -6,6 +6,7 @@ import cats.{
   Traverse,
 }
 import blog.core.Eval
+import blog.skeleton.Expr
 import blog.skeleton.Exprs.SkeleExpr.*
 import blog.skeleton.Exprs.*
 // import blog.skeleton.Trees.*
@@ -29,13 +30,14 @@ import cats.MonadError
   implicitly. However, the scala compiler shall choose the most specific one
   (i.e., Eval[F, Input, Output] & Expr[F, Output]) which cannot handle lambda value error.
 */
+
 trait EvalExpr[F[_], Input, Output] extends
   Eval[F, Input, Output],
   Expr[F, Output]
 
-trait EvalStatement[F[_], Input, Output] extends
-  Eval[F, Input, Output],
-  Statement[F, Output]
+//trait EvalStatement[F[_], Input, Output] extends
+//  Eval[F, Input, Output],
+//  Statement[F, Output]
 
 
 
@@ -49,6 +51,8 @@ trait EvalSkeleExpr[F[_], Value]
    * because we cannot evaluate parameter list and we do not have this data structure
    * currently in Skele.
    * Maybe we can add weak form term into the data structure someday.
+   * 
+   * UPDATE: weak form term has been supported as the [[Quote]] data structure!
   */
   import cats.implicits.*
   

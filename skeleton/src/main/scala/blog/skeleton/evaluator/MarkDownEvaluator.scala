@@ -1,4 +1,4 @@
-package blog.skeleton
+package blog.skeleton.evaluator
 
 import cats.{
   Monad,
@@ -14,8 +14,8 @@ import cats.syntax.functor.*
 import cats.syntax.applicative.*
 import cats.syntax.traverse.*
 import cats.MonadError
-import blog.skeleton.EvalSkeleExpr
 import scalatags.generic.TypedTag
+import blog.skeleton.evaluator.EvalSkeleExpr
 
 
 
@@ -86,6 +86,9 @@ object MarkDownEvaluator:
       "list"      -> ul,
       "@"         -> li,
       "_"         -> u,
+      "video"     -> video,
+      "audio"     -> audio,
+      "source"    -> source,
       "document"  -> div(marginLeft := 50, marginRight := 50, fontSize := 20),
       // "section" -> section,
     )

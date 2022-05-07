@@ -22,13 +22,15 @@ import server.blaze.BlazeServerBuilder
 import server.Server
 import server.staticcontent.*
 import scala.concurrent.ExecutionContext
+import cats.Monad
+import cats.implicits.*
 
 
 object Routes {
 
   given blog.Configuration = blog.Configuration.onlineBlog
 
-  def mainRoutes[F[_]: Sync]: HttpRoutes[F] =
+  def mainRoutes[F[_]: Sync: Monad]: HttpRoutes[F] =
     val dsl = new Http4sDsl[F]{}
     import dsl.*
     import blog.page.*
@@ -61,6 +63,15 @@ object Routes {
         Ok(Filter.index(
           span(color := "grey")("No result")
         ))
+
+      case GET -> Root / "skeleton" => 
+        val content = SkeletonRepl.index
+        Ok(content)
+
+      case req @ POST -> Root / "compile" => for {
+        code <- req.as[String]
+        res  <- Ok(Frame.index(code))
+      } yield res
 
       case GET -> Root / "shutdown" =>
         sys.exit()

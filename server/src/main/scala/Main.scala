@@ -9,7 +9,7 @@ import org.http4s.server.Server
 // import org.http4s.HttpServer
 import org.http4s.blaze.server.BlazeServerBuilder
 import scala.concurrent.ExecutionContext.global
-import specs2.run
+// import specs2.run
 // import org.http4s.HttpApp
 // import org.http4s.server.Server
 
@@ -45,7 +45,6 @@ object Application extends IOApp:
   end test
 
 end Application
-
 
 object BlogHttpServer {
   

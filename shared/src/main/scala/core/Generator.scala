@@ -15,20 +15,20 @@ import cats.syntax.applicative.*
 
 
 
-trait Generator_[F[_]: Monad, Path, Thing] extends
+trait Generator[F[_]: Monad, Path, Thing] extends
   Reader[F, Path, Thing],
   Writer[F, Path, Thing]
 
 
 
-object Generator_ :
+object Generator :
   
   given given_defaultGenerator[F[_]: Monad, Path, Thing](using
       fileIO: FileIO[F, Path, String],
       parser: Parser[F, Thing],
       decoder: Decoder[F, Thing],
     )
-    : Generator_[F, Path, Thing] = new Generator_ {
+    : Generator[F, Path, Thing] = new Generator {
     
     override def read(path: Path): F[Thing] = {
       for {
@@ -45,13 +45,24 @@ object Generator_ :
     }
   }
 
-end Generator_
+
+  import Effect.*
+  import Effect.given
+  given (using conf: blog.Configuration): BlogIndexGenerator[IOErr] with
+    def config = conf
+
+
+  given (using conf: blog.Configuration):
+    BlogIndexGenerator[[A] =>> Injection[IOErr, blog.Configuration, A]] with
+    def config = conf
+
+end Generator
 
 
 
 trait BlogIndexGenerator[F[_]: Monad]
   (using
-    gen: Generator_[F, String, page.Index],
+    gen: Generator[F, String, page.Index],
     htmlWriter: Writer[F, String, blog.HtmlText],
   ):
   
@@ -80,9 +91,8 @@ trait BlogIndexGenerator[F[_]: Monad]
     // println(s"${config.blogPath}/index.html")
     for {
       index <-  readIndexHtml
-      _     <-  htmlWriter.write
-                  (page.Frame.index(index))
-                  (s"${config.blogPath}/index.html")
+      _     <-  htmlWriter
+                  .write(page.Frame.index(index))(s"${config.blogPath}/pages/index.html")
     } yield ()
   }
   
@@ -95,19 +105,4 @@ trait BlogIndexGenerator[F[_]: Monad]
 end BlogIndexGenerator
 
 
-
-
-object Generator:
-
-  import Effect.*
-  import Effect.given
-  given (using conf: blog.Configuration): BlogIndexGenerator[IOErr] with
-    def config = conf
-
-
-  given (using conf: blog.Configuration):
-    BlogIndexGenerator[[A] =>> Injection[IOErr, blog.Configuration, A]] with
-    def config = conf
-
-end Generator
 

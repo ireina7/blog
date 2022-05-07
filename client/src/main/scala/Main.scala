@@ -26,8 +26,8 @@ object Main {
   /**
    * It is sad that we cannot reuse [[blog.BlogType]] here.
   */
-  val assetsPath = 
-    if isStatic then "./assets" else "/assets"
+  val assetsPath = //Configuration.staticBlog.blogType.assetsPath
+    if isStatic then "../assets" else "/assets"
 
   def setup(): Unit = {
     
@@ -54,30 +54,34 @@ object Main {
   }
 
 
-  val content: dom.Element = {
-    div(marginLeft := 50, marginRight := 50, fontSize := 20)(
-      p("""
-这是一个首页测试，目前问题还有很多，视觉性较差。@%%%%
-我是Ireina，混迹在世界各地的旅行魔女，遇到我将会是你的荣幸。
-      """),
-      p("高亮解决！"),
-      p("代码示例："),
-      pre()(code(`class` := "language-scala")("""
-def searchBar: dom.Element = {  
 
-form(cls := "d-flex")(  
-    input(
-        `class` := "form-control me-2",
-        `type` := "search", 
-        placeholder := "search", 
-        attr("aria-label") := "Search"
-    ),
-    button(`class` := "btn btn-outline-success", `type` := "submit")("search")
-)
-}.render
-      """)),
-    )
-  }.render
+
+
+
+//   val content: dom.Element = {
+//     div(marginLeft := 50, marginRight := 50, fontSize := 20)(
+//       p("""
+// 这是一个首页测试，目前问题还有很多，视觉性较差。@%%%%
+// 我是Ireina，混迹在世界各地的旅行魔女，遇到我将会是你的荣幸。
+//       """),
+//       p("高亮解决！"),
+//       p("代码示例："),
+//       pre()(code(`class` := "language-scala")("""
+// def searchBar: dom.Element = {  
+
+// form(cls := "d-flex")(  
+//     input(
+//         `class` := "form-control me-2",
+//         `type` := "search", 
+//         placeholder := "search", 
+//         attr("aria-label") := "Search"
+//     ),
+//     button(`class` := "btn btn-outline-success", `type` := "submit")("search")
+// )
+// }.render
+//       """)),
+//     )
+//   }.render
 
   val footer: dom.Element = {
 
@@ -142,7 +146,7 @@ form(cls := "d-flex")(
   val navBar: dom.Element = {
       
     div(
-      backgroundImage := s"url($assetsPath/img/yuii.jpg)", 
+      backgroundImage := s"url($assetsPath/img/yuii.png)", 
       backgroundPosition := "right bottom",
       backgroundSize := "cover",
     )(

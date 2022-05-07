@@ -57,15 +57,16 @@
   \p {
     \Skeleton\ 是一门十分精简的语言。语言主体包括如下几种不可分割的最基本的元素：
     \list {
-      (\@ (\color 'orange' 变量 variable))
-      (\@ (\color 'green' 数字 number))
+      (\@ (\color [orange] 变量 variable))
+      (\@ (\color [green] 数字 number))
       (\@ 文本 text)
     }
   }
   (\#### 2.1\ 变量)
   \p {
+    (\set (\square \self) “[\self]”)
     在 \Skeleton\ 中，所有的变量以 "\\ " 开头。
-    比如我们需要写 "\\ " 这个符号，
+    比如我们需要写 [\\] 这个符号，
     在\Skeleton\ 中需要写作：(\code '\slash')\ or (\code '\\')（因为反斜杠在\Skeleton\ 会被自动识别为变量开头）。
   }
   (\#### 2.2\ 数字)

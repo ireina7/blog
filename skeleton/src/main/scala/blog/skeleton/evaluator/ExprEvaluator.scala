@@ -1,4 +1,4 @@
-package blog.skeleton
+package blog.skeleton.evaluator
 
 import cats.{
   Monad,
@@ -14,7 +14,7 @@ import cats.syntax.functor.*
 import cats.syntax.applicative.*
 import cats.syntax.traverse.*
 import cats.MonadError
-import blog.skeleton.EvalSkeleExpr
+import blog.skeleton.evaluator.EvalSkeleExpr
 
 
 
@@ -51,6 +51,8 @@ object ExprEvaluator:
       import Exprs.*
       import SkeleExpr.*
   */
+  // type Inject[Env, A] = Env => Result[A]
+  // type F[A] = Inject[Env, A]
   def evalSkeleExpr[F[_]]
     (using err: MonadError[F, Throwable])
     : EvalSkeleExpr[[A] =>> Skele[F, A], SkeleExpr] =
@@ -142,7 +144,7 @@ object ExprEvaluator:
       ???
     }
   }
-
+  
 end ExprEvaluator
 
 
@@ -200,6 +202,9 @@ object PreMarkDownExprEvaluator:
       "span"      -> Primitive,
       "line"      -> Primitive,
       "list"      -> Primitive,
+      "video"     -> Primitive,
+      "audio"     -> Primitive,
+      "source"    -> Primitive,
       "document"  -> Primitive,
     )
     val arith: Environment = mutable.Map(
@@ -389,14 +394,32 @@ object PreMarkDownExprEvaluator:
       override def eval: Skele[F, SkeleExpr] = env ?=>
         // println(s"eval env: ${env.##}, $expr")
         val ans = expr match
-        case Box(xs) => 
-          xs.traverse(_.eval).map(Box.apply)
+        case Box(xs) => {
+          val env1 = env.clone() // to prevent polluting environment
+          for {
+            vs <- xs.foldLeft(List.empty[SkeleExpr].pure) {
+              (ps, p) =>
+                for {
+                  xs <- ps
+                  pv <- p.eval(using env1)
+                } yield pv :: xs // for perfomance
+            }.map(_.reverse)
+            // param <- ps.traverse(_.eval(using env)) //bad bad bad! never use abstractions you do not familiar with
+          } yield Box(vs)
+        }
+          // xs.traverse(_.eval).map(Box.apply)
 
         case App(Var("square"), xs) => {
           env.get("square") match
             case None => Box(xs).eval
-            case Some(Ref(f)) => application(f, xs)
-            case Some(f) => application(f, xs)
+            case Some(Ref(f)) => for {
+              ps <- Box(xs).eval
+              vs <- application(f, ps::Nil)
+            } yield vs
+            case Some(f) => for {
+              ps <- Box(xs).eval
+              vs <- application(f, ps::Nil)
+            } yield vs
         }
 
         case App(Var("+"), List(a, b)) => for {

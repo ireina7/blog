@@ -27,5 +27,5 @@ enum BlogType {
 
   def assetsPath: String = this match
     case Online => s"/assets"
-    case Static => "./assets"  
+    case Static => "../assets"  
 }

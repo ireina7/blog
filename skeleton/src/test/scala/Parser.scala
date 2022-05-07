@@ -20,10 +20,10 @@ import Exprs.SkeleExpr.*
 object ParserTests
   extends Properties("Skeleton Parser tests"):
   import Effect.{*, given}
-  import blog.skeleton.given
+  import blog.skeleton.parser.NaiveParser.given
 
   override def overrideParameters(p: Parameters) = 
-    p.withMinSuccessfulTests(100)
+    p.withMinSuccessfulTests(1000)
 
   
   // Properties
@@ -91,7 +91,7 @@ package laws:
     val variableGen: Gen[String] = Gen.identifier
     val skeleVarGen: Gen[String] = Gen.nonEmptyListOf(
       arbitrary[Char].suchThat(c =>
-        "[^{}()\\\\\\s]+".r.matches(s"$c")
+        "[^{}()'\"\\[\\]\\\\\\s]+".r.matches(s"$c")
       )
     ).map(_.mkString)
     // val applyGen: Gen[String] = for {
@@ -126,7 +126,6 @@ package laws:
     def `simple function application`[F[_]: blog.core.Runnable]
       (using parser: Parser[F, SkeleExpr]) = 
       
-
       true
     end `simple function application`
 

@@ -1,12 +1,22 @@
 package blog.skeleton
 
 import scala.language.implicitConversions
-import blog.skeleton.Types.*
+//import blog.skeleton.Types.*
 import blog.core.Eval
 import blog.skeleton.Exprs.SkeleExpr
 
 
+// class Impl extends MarkDownLanguage:
+//   override def integer(i: Int) = {
+//     djfh
+//     return 
+//     dsf
+//     return x
+//   }
 
+// MarkDownLanguage[List, Int]
+
+// def integer(i: Int): List[Int]
 
 trait MarkDownLanguage[F[_], E] {
   def integer(i: Int)       : F[E]
@@ -203,6 +213,27 @@ object Exprs:
   //   def value: A
   // }
 
+  // class CC {
+  //   var id: Int = 0
+  //   CC(x: Int) {
+  //     this.id = x
+  //   }
+  // }
+
+  // class CC(var id: Int = 0)
+
+  // enum Day:
+  //   case Monday
+  //   case Tuesday
+  //   case Custom(name: String)
+  // end Day
+
+  // val day: Day = Day.Monday
+  // val newDay: Day = Day.Custom("happy")
+
+  // day match 
+  //   case Monday => println(???) 
+  //   case Custom(dayName) => println(dayName)
   
   /**
    * The data type for interal expression tree
@@ -211,6 +242,7 @@ object Exprs:
   trait SkeleExpr {
     def code: String = toString
   }
+  // type Id<A> = A
   object SkeleExpr extends Expr[cats.Id, SkeleExpr]:
 
     type Env = collection.mutable.Map[String, SkeleExpr]
