@@ -15,17 +15,18 @@ import org.scalacheck.Arbitrary.arbitrary
 import blog.skeleton.Exprs
 import blog.skeleton.Exprs.SkeleExpr
 import Exprs.SkeleExpr.*
+import blog.skeleton.evaluator
 
 
 object EvalTests
   extends Properties("Skeleton Evaluator tests"):
   import Effect.{*, given}
   import blog.skeleton.given
-  import blog.skeleton.PreMarkDownExprEvaluator
-  import blog.skeleton.PreMarkDownExprEvaluator.given
+  import evaluator.PreMarkDownExprEvaluator
+  import evaluator.PreMarkDownExprEvaluator.given
 
-  given exprEnv: PreMarkDownExprEvaluator.Environment = 
-      PreMarkDownExprEvaluator.Environment.predefForMarkDown
+  given exprEnv: evaluator.PreMarkDownExprEvaluator.Environment = 
+      evaluator.PreMarkDownExprEvaluator.Environment.predefForMarkDown
 
   // property("integer") = 
   //   laws.Eval.number[

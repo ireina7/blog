@@ -1,0 +1,6 @@
+
+\document {
+  \set { \class [test page] }
+
+  Hello, \font{\set{\style color:purple} skeleton!}
+}

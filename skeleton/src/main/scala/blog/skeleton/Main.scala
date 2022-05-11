@@ -84,8 +84,9 @@ class SkeletonHtml [
     // println(generator.config.blogPath)
     for
       html <- compile(path)
-      _    <- htmlWriter
-                .write(generator.indexPage(html))(s"${generator.config.blogPath}/pages/$fileName")
+      _    <- htmlWriter.write
+                (generator.indexPage(html))
+                (s"${generator.config.blogPath}/pages/$fileName")
       _    <- registerIndex(item)
     yield ()
 
@@ -125,7 +126,7 @@ object Skeleton:
     import MarkDownEvaluator.given
     import PreMarkDownExprEvaluator.given
 
-    given blog.Configuration = blog.Configuration.staticBlog
+    given blog.Configuration = blog.Configuration.onlineBlog
     given markdownEnv: MarkDownEvaluator.Environment =
       MarkDownEvaluator.Environment.predef
     given exprEnv: PreMarkDownExprEvaluator.Environment = 
@@ -167,6 +168,9 @@ object Skeleton:
   end main
     
 end Skeleton
+
+
+
 
 
 

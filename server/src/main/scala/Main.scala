@@ -46,17 +46,19 @@ object Application extends IOApp:
 
 end Application
 
+
 object BlogHttpServer {
   
   // override def run(args: List[String]): IO[ExitCode] =
   //   app.use(_ => IO.never).as(ExitCode.Success)
+  given cs: ContextShift[IO] = IO.contextShift(global)
   given Timer[IO] = IO.timer(global)
   val app: ConcurrentEffect[IO] ?=> Resource[IO, Server] =
     for {
       blocker <- Blocker[IO]
       server  <- BlazeServerBuilder.apply[IO](global)
         .bindHttp(8080)
-        .withHttpApp((Routes.mainRoutes[IO] <+> Routes.ioRoutes).orNotFound)
+        .withHttpApp((Routes.mainRoutes[IO]).orNotFound)
         .resource
     } yield server
 }
