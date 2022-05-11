@@ -17,7 +17,7 @@ object V {
   val akka               = "2.6.15"
   val http4s             = "0.22.12"//"0.21.24"
   val logBack            = "1.2.3"
-  val doobie             = "0.12.1"
+  val doobie             = "0.13.4"//"0.12.1"
   val circe              = "0.14.0"
   val munit              = "0.7.20"
   val munitCatsEffect    = "0.13.0"

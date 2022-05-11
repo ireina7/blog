@@ -15,3 +15,8 @@
 - Add `static` module, now can generate static package.
 - Add `skeleton` module which serves as a front-end page generator.
 - Robust path resolution.
+
+## Version `0.2.1`
+- The `Skeleton` programming language first parser and compiler for `HTML`.
+- Basic online blog server finished.
+- The `Skeleton` blog register tools.

@@ -80,7 +80,11 @@ trait BlogIndexGenerator[F[_]: Monad]
     
     for {
       index <- readIndex
-    } yield div(index.map(page.Frame.item(_)))
+    } yield div(
+      index.map(blog => 
+        div(page.Frame.item(blog), hr)
+      )
+    )
   }
 
   def indexPage(content: HtmlText = div()): HtmlText = 

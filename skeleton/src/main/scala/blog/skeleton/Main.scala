@@ -126,7 +126,8 @@ object Skeleton:
     import MarkDownEvaluator.given
     import PreMarkDownExprEvaluator.given
 
-    given blog.Configuration = blog.Configuration.onlineBlog
+    given blog.Configuration = blog.Configuration.staticBlog
+    // given blog.Configuration = blog.Configuration.onlineBlog
     given markdownEnv: MarkDownEvaluator.Environment =
       MarkDownEvaluator.Environment.predef
     given exprEnv: PreMarkDownExprEvaluator.Environment = 
