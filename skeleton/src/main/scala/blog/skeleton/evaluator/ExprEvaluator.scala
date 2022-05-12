@@ -422,17 +422,14 @@ object PreMarkDownExprEvaluator:
           s"Addition error: operating $x and $y"
         ))
     }
-    private def `import`(path: String): Skele[F, SkeleExpr] = env ?=>
-      for {
+    private def `import`(path: String): Skele[F, SkeleExpr] = 
+      for
         src <- fileIO.readFile(path)
         exp <- parser.parse(src)
         res <- exp.eval
-      } yield {
-        // println(env)
-        Pass
-      }
-    end `import`
-    
+      yield Pass
+
+
     private def condition
       (branches: List[(SkeleExpr, SkeleExpr)]): Skele[F, SkeleExpr] = {
       

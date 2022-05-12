@@ -182,7 +182,7 @@ object Parser:
       | bracketEscaped 
       | braceEscaped 
       | quotesEscaped
-    private def lists      = ("(" ~> expr.*   <~ ")") ^^ {
+    private def lists      = ("(" ~> expr.* <~ ")") ^^ {
       case Nil => Pass
       case f::ps => application(f, ps)
     }

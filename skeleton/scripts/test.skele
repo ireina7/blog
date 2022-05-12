@@ -4,21 +4,8 @@
 
   (\import './skeleton/scripts/predef.skele')
 
-  \set {
-    \Math{\f}
-    (\ (\n) .ok)
+  \head {Test page}
+  \para {
+    This a \Skeleton test.
   }
-
-  (\set \predef{\f}) {
-    (\case \f) {
-      (.hello-world .okk)
-      (.sqrt (\Math.sqrt))
-    }
-  }
-
-  (\set \test (\Math.sqrt))
-
-  (\predef.hello-world)
-  (\predef.sqrt) {2} 
-  (\titleOf Test!!)
 }

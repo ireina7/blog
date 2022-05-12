@@ -1,66 +1,206 @@
 \document {
-  (\set \class article)
-  (\set (\color \x \self)) {
-    (\font (\set \style color:\x) \self)
+  (\set\class blog)
+  (\import './skeleton/scripts/predef.skele')
+
+  (\set\tf) {
+    \italic{\color{[purple] Tagless Final}}\ 
   }
-  (\set \blog) {
-    (\font (\color 'purple' blog))
+  (\set\effect) {
+    \italic{\color{[blue] 计算效应}}\ 
   }
-  (\set \Scala) {
-    (\italic (\color {red} Scala))
+  (\set\scala) {
+    \italic{\color{[red] Scala}}\ 
   }
-  (\set (\title \self)) { 
-    (\italic (\# \self)) \line\n
+  (\set\haskell) {
+    \italic{\color{[purple] Haskell}}\ 
   }
-  
-  (\set (\p \self)) {
-    (\paragraph) {
-      (\set \style text-indent:2em)
-      \self
-    }
+  (\set\java) {
+    \italic{\color{[brown] Java}}\ 
   }
-  (\set (\test \i \self)) {
-    (\paragraph) {
-      (\set \style text-indent:\i em)
-      \self
-    }
+  (\set\part{\self}) {
+    \n\###{\self}\line
+  }
+  (\set\subpart{\self}) {
+    \n\####{\self}
   }
 
-  (\title Tagless final 设计模式)
+  \head {\tf 设计模式}
 
-  (\## 这是什么奇怪的名字？？)
-  \p {
-    本\blog 全面使用了\Scala\_ 作为主力语言，这是因为\Scala 支持 Tagless final 的设计模式。(\title)
-    所谓 Tagless final，就是不再使用有tag的数据结构来构造程序，转而使用函数来约束数据结构，使得tag不再成为必须。
-    在了解 Tagless final 之前，我们首先需要了解什么是计算效应(\bracket (\italic Computation effects))。
+  \para {
+    \tf 一词目前还多见于论文，是 Oleg 等人提出的一种新的编程设计模式。
+    这个名字看上去很怪，其实是因为学术界之前一直将一种编程方式称为 \italic{inital encoding}，
+    在这种 encoding 中，所有数据结构都是有 tag 的，所以将后来新的编程模式称为\tf 。
+    本文不打算涉及学术概念和背景，从而直接将 \tf 的概念和用法从实际使用中梳理清楚
+    （欲理解本文的内容，你需要了解 \scala 或者 \haskell ）。
   }
 
-  (\### (\color (\box purple) 计算效应))
-  \paragraph {
-    (\italic 计算效应就是除了函数返回值之外的一切。)
-    (\bracket <b> gggg </b>)
-  }
-
-  (\#### 计算效应举例)
-  \list {
-    (\@ IO)
-    (\@ List)
-    (\@ Future)
-    (\@ Option)
-    (\@ Either[Throwable, _])
-    (\@ Config ?=> _)
+  \part{副作用（Side effects）}
+  \para {
+    也许你听说过「副作用」这个词。但是在编程的世界里副作用也许和生活中使用含义大不相同。
+    如果你对数学熟悉的话，那你一定知道，在数学中，一个「纯函数」只要输入一样，那么输出必然一样。
+    但是这一点在程序的世界里被彻底打破了。让我们来看看最典型的 \code{getChar}\ 函数：
   }
   \pure {'
-    |//Scala code
-    |def program[F[_]]: F[ExitCode] = {
-    |  val x = 1
-    |}
-    '
+    | // Definition
+    | def getChar(): Char
+    |
+    | // Usage
+    | val a = getChar()
+    | val b = getChar()
+    | val c = getChar()
+  '}
+  \para {
+    这里显然 \code{a, b, c}\ 可能是不同的字符，因为用户输入的字符不一定每次都相同。
+    不仅如此，我们还注意到：
+    \list {
+      \@{\code{getChar}\ 函数对计算机外部的缓存进行了修改，从而使得状态发生了变化}
+      \@{\code{getChar}\ 所导致的外部变化在函数调用结束之后继续存在且作用于全局}
+    }
+    这种除了函数内部还会对外部造成影响的函数我们称之为「非纯函数」。
+    而纯函数以外的，对外部做的修改我们称之为「副作用」。
+    非纯函数对于计算机来说至关重要，没有非纯函数就没有 IO,没有 IO 就没有任何计算机能够对现实世界产生实际的作用。
+
+    「非纯函数」虽然对计算机来说很重要，对于程序开发人员来说却无异于「梦魇」。无处不在的副作用宛如幽灵一般
+    在程序中不断影响着我们对程序的理解，更可怕的是，非纯函数打破了「可替换原则」，也就是说，如果我们不小心
+    将程序中的某个语句做了微小的改动，其所产生的副作用也许是巨大的（蝴蝶效应）。为了降低开发的心智负担，以
+    \haskell 为首的开发者们想要设计一门只有纯函数的编程语言，但结果是既成功了，也失败了。
   }
-  (\italic IO, List, Future, Option, Either[Throwable, _], Config ?=> A, etc)
 
-  \n\n\n
-  (\### (\color (\box brown) 参数化抽象!))
+  \part{\effect （Effects）：狩猎副作用}
+  \para {
+    \effect 是我在学习计算机时遇到的最抽象的概念之一。
+    但是一旦理解了其表达的含义，写程序就再也离不开这一伟大的抽象。
+    既然副作用如幽灵一般藏匿在我们的代码中，那么我们可以想办法拒绝与其继续玩“捉迷藏”的游戏，
+    我们可以做一次猎人，将所有幽灵直接捕获，并关进「\effect 」的牢笼。
 
+    让我们重新来审视我们的 \code{getChar}\ 函数，
+    这次我们对返回值加上一些额外的描述让其老实交代自身做了什么副作用（\scala 中方括号等价于\java 的尖括号）：
+  }
+  \pure {'
+  | def getChar(): Char modifies Buffer[StdIn]
+  '}
+  \para {
+    Ops! 我们成功了（虽然看上去没什么用...），但是这是伟大的一步，近乎已经成功了一半！
+    我不知道你是否熟悉 \java 的 Checked exception，如果你熟悉的话，那么也许你已经发现了这个写法与
+    Checked exception 有多么的相像：
+  }
+  \pure {'
+  | char getChar() throws IOException
+  '}
+  \para {
+    如果你习惯抽象的思考方式，那你很快就会发现副作用可以\_{在返回类型上加上额外的信息描述}来进行表达。
+    但是我们如何确定我们需要描述什么样的副作用呢？在不知道的情况下，我们就请出我们的老朋友：参数式抽象。
+  }
 
+  \part{\color{[green] 参数式抽象}：函数式的灵魂}
+  \para {
+    不知道你有没有思考过几个问题：
+    \list {
+      \@{函数为什么长今天这个样子？}
+      \@{泛型为什么长得这么像类型层面上的函数？}
+      \@{运行时多态为什么经常与面向对象的编程范式共存？}
+    }
+    让我们一个一个问题来看。对于第一个问题，答案就在标题里，我们不知道具体的事物是什么，于是用一个参数来表示，
+    进而将复杂的过程与关系进行抽象，就是因为我们想要抽象，才有了函数这种奇怪的东东。
+    第二个问题，没错，就是类型层面的函数 QED.
+    第三个问题，因为直接把类型本身当作参数在运行时传递，用面向对象的方式可以自动实现这一过程
+    （以防你会好奇有没有运行时多态不需要面形对象和自类型，其实有，而且有很多）。
+    了解了这些，让我们继续使用这一古老的魔法，将副作用一网打尽。
+  }
+  \para {
+    既然我们需要的是在类型层面增加描述，那么我们可以直接将增加描述这一过程抽象成一个类型层面上的函数。
+    现在假设存在一个函数 \code{F}\ ，其接收一个类型作为参数，然后返回增加了计算效应的一个类型。
+    如果我们想要描述 \code{getChar}\ 的类型，我们可以写：
+  }
+  \pure {'
+  | type F[A] = A modifies Buffer[StdIn]
+  '}
+  \para {
+    有了 \code{F}\ ，我们就可以写 \code{getChar}\ 的返回类型是：
+    \code{'F[Char]'}。
+    现在请跟着我思考：如果我们不知道\code{F}\ 是什么的时候该怎么办？我们能不能把\code{F}\ 这一函数本身
+    当作参数进行抽象呢？如果我能做到的话，那我们的代码将彻底超脱于任何副作用，无论什么副作用都会被瞬间捕获，
+    无处可藏！
+  }
+
+  \part{\color{[orange] 高阶类型}（Higher-Kinded Type）}
+  \para {
+    千万不要被「高阶类型」这个词吓到，这个词其实意外的很单纯，比计算效应好理解多了。
+    所谓高阶类型，就是\scala 中\code{'List[Int]'}\ 的 \code{List}\ ，
+    就是\scala 中\code{'Future[String]'}\ 中的 \code{Future}\ ，
+    就是一个被当成参数传入的类型行层面上的「函数」（不熟悉\scala 的同学请自动将方括号替换为尖括号）！
+    在\scala 中，我们需要写作：\code{'F[_]'}\ 表示\code{F}\ 即将接受一个类型作为参数。
+    在\java 中，很遗憾，我们表达不了，虽然可以用奇怪的方式模拟，但是终究有区别。
+    现在让我们重写我们的\code{getChar}\ 函数：
+  }
+  \pure{'
+  | def getChar[F[_]](): F[Char]
+  '}
+  \para {
+    搞定！现在我们的\code{getChar}\ 函数彻底挣脱了副作用的控制，
+    无论怎样调用都不会对外部产生影响，也不会参数一样而返回不同的结果。
+    但是，你肯定会反驳：这个函数根本就运行不了啊？函数体根本写不出来吧？根本没有卵用吧？
+    是的，没有卵用，这就是抽象，抽象就是nonsense，只是一种思维的工具，因为我们可以把实现抽象出来交给全世界来做。
+    但是这次我们干一次脏活，来看看怎么实现。
+  }
+
+  \part{\color{[gray] 数据结构}\ = 对程序的解释}
+  \para {
+    我不知道你是怎么理解数据结构的，我当时第一次接触这个概念的时候可是非常的疑惑，
+    我总觉得其与函数有什么相似的地方，却又无法准确的表达出来。
+    言归正传，如果我们想实现\code{F}\ 那么我们需要一个数据结构来表达\code{F}\ 是什么。
+  }
+  \subpart{\italic{Identity}(\bracket Id): 释放副作用}
+  \para {
+    既然\code{F}\ 是个函数，那么我们能不能让其什么也不做直接把接受的类型原样返回呢？
+    其实是可以的，而且异常简单：
+  }
+  \pure {'
+  | type Id[A] = A
+  '}
+  \para {
+    然后我们把\code{Id}\ 传给\code{getChar}\ :
+  }
+  \pure{'val c: Char = getChar[Id]()'}
+  \para {
+    这样一来函数就成了我们最一开始写的充满了副作用的版本，「释放」了副作用，
+    虽然没什么提升，但是这从侧面表现出了计算效应这一抽象的表达能力的强大。
+  }
+
+  \subpart{\italic{Option}: 缺省的效应}
+  \para {
+    (\set\null\code{null}\ )
+    不知道你喜不喜欢指针，但我是不喜欢\null 的。
+    如果你和我一样容易粗心，那你一定也遇到过\code{null pointer exception}\ ，
+    \null 的问题在于缺乏类型系统的保护，容易将「副作用」释放出去，从而难以找到问题根源。
+    现在让我们来构造一个数据结构来表达值的「缺省」：
+  }
+  \pure {'
+  | enum Option[+A]:
+  |   case None
+  |   case Some(A)
+  '}
+  \para {
+    如果你了解\java 的\code{Optional}\ ，那你其实已经很懂这一抽象了。
+    所谓\code{Option}\ 就是要不是\code{None}\ ，要不是一个值。这里\code{F}\ 就成了\code{Option}\ ，
+    如果用在\code{getChar}\ 上：
+  }
+  \pure{
+    'val c: Option[Char] = getChar[Option]()'
+  }
+
+  \subpart{\italic{Either}: 可能会出错的效应}
+  (\set\either) {\italic Either}
+  \para {
+    有时候光能处理缺省并不够用，我们还需要知道为什么缺省，为什么得不到结果，错误出在哪里。
+    于是我们有了 \either\ 效应。谈到错误，如果你熟悉\java 的话，肯定会想到\code{exception}。
+    本质上，\code{exception}\ 和本段的\either\ 是同构的，所以我们直接来看\either\ 。
+  }
+
+  \subpart{\italic{State}: 状态的效应}
+  \subpart{\italic{Future}: 来自未来的效应}
+  \subpart{\italic{List}: 参数数量不受限制的效应}
+
+  \part{\color{[purple] 类型类}（Typeclass）：对一类高阶类型进行抽象与约束}
+  未完待续
 }

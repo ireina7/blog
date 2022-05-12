@@ -2,7 +2,7 @@
 My personal blog written mostly in Scala and Java.
 Trying `finally tagless` with `extensive effects`.
 ![k-on!](./img/k-on-q.png)  
-- version: `0.2.1`
+- version: `0.2.10`
 
 ## Dependences
 - `Scala3` the programming language
@@ -22,7 +22,13 @@ Trying `finally tagless` with `extensive effects`.
 ### The **Skeleton** programming language
 - Please refer to the [Skeleton guide](./doc/Skeleton.md)
 
+## Development log
+- Pleaase refer to the [Development log](./doc/DEV.md)
+
 ### The HTTP server
+The HTTP server is modeled as a simple function:
+`Request[F] => OptionT[F, Response[F]]`
+where `F` is the computation effect.
 
 ### Highly extensible and scalable by using finally tagless
 All trait are parameterized with computation effects (e.g. `F[_]`).

@@ -1,11 +1,18 @@
 \module {
 
+  
   (\set (\color \c \self)) {
     (\font (\set \style color:\c) \self)
   }
+  (\set \Skeleton) {
+    (\color [purple] Skeleton)
+  }
+    
+  (\set (\ref \h \self)) {
+    (\link (\set \href \h) \self)
+  }
 
-  (\set \Skeleton (\color [purple] Skeleton))
-  (\set (\titleOf \self)) {
+  (\set (\head \self)) {
     (\## (\bold \self))\line
   }
 

@@ -20,3 +20,7 @@
 - The `Skeleton` programming language first parser and compiler for `HTML`.
 - Basic online blog server finished.
 - The `Skeleton` blog register tools.
+
+## Version `0.2.10`
+- The basic namespace and `import` system.
+- Starting to support tex generator.
