@@ -208,6 +208,7 @@ object MarkDownEvaluator:
 
     extension (expr: SkeleExpr)
       override def eval: Skele[F, HtmlText] = expr match
+        case Pass => raw("").pure
         case Box(xs) => //debox!
           xs.traverse(_.eval).map {
             xs => xs.map(_.render).mkString

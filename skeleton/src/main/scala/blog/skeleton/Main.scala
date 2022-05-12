@@ -39,14 +39,34 @@ trait SkeletonCompiler [
       text <- readFile(path)
       tree <- parse(text)
       expr <- evalExpr.eval(tree)
-      html <- evalMarkDown.eval(expr)
+      html <- {
+        // println(expr.toString)
+        evalMarkDown.eval(expr)
+      }
     yield html
   }
 end SkeletonCompiler
 
 
 
+/*
 
+\Math
+  \sqrt{1 2}
+  \double
+  \quoted
+
+\module\Math {
+  \set\sqrt {
+    \unimplemented
+  }
+}
+
+This is \Scala\Js
+
+(\list Math) {}
+
+*/
 
 
 
@@ -57,12 +77,12 @@ class SkeletonHtml [
   GenEnv,
 ]
 (using
- fileIO: FileIOString[F],
- parser: Parser[F, SkeleExpr],
- evalMarkDown: blog.core.Eval[[A] =>> MarkDownEnv ?=> F[A], SkeleExpr, blog.HtmlText],
- evalExpr: blog.core.Eval[[A] =>> ExprEnv ?=> F[A], SkeleExpr, SkeleExpr],
- generator: BlogIndexGenerator[[A] =>> GenEnv ?=> F[A]],
- htmlWriter: blog.core.Writer[F, String, blog.HtmlText],
+  fileIO: FileIOString[F],
+  parser: Parser[F, SkeleExpr],
+  evalMarkDown: blog.core.Eval[[A] =>> MarkDownEnv ?=> F[A], SkeleExpr, blog.HtmlText],
+  evalExpr: blog.core.Eval[[A] =>> ExprEnv ?=> F[A], SkeleExpr, SkeleExpr],
+  generator: BlogIndexGenerator[[A] =>> GenEnv ?=> F[A]],
+  htmlWriter: blog.core.Writer[F, String, blog.HtmlText],
 ) extends SkeletonCompiler[F, blog.HtmlText, MarkDownEnv, ExprEnv, GenEnv]:
   import blog.page
 

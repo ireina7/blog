@@ -15,6 +15,7 @@ import cats.syntax.applicative.*
 import cats.syntax.traverse.*
 import cats.MonadError
 import blog.skeleton.evaluator.EvalSkeleExpr
+import blog.core.FileIO
 
 
 
@@ -196,6 +197,7 @@ object PreMarkDownExprEvaluator:
       "######"    -> Primitive,
       "section"   -> Primitive,
       "paragraph" -> Primitive,
+      "module"    -> Primitive,
       "link"      -> Primitive,
       "image"     -> Primitive,
       "font"      -> Primitive,
@@ -222,7 +224,13 @@ object PreMarkDownExprEvaluator:
       )
   end Environment
 
-  given given_evalSkeleExpr[F[_]](using err: MonadError[F, Throwable])
+  import blog.core.FileIOString
+  import blog.core.Parser
+  given given_evalSkeleExpr[F[_]](using 
+      err: MonadError[F, Throwable],
+      fileIO: FileIO[F, String, String],
+      parser: Parser[F, SkeleExpr],
+    )
     : EvalSkeleExpr[[A] =>> Skele[F, A], SkeleExpr] =
     evalSkeleExpr
 
@@ -240,7 +248,11 @@ object PreMarkDownExprEvaluator:
       import SkeleExpr.*
   */
   def evalSkeleExpr[F[_]]
-    (using err: MonadError[F, Throwable])
+    (using 
+      err: MonadError[F, Throwable], 
+      fileIO: FileIO[F, String, String],
+      parser: Parser[F, SkeleExpr]
+    )
     : EvalSkeleExpr[[A] =>> Skele[F, A], SkeleExpr] =
     new EvalSkeleExpr {
     
@@ -303,6 +315,14 @@ object PreMarkDownExprEvaluator:
       
       f match
         /**Primitive case, no change! very dirty!*/
+        case Var("module") => {
+          xs.foldLeft(Pass.pure) { case (acc, x) => 
+            for
+              pre <- acc
+              res <- x.eval(using env)
+            yield res
+          }
+        }
         case Var(name) => App(f, xs).pure
         case Closure(params, expr, environment) => {
           // println(s"$ps, $expr, $env")
@@ -335,9 +355,21 @@ object PreMarkDownExprEvaluator:
             lambda(lefts, expr)(using env)
           else if !rights.isEmpty then
             if env.contains("self") 
-            then env("self") = App(Var("span"), env("self") :: rights)
-            else env += ("self" -> App(Var("span"), rights))
-            expr.eval(using env)
+            then {
+              // Set self text
+              env("self") = App(Var("span"), env("self") :: rights)
+              expr.eval(using env)
+            }
+            else {
+              // Curry it
+              // env += ("self" -> App(Var("span"), rights))
+              expr match
+                case Box(List(f)) => 
+                  App(f, rights).eval(using env)
+                case _ => 
+                  App(expr, rights).eval(using env)
+            }
+            
           else
             expr.eval(using env)
             // Auto currying
@@ -390,10 +422,48 @@ object PreMarkDownExprEvaluator:
           s"Addition error: operating $x and $y"
         ))
     }
+    private def `import`(path: String): Skele[F, SkeleExpr] = env ?=>
+      for {
+        src <- fileIO.readFile(path)
+        exp <- parser.parse(src)
+        res <- exp.eval
+      } yield {
+        // println(env)
+        Pass
+      }
+    end `import`
+    
+    private def condition
+      (branches: List[(SkeleExpr, SkeleExpr)]): Skele[F, SkeleExpr] = {
+      
+      // branches.foldLeft()
+      ???
+    }
+    private def cases(
+      expr: SkeleExpr, 
+      branches: List[(SkeleExpr, SkeleExpr)]
+    ): Skele[F, SkeleExpr] = {
+      
+      val notMatch: Skele[F, SkeleExpr] = 
+        err.raiseError(
+          blog.Error(s"case matching failed: matching: $expr")
+        )
+      
+      branches.foldLeft(notMatch) {
+        case (acc, (p, v)) =>
+          if p == expr then return v.eval//.flatMap{x => println(x); x.pure}
+          else acc
+      }
+    }
+
     extension (expr: SkeleExpr)
       override def eval: Skele[F, SkeleExpr] = env ?=>
         // println(s"eval env: ${env.##}, $expr")
         val ans = expr match
+        case Pass => Pass.pure
+        case Box(List(x)) => 
+          val env1 = env.clone()
+          x.eval
         case Box(xs) => {
           val env1 = env.clone() // to prevent polluting environment
           for {
@@ -408,7 +478,9 @@ object PreMarkDownExprEvaluator:
           } yield Box(vs)
         }
           // xs.traverse(_.eval).map(Box.apply)
-
+        case App(Var("import"), List(Str(path))) =>
+          `import`(path)
+        
         case App(Var("square"), xs) => {
           env.get("square") match
             case None => Box(xs).eval
@@ -421,6 +493,17 @@ object PreMarkDownExprEvaluator:
               vs <- application(f, ps::Nil)
             } yield vs
         }
+        case App(Var("case"), expr :: branches) => 
+          val bs = branches.map {
+            case App(p, List(v)) => (p, v)
+            case other => return 
+              err.raiseError(blog.Error(s"case pattern syntax error: $other"))
+          }
+          // println(s">>> $bs")
+          for {
+            e <- expr.eval
+            v <- cases(e, bs)
+          } yield v
 
         case App(Var("+"), List(a, b)) => for {
           x <- a.eval

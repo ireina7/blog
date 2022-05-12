@@ -62,7 +62,7 @@ end given
 object Parser:
   
   // val identity = "[a-zA-Z0-9~\\[\\]!=-@#$+%^&*_:\";/,|\\_\\.]+".r
-  val identity: Regex = "[^{}()'\"\\[\\]\\s\\\\]+".r //more general
+  val identity: Regex = "[^{}()'\\.\"\\[\\]\\s\\\\]+".r //more general
 
   import scala.util.parsing.combinator.RegexParsers
 
@@ -73,12 +73,11 @@ object Parser:
     private def variable: Parser[Var] = "\\" ~ identity ^^ {
       case _ ~ name => Var.apply(name)
     }
-    private def real = "\\d+\\.\\d*".r ^^ (s => SkeleExpr.number(s.toDouble))
-    private def integer = "\\d+".r ^^ (s => SkeleExpr.integer(s.toInt))
-    private def number = real | integer
-//    private def symbol     = "'" ~ identity  ^^ {
-//      case _ ~ name => SkeleExpr.variable(name)
-//    }
+    private def real       = "\\d+\\.\\d*".r ^^ (s => SkeleExpr.number(s.toDouble))
+    private def integer    = "\\d+".r ^^ (s => SkeleExpr.integer(s.toInt))
+    private def number     = real | integer
+    private def symbol     = "." ~> identity  ^^ SkeleExpr.string
+    
     private def space      = "\\ " ^^ (_ => Str(" "))
     private def quoted     = ("'" ~> "[^']+".r <~ "'") ^^ Str.apply.compose(_.stripMargin)
 //    private def pattern    = symbol | lists
@@ -89,7 +88,8 @@ object Parser:
         Quote(e)
       )
     }
-    private def bracketBoxed = ("(\\box " ~> expr.* <~ ")") ~ ("{" ~> expr.* <~ "}").? ^^ {
+    private def dot = "."
+    private def bracketBoxed = ("(" ~ "\\box " ~> expr.* <~ ")") ~ ("{" ~> expr.* <~ "}").? ^^ {
       case xs ~ None => Box(xs)
       case xs ~ Some(ys) => Box(xs ++ ys)
     }
@@ -99,7 +99,7 @@ object Parser:
     private def braceBoxed = "\"" ~> expr.* <~ "\"" ^^ Box.apply
     private def boxed = bracketBoxed | singleBracketBoxed | braceBoxed
 
-    private def commonComments   = ("(\\doc " ~> expr.* <~ ")") ~ ("{" ~> expr.* <~ "}").? ^^ {
+    private def commonComments   = ("(" ~ "\\doc " ~> expr.* <~ ")") ~ ("{" ~> expr.* <~ "}").? ^^ {
       case _ ~ _ => Box(Str(""):: Nil)
     }
     private def structComments = "\\doc" ~> ("{" ~> expr.* <~ "}") ^^ {
@@ -107,17 +107,17 @@ object Parser:
     }
     private def comments = commonComments | structComments
     // def structLambda = ("(\\" ~> lists ~ expr <~ ")") ~ ("{" ~> expr.* <~ "}").?
-    private def simpleAssignment = ("(\\set " ~> variable ~ expr.+ <~ ")") ^^ {
+    private def simpleAssignment = "(" ~ "\\set" ~> variable ~ expr.+ <~ ")" ^^ {
       case key ~ es => Set(Quote(key), Box(es))
     }
-    private def structAssign = ("(\\set " ~> variable ~ expr.* <~ ")") ~ ("{" ~> expr.+ <~ "}") ^^ {
+    private def structAssign = ("(" ~ "\\set" ~> variable ~ expr.* <~ ")") ~ ("{" ~> expr.+ <~ "}") ^^ {
       case key ~ xs ~ es => Set(Quote(key), Box(xs ++ es))
     }
     private def setAssign = "\\set" ~> ("{" ~> variable ~ expr.+ <~ "}") ^^ {
       case key ~ es => Set(Quote(key), Box(es))
     }
     private def assignment = structAssign | simpleAssignment | setAssign
-    private def simpleDef = ("(\\set " ~> lists ~ expr.+ <~ ")") ^^ {
+    private def simpleDef = ("(" ~ "\\set" ~> structList ~ expr.+ <~ ")") ^^ {
       case App(f, xs) ~ es => 
         Set(
           Quote(f),
@@ -128,7 +128,7 @@ object Parser:
         )
       case _ => Pass // bad!
     }
-    private def structDef = ("(\\set " ~> lists ~ expr.* <~ ")") ~ ("{" ~> expr.+ <~ "}") ^^ {
+    private def structDef = ("(" ~ "\\set" ~> structList ~ expr.* <~ ")") ~ ("{" ~> expr.+ <~ "}") ^^ {
       case App(f, ps) ~ xs ~ ys => 
         Set(
           Quote(f),
@@ -139,7 +139,7 @@ object Parser:
         )
       case _ => Pass // bad!
     }
-    private def setDef = "\\set" ~> ("{" ~> lists ~ expr.+ <~ "}") ^^ {
+    private def setDef = "\\set" ~> ("{" ~> structList ~ expr.+ <~ "}") ^^ {
       case App(f, ps) ~ es => Set(
         Quote(f),
         Lambda(
@@ -153,11 +153,11 @@ object Parser:
     // def codes      = ("(\\code" ~> ??? <~ ")") ^^ {
     //   case code => App(Var("code"), "[.]")
     // }
-    private def brackets   = ("(\\bracket " ~> expr.* <~ ")") ~ ("{" ~> expr.* <~ "}").? ^^ {
+    private def brackets   = ("(" ~ "\\bracket " ~> expr.* <~ ")") ~ ("{" ~> expr.* <~ "}").? ^^ {
       case xs ~ None => Box(List(Str("(")) ++ xs ++ List(Str(")")))
       case xs ~ Some(ys) => Box(List(Str("(")) ++ xs ++ ys ++ List(Str(")")))
     }
-    private def braces   = ("(\\brace " ~> expr.* <~ ")") ~ ("{" ~> expr.* <~ "}").? ^^ {
+    private def braces   = ("(" ~ "\\brace " ~> expr.* <~ ")") ~ ("{" ~> expr.* <~ "}").? ^^ {
       case xs ~ None => Box(List(Str("{")) ++ xs ++ List(Str("}")))
       case xs ~ Some(ys) => Box(List(Str("{")) ++ xs ++ ys ++ List(Str("}")))
     }
@@ -198,12 +198,22 @@ object Parser:
       case _ => ???//Left(blog.Error("unknown parser error"))
     } | variableList
 
+    private def branch: Parser[SkeleExpr] =
+      "(" ~> expr ~ expr <~ ")" ^^ {
+        case p ~ v => Box(List(p, v))
+      }
+    private def cases: Parser[SkeleExpr] = 
+      ("(" ~> "\\case" ~> expr <~ ")") ~ ("{" ~> branch.+ <~ "}") ^^ {
+        case e ~ bs => App(Var("case"), e :: bs)
+      }
+
 
     private def expr: Parser[SkeleExpr] =
       escapes    |
       number     | 
       quoted     |
       squares    |
+      symbol     |
       text       | 
       boxed      |
       comments   |

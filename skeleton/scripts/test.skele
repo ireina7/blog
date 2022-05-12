@@ -1,6 +1,24 @@
 
 \document {
-  \set { \class [test page] }
+  (\set\class) { test page }
 
-  Hello, \font{\set{\style color:purple} skeleton!}
+  (\import './skeleton/scripts/predef.skele')
+
+  \set {
+    \Math{\f}
+    (\ (\n) .ok)
+  }
+
+  (\set \predef{\f}) {
+    (\case \f) {
+      (.hello-world .okk)
+      (.sqrt (\Math.sqrt))
+    }
+  }
+
+  (\set \test (\Math.sqrt))
+
+  (\predef.hello-world)
+  (\predef.sqrt) {2} 
+  (\titleOf Test!!)
 }

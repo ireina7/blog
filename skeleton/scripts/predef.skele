@@ -1,0 +1,19 @@
+\module {
+
+  (\set (\color \c \self)) {
+    (\font (\set \style color:\c) \self)
+  }
+
+  (\set \Skeleton (\color [purple] Skeleton))
+  (\set (\titleOf \self)) {
+    (\## (\bold \self))\line
+  }
+
+  \doc { to generate indented paragraph }
+  (\set (\para \self)) {
+    \paragraph {
+      (\set \style text-indent:2em)
+      \self
+    }
+  }
+}
