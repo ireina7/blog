@@ -3,10 +3,6 @@ package blog
 import cats.*
 
 
-
-
-
-
 class BlogEnv[A](val config: blog.Configuration) {
 
   import scala.collection.mutable.Map

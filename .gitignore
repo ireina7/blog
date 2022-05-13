@@ -39,7 +39,11 @@ classes/
 
 /shared/public/*
 !/shared/public/.gitkeep
+!/shared/public/pages
 !/shared/public/README.md
+
+/shared/public/pages/*
+!/shared/public/pages/.gitkeep
 
 /shared/staticPackage/*
 !/shared/staticPackage/.gitkeep

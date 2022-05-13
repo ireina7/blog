@@ -38,6 +38,8 @@ object TexEvaluator:
   //       env.get(name) match
   //         case Some(x) => x.toString.pure
   //         case None => errDsl.raiseError(blog.Error(s"Markdown: Variable not found: $name"))
+
+  //     override def integer(i: Int) = ???
+  //     override def string(s: String) = ???
     
   //   end new
-end TexEvaluator

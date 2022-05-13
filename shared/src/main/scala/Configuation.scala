@@ -4,11 +4,14 @@ package blog
 case class Configuration(
   blogType: BlogType,
   prompt: String = "blog",
-) {
+  dataPath: String = "./shared",
+):
   def blogPath: String = blogType match
-    case BlogType.Static => s"./shared/staticPackage"
-    case BlogType.Online => s"./shared/public"
-}
+    case BlogType.Static => s"$dataPath/staticPackage"
+    case BlogType.Online => s"$dataPath/public"
+  
+end Configuration
+
 
 object Configuration {
   
