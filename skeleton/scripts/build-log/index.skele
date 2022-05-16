@@ -1,0 +1,27 @@
+\document {
+  (\set\class blog)
+  (\import './skeleton/scripts/predef.skele')
+
+  (\set\scala) {
+    \color{.red Scala\ }
+  }
+  (\set\part{\self}) {
+    \line\###{\self}
+  }
+
+  \doc {main content}
+  (\## Blog 搭建纪实)
+
+  \part {前端}
+  全面使用 (\code Scala.js)。
+
+  \part {后端}
+  全面使用 (\italic tagless final) 编程方式，使用 \scala 完成。
+
+  \part {域名}
+  于 \ref{[namecheap.com] namecheap}\ 购买。
+
+  \part {虚拟服务器（VPS）}
+  于 \ref{[vultr.com] Vultr}\ 购买。
+
+}

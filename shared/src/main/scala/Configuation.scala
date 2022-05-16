@@ -38,7 +38,7 @@ extension (conf: Configuration)
     case Online => s"/blog"
 
   def assetsRoute: String = conf.blogType match
-    case Static => "../assets" 
+    case Static => "../../assets" 
     case Online => s"/assets"
   
 end extension

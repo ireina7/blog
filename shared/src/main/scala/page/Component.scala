@@ -44,7 +44,7 @@ object Component {
   }
 
   def mainContent(content: HtmlText) = {
-    div(id := "blog-content")(content)
+    div(`class` := "blog-content")(content)
   }
   
   val footer: HtmlText = {

@@ -27,7 +27,7 @@ object Main {
    * It is sad that we cannot reuse [[blog.BlogType]] here.
   */
   val assetsPath = //Configuration.staticBlog.blogType.assetsPath
-    if isStatic then "../assets" else "/assets"
+    if isStatic then "../../assets" else "/assets"
 
   def setup(): Unit = {
     
@@ -104,7 +104,7 @@ object Main {
 
   val searchBar: dom.Element = {
 
-    form(cls := "d-flex", marginLeft := 45, bottom := 0, marginTop := 30, width := 600)(
+    form(cls := "d-flex", marginLeft := 65, bottom := 0, marginTop := 30, width := 600)(
       input(
         `class` := "form-control me-2", 
         `type` := "search",
@@ -150,7 +150,7 @@ object Main {
       backgroundPosition := "right bottom",
       backgroundSize := "cover",
     )(
-      tag("nav")(`class` := "nav sticky-top", marginTop := 0, marginLeft := 50, height := 150)(
+      tag("nav")(`class` := "nav sticky-top", marginTop := 0, marginLeft := 70, height := 150)(
         div(marginTop := 20)(
           a(
             `class` := "navbar-brand",
@@ -166,7 +166,7 @@ object Main {
       ),
       searchBar,
       pre(
-        marginLeft := 55,
+        marginLeft := 65,
         fontSize := 18,
       )(
         """
