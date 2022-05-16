@@ -49,33 +49,8 @@ end SkeletonCompiler
 
 
 
-/*
 
-\Math
-  \sqrt{1 2}
-  \double
-  \quoted
-
-\module\Math {
-  \set\sqrt {
-    \unimplemented
-  }
-}
-
-This is \Scala\Js
-
-(\list Math) {}
-
-*/
-
-
-
-class SkeletonHtml [
-  F[_]: Monad,
-  MarkDownEnv,
-  ExprEnv,
-  GenEnv,
-]
+final class SkeletonHtml[F[_]: Monad, MarkDownEnv, ExprEnv, GenEnv]
 (using
   conf: blog.Configuration,
   fileIO: FileIOString[F],
@@ -84,6 +59,7 @@ class SkeletonHtml [
   evalExpr: blog.core.Eval[[A] =>> ExprEnv ?=> F[A], SkeleExpr, SkeleExpr],
   generator: BlogIndexGenerator[[A] =>> GenEnv ?=> F[A]],
   htmlWriter: blog.core.Writer[F, String, blog.HtmlText],
+
 ) extends SkeletonCompiler[F, blog.HtmlText, MarkDownEnv, ExprEnv, GenEnv]:
   import blog.page
 
@@ -92,41 +68,71 @@ class SkeletonHtml [
     
     for
       idx  <- generator.readIndex
-      _    <- generator.generateIndexFile(
-                conf.path.index,
-                item :: idx
-              )
+      _    <- generator.generateIndexFile(conf.path.index, item :: idx.filter(_.id != item.id))
       _    <- generator.generateIndexPage
     yield ()
   }
 
-  def register(path: String, fileName: String, item: page.Item)
+  def registerFile
+    (path: String, title: String, blogNo: Option[Int] = None)
     (using ExprEnv, MarkDownEnv, GenEnv): F[Unit] = 
     // println(generator.config.blogPath)
     import blog.blogPath
-    for
-      html <- compile(path)
-      _    <- htmlWriter.write
-                (generator.indexPage(html))
-                (s"${generator.config.blogPath}/pages/$fileName")
-      _    <- registerIndex(item)
-    yield ()
-
-  def registerCmd(path: String, title: String)
-    (using ExprEnv, MarkDownEnv, GenEnv): F[Unit] = {
-    
     import blog.blogRoute
+
     val linkDir = s"${generator.config.blogRoute}"
     val format = java.time.format.DateTimeFormatter.ofPattern("yyyy年 MM月 dd日")
-    val item = page.Item(
-      title  = title,
-      link   = s"$linkDir/$title.html",
-      author = "Ireina7",
-      date   = java.time.LocalDateTime.now.format(format),
-      view   = "",
-    )
-    register(path, s"$title.html", item)
-  }
+    for
+      html <- compile(path)
+      id   <- blogNo match
+                case Some(i) => i.pure
+                case None => generator.readIndex.map(xs => xs.map(_.id).maxOption.getOrElse(-1) + 1)
+      _    <- fileIO.createDirectory(s"${generator.config.blogPath}/pages")
+      _    <- htmlWriter.write
+                (generator.indexPage(html))
+                (s"${generator.config.blogPath}/pages/blog-$id.html")
+      _    <- registerIndex(page.Item(
+                id     = id, 
+                title  = title,
+                link   = s"$linkDir/blog-$id.html",
+                author = "Ireina7",
+                date   = java.time.LocalDateTime.now.format(format),
+                view   = "",
+              ))
+    yield ()
+  end registerFile
+
+  def registerDirectory
+    (path: String, title: String, blogNo: Option[Int] = None)
+    (using ExprEnv, MarkDownEnv, GenEnv): F[Unit] = 
+    // println(generator.config.blogPath)
+    import blog.blogPath
+    import blog.blogRoute
+
+    val linkDir = s"${generator.config.blogRoute}"
+    val storePath = s"${generator.config.blogPath}/pages"
+    val format = java.time.format.DateTimeFormatter.ofPattern("yyyy年 MM月 dd日")
+    for
+      html <- compile(s"$path/index.skele")
+      id   <- blogNo match
+                case Some(i) => i.pure
+                case None => generator.readIndex.map(xs => xs.map(_.id).maxOption.getOrElse(-1) + 1)
+      _    <- fileIO.createDirectory(storePath)
+      _    <- fileIO.createDirectory(s"$storePath/$id")
+      _    <- fileIO.copyDirectory(path, s"$storePath/$id")
+      _    <- htmlWriter.write
+                (generator.indexPage(html))
+                (s"$storePath/$id/index.html")
+      _    <- registerIndex(page.Item(
+                id     = id, 
+                title  = title,
+                link   = s"$linkDir/$id/index.html",
+                author = "Ireina7",
+                date   = java.time.LocalDateTime.now.format(format),
+                view   = "",
+              ))
+    yield ()
+  end registerDirectory
 
 end SkeletonHtml
 
@@ -166,6 +172,10 @@ object Skeleton:
     // println(args.toList)
     val filePath = args(1)
     val fileTitle = args(2)
+    val blogNo: Option[Int] = 
+      if args.length > 3 
+      then Some(args(3).toInt) 
+      else None
 
     // given generator = summon[Generator[GenEffect]]
     val skeleton: SkeletonHtml[
@@ -179,12 +189,12 @@ object Skeleton:
     
 //    val link = summon[blog.Configuration].blogType.blogPath
     // println(link)
+    // val exe = 
+    //   skeleton.registerFile(filePath, fileTitle, blogNo)
+
     val exe = 
-      skeleton.registerCmd(
-        filePath, 
-        fileTitle,
-      )
-    // println("end exe")
+      skeleton.registerDirectory(filePath, fileTitle, blogNo)
+    
     exe.run() match
       case Left(err) => println(s"[error] $err")
       case Right(_)  => println(s"[info] Ok: $filePath registered.")

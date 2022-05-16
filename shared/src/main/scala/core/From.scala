@@ -16,13 +16,14 @@ object From {
   given itemDecoder: Decoder[blog.page.Item] = new Decoder[blog.page.Item]:
     def apply(c: HCursor) =
       for {
+        id     <- c.downField("id"    ).as[Int]
         title  <- c.downField("title" ).as[String]
         link   <- c.downField("link"  ).as[String]
         author <- c.downField("author").as[String]
         date   <- c.downField("date"  ).as[String]
         view   <- c.downField("view"  ).as[String]
       } yield {
-        blog.page.Item(title, link, author, date, view)
+        blog.page.Item(id, title, link, author, date, view)
       }
 
   given parseJson[B](using decoder: io.circe.Decoder[B])

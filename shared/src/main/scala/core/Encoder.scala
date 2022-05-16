@@ -27,6 +27,7 @@ object Encoder:
 
       given encodeEvent: circe.Encoder[page.Item] = new circe.Encoder[page.Item] {
         final def apply(a: page.Item): Json = Json.obj(
+          ("id",     Json.fromInt(a.id)),
           ("title",  Json.fromString(a.title)),
           ("link",   Json.fromString(a.link)),
           ("author", Json.fromString(a.author)),

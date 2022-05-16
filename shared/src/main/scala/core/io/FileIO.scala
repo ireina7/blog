@@ -1,7 +1,7 @@
 package blog.core
 
 import scala.util.{Try, Success, Failure}
-// import shapeless.Succ
+import java.io.File
 
 
 
@@ -19,8 +19,15 @@ import scala.io.{ Source, BufferedSource }
 
 trait FileIO[F[_], Path, -Content] {
   
-  def readFile(path: Path): F[String]
-  def writeFile(path: Path, content: Content): F[Unit]
+  /** File operations */
+  def createFile(path: Path): F[Unit]
+  def readFile  (path: Path): F[String]
+  def writeFile (path: Path, content: Content): F[Unit]
+
+  /** Directory operations */
+  def createDirectory(path: Path): F[Unit]
+  def copyDirectory(from: Path, to: Path): F[Unit]
+  // def writeDirectory (to: Path): F[Unit]
 }
 
 
@@ -39,6 +46,10 @@ object FileIO:
   // type Id[A] = A
   given FileIO[Id, String, String] with {
 
+    override def createFile(path: String): Unit = {
+      val file: File = new File(path)
+      file.createNewFile() // if already exists, no warning though...
+    }
     override def readFile(path: String) = {
       import java.nio.file.{ Files, Paths }
       new String(Files.readAllBytes(Paths.get(path)))
@@ -50,9 +61,29 @@ object FileIO:
         p.close
       }
     }
+
+    override def createDirectory(path: String): Unit = {
+      val theDir: File = new File(path)
+      if !theDir.exists() then
+        theDir.mkdirs()
+    }
+
+    override def copyDirectory(from: String, to: String): Unit = {
+      import java.nio.file.Path
+      summon[FileIO[Id, Path, String]]
+        .copyDirectory(Path.of(from), Path.of(to))
+    }
+    // override def writeDirectory (path: String): Unit = {
+    //   ???
+    // }
   }
 
   given FileIO[Id, java.nio.file.Path, String] with {
+
+    def createFile(path: java.nio.file.Path): Unit = {
+      val file: File = new File(path.toString)
+      file.createNewFile() // if already exists, no warning though...
+    }
 
     def readFile(path: java.nio.file.Path) = {
       import java.nio.file.{ Files, Paths }
@@ -65,24 +96,76 @@ object FileIO:
         p.close
       }
     }
+    override def createDirectory(path: java.nio.file.Path): Unit = {
+      val theDir: File = new File(path.toString)
+      if !theDir.exists() then
+        theDir.mkdirs()
+    }
+
+    override def copyDirectory(from: java.nio.file.Path, to: java.nio.file.Path): Unit = {
+      import java.nio.file.StandardCopyOption.*
+      import java.nio.file.{Files, Path}
+      var stream: java.util.stream.Stream[Path] = null
+      try {
+        stream = Files.walk(from)
+        stream.forEach {
+          source => 
+            copyFolder(source, to.resolve(from.relativize(source)))
+        }
+      } finally {
+        stream.close()
+      }
+    }
+    private def copyFolder(from: java.nio.file.Path, to: java.nio.file.Path): Unit = {
+      import java.nio.file.StandardCopyOption.*
+      import java.nio.file.{Files, Path}
+      try {
+        Files.copy(from, to, REPLACE_EXISTING)
+      } catch {
+        case e: Exception =>
+          throw new RuntimeException(e.getMessage(), e)
+      }
+    }
+    // override def writeDirectory (path: java.nio.file.Path): Unit = {
+    //   ???
+    // }
   }
 
-  given [Path](using rawIO: FileIO[Id, Path, String]): 
-    FileIO[IO, Path, String] with {
+  given [Path](using rawIO: FileIO[Id, Path, String])
+    : FileIO[IO, Path, String] with 
 
-    def readFile(path: Path) = 
-      // IO { rawIO.readFile(path) }
-      Try(rawIO.readFile(path)) match
-        case Success(s) => IO(s)
-        case Failure(e) => IO.raiseError(e)
-    
-    def writeFile(path: Path, content: String) = 
-      // IO { rawIO.writeFile(path, content) }
-      Try(rawIO.writeFile(path, content)) match
+    override def createFile(path: Path): IO[Unit] = 
+      IO(Try(rawIO.createFile(path))).flatMap {
         case Success(_) => IO(())
         case Failure(e) => IO.raiseError(e)
+      }
+
+    override def readFile(path: Path) = 
+      // IO { rawIO.readFile(path) }
+      IO(Try(rawIO.readFile(path))).flatMap {
+        case Success(s) => IO(s)
+        case Failure(e) => IO.raiseError(e)
+      }
     
-  }
+    override def writeFile(path: Path, content: String) = 
+      // IO { rawIO.writeFile(path, content) }
+      IO(Try(rawIO.writeFile(path, content))).flatMap {
+        case Success(_) => IO(())
+        case Failure(e) => IO.raiseError(e)
+      }
+
+    override def createDirectory(path: Path): IO[Unit] = 
+      IO(Try(rawIO.createDirectory(path))).flatMap {
+        case Success(_) => IO(())
+        case Failure(e) => IO.raiseError(e)
+      }
+
+    override def copyDirectory(from: Path, to: Path): IO[Unit] = 
+      IO(Try(rawIO.copyDirectory(from, to))).flatMap {
+        case Success(_) => IO(())
+        case Failure(e) => IO.raiseError(e)
+      }
+  end given
 
   export blog.core.Effect.given FileIO[?, ?, ?]
 

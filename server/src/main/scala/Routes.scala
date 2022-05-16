@@ -100,7 +100,7 @@ object Routes:
         Ok(content)
           
       // /blog/$file
-      case req @ GET -> Root / "blog" / fileName =>
+      case req @ GET -> "blog" /: fileName =>
         StaticFile
           .fromFile(new File(s"${blog.Path.blogs}/pages/$fileName"), blocker, Some(req))
           .getOrElseF(NotFound())

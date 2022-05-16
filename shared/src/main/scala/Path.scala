@@ -15,7 +15,7 @@ abstract class Path:
 object Path:
 
   val default = new Path {
-    def root = s".."
+    def root = s"."
     def data = s"$root/shared"
     def index = s"$data/public/items.json"
   }

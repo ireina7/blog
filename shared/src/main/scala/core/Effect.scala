@@ -31,21 +31,38 @@ object Effect:
 
   type IOErr[A] = EitherT[IO, Throwable, A]
 
-  given (using rawIO: FileIOString[Id]):
-    FileIO[IOErr, String, String] with {
-    def readFile(path: String) = {
+  given [Path](using rawIO: FileIO[Id, Path, String]):
+    FileIO[IOErr, Path, String] with 
+
+    override def createFile(path: Path): IOErr[Unit] = 
+      EitherT.rightT[IO, Throwable]
+        (Try(rawIO.createFile(path))).flatMap {
+        case Success(_) => EitherT.rightT(())
+        case Failure(e) => EitherT.leftT(e)
+      }
+    override def readFile(path: Path) = {
       // EitherT.rightT[IO, Throwable](rawIO.readFile(path))
       Try(rawIO.readFile(path)) match
         case Success(s) => EitherT.rightT(s)
         case Failure(e) => EitherT.leftT(e)
     }
-    def writeFile(path: String, content: String) = {
+    override def writeFile(path: Path, content: String) = {
       // EitherT.rightT[IO, Throwable](rawIO.writeFile(path, content))
       Try(rawIO.writeFile(path, content)) match
         case Success(_) => EitherT.rightT(())
         case Failure(e) => EitherT.leftT(e)
     }
-  }
+
+    override def createDirectory(path: Path): IOErr[Unit] = 
+      Try(rawIO.createDirectory(path)) match
+        case Success(_) => EitherT.rightT(())
+        case Failure(e) => EitherT.leftT(e)
+
+    override def copyDirectory(from: Path, to: Path): IOErr[Unit] =
+      Try(rawIO.copyDirectory(from, to)) match
+        case Success(_) => EitherT.rightT(())
+        case Failure(e) => EitherT.leftT(e)
+  end given
 
 
   given (using ioio: Console[IO]): 
@@ -68,13 +85,14 @@ object Effect:
       given itemDecoder: Decoder[blog.page.Item] = new Decoder[blog.page.Item]:
         def apply(c: HCursor) =
           for 
+            id     <- c.downField("id"    ).as[Int]
             title  <- c.downField("title" ).as[String]
             link   <- c.downField("link"  ).as[String]
             author <- c.downField("author").as[String]
             date   <- c.downField("date"  ).as[String]
             view   <- c.downField("view"  ).as[String]
           yield 
-            blog.page.Item(title, link, author, date, view)
+            blog.page.Item(id, title, link, author, date, view)
       
       EitherT.fromEither(decode(s))
     }
@@ -166,12 +184,21 @@ object Effect:
   }
 
 
-  given [F[_], Env](using fio: FileIO[F, String, String]):
-    FileIO[[A] =>> Injection[F, Env, A], String, String] with {
-    override def readFile(path: String) = 
+  given [F[_], Env, Path](using fio: FileIO[F, Path, String]):
+    FileIO[[A] =>> Injection[F, Env, A], Path, String] with {
+
+    override def createFile(path: Path): Injection[F, Env, Unit] =
+      fio.createFile(path)
+    override def readFile(path: Path) = 
       fio.readFile(path)
-    override def writeFile(path: String, content: String) = 
+    override def writeFile(path: Path, content: String) = 
       fio.writeFile(path, content)
+    
+    override def createDirectory(path: Path) = 
+      fio.createDirectory(path)
+
+    override def copyDirectory(from: Path, to: Path) =
+      fio.copyDirectory(from ,to)
   }
 
 
