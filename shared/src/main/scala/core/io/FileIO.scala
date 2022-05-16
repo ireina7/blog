@@ -74,9 +74,9 @@ object FileIO:
     }
 
     override def copyDirectory(from: String, to: String): Unit = {
-      import java.nio.file.Path
-      summon[FileIO[Id, Path, String]]
-        .copyDirectory(Path.of(from), Path.of(to))
+      import java.nio.file.Paths
+      summon[FileIO[Id, java.nio.file.Path, String]]
+        .copyDirectory(Paths.get(from), Paths.get(to))
     }
     // override def writeDirectory (path: String): Unit = {
     //   ???

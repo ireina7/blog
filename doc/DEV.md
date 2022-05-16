@@ -24,3 +24,8 @@
 ## Version `0.2.10`
 - The basic namespace and `import` system.
 - Starting to support tex generator.
+
+## Version `0.3.1`
+- Modular blog! You can group everything related to your article in a folder and pack them later.
+- Lots of bugs fixed
+- TODO: Fix `./shared/assets` problem and add more detailed doc on how to write articles.

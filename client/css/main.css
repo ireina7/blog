@@ -87,17 +87,17 @@
 }
 
 .blog-searchBar {
-    margin-left: 65; 
+    margin-left: 45; 
     margin-top : 30;
     bottom: 0; 
     width : 600;
 }
 
-.blog-content {
+/* .blog-content {
     margin-left: 50; 
     margin-right: 50; 
     font-size: 20;
-}
+} */
 
 
 /**
