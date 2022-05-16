@@ -21,60 +21,81 @@ trait Generator[F[_]: Monad, Path, Thing] extends
 
 
 
-object Generator :
-  
-  given given_defaultGenerator[F[_]: Monad, Path, Thing](using
+object Generator:
+
+  class DefaultGenerator[F[_]: Monad, Path, Thing]
+    (using 
       fileIO: FileIO[F, Path, String],
-      parser: Parser[F, Thing],
       decoder: Decoder[F, Thing],
+      encoder: Encoder[F, Thing],
     )
-    : Generator[F, Path, Thing] = new Generator {
-    
-    override def read(path: Path): F[Thing] = {
+    extends Generator[F, Path, Thing]:
+
+    override def read(path: Path): F[Thing] = 
       for {
         raw <- fileIO.readFile(path)
-        res <- parser.parse(raw)
+        res <- decoder.decode(raw)
       } yield res
-    }
 
-    override def write(x: Thing)(path: Path) = {
+    override def write(x: Thing)(path: Path) = 
       for {
-        json <- decoder.decode(x)
+        json <- encoder.encode(x) // json for example
         _    <- fileIO.writeFile(path, json)
       } yield ()
-    }
-  }
+  end DefaultGenerator
+  
 
-
-  import Effect.*
-  import Effect.given
-  given (using conf: blog.Configuration): BlogIndexGenerator[IOErr] with
-    def config = conf
-
-
-  given (using conf: blog.Configuration):
-    BlogIndexGenerator[[A] =>> Injection[IOErr, blog.Configuration, A]] with
-    def config = conf
+  given given_defaultGenerator
+    [F[_]: Monad, Path, Thing](using
+      fileIO: FileIO[F, Path, String],
+      decoder: Decoder[F, Thing],
+      encoder: Encoder[F, Thing],
+    )
+    : DefaultGenerator[F, Path, Thing] = 
+    new DefaultGenerator
 
 end Generator
 
 
 
-trait BlogIndexGenerator[F[_]: Monad]
+class BlogIndexGenerator[F[_]: Monad] 
   (using
-    gen: Generator[F, String, page.Index],
+    // gen: Generator[F, String, page.Index],
+    fileIO: FileIO[F, String, String],
+    decoder: Decoder[F, page.Index],
+    encoder: Encoder[F, page.Index],
     htmlWriter: Writer[F, String, blog.HtmlText],
-  ):
+    val config: blog.Configuration
+  ) extends Generator[F, String, page.Index]:
   
-  def config: blog.Configuration
-  given blog.Configuration = config
+  // def config: blog.Configuration
+  // given blog.Configuration = config
 
   // A test to abstract typeclass constraints and it works!
   // type FileIOParser[F[_], A] = 
   //   (FileIOString[F], Parser[F, Index]) ?=> F[A]
 
+  override def read(path: String): F[page.Index] = 
+    for {
+      raw <- fileIO.readFile(path)
+      res <- decoder.decode(raw)
+    } yield res
+
+  override def write(x: page.Index)(path: String) = 
+    for {
+      json <- encoder.encode(x) // json for example
+      _    <- fileIO.writeFile(path, json)
+    } yield ()
+
+  
+  // override def read(path: String): F[page.Index] =
+  //   read(path) 
+
+  // override def write(x: page.Index)(path: String) =
+  //   write(x)(path) 
+
   def readIndex: F[page.Index] = 
-    gen.read(Path.items)
+    read(config.path.index)
 
   def readIndexHtml: F[HtmlText] = {
     
@@ -104,8 +125,30 @@ trait BlogIndexGenerator[F[_]: Monad]
   def generateIndexFile
     (path: String, index: page.Index): F[Unit] = {
     
-    gen.write(index)(path)
+    write(index)(path)
   }
+
+end BlogIndexGenerator
+
+
+
+object BlogIndexGenerator:
+
+  import Effect.*
+  import Effect.given
+  given [F[_]: Monad](using 
+    conf: blog.Configuration,
+    fileIO: FileIO[F, String, String],
+    decoder: Decoder[F, page.Index],
+    encoder: Encoder[F, page.Index],
+    htmlWriter: Writer[F, String, blog.HtmlText],
+  ): BlogIndexGenerator[F] =
+    new BlogIndexGenerator
+
+
+  // given (using conf: blog.Configuration):
+  //   BlogIndexGenerator[[A] =>> Injection[IOErr, blog.Configuration, A]] =
+  //     new BlogIndexGenerator
 
 end BlogIndexGenerator
 

@@ -21,12 +21,12 @@ object Writer:
 
   given [F[_]: Monad, Path, Input](using
     fileIO: FileIO[F, Path, String],
-    decoder: Decoder[F, Input],
+    encoder: Encoder[F, Input],
   )
   : Writer[F, Path, Input] = new Writer {
     def write(x: Input)(path: Path): F[Unit] = {
       for {
-        s <- decoder.decode(x)
+        s <- encoder.encode(x)
         _ <- fileIO.writeFile(path, s)
       } yield ()
     }

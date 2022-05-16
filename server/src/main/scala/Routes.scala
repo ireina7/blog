@@ -15,7 +15,8 @@ import http4s.{
   client as http4sClient,
   *
 }
-import http4s.dsl.*
+// import http4s.dsl.*
+// import http4s.dsl.io.*
 import http4s.server
 import http4s.syntax.kleisli.*
 import server.blaze.BlazeServerBuilder
@@ -31,7 +32,8 @@ import cats.implicits.*
 object Routes:
 
   import java.util.concurrent.*
-  given blog.Configuration = blog.Configuration.onlineBlog
+  import blog.server.data.*
+  given conf: blog.Configuration = blog.Configuration.onlineBlog
   val blockingPool = Executors.newFixedThreadPool(4)
   val blocker = Blocker.liftExecutorService(blockingPool)
 
@@ -41,7 +43,7 @@ object Routes:
     
     val dsl = new Http4sDsl[F]{}
     import dsl.*
-    import blog.page.*
+    import blog.page
 
     HttpRoutes.of[F] {
       // /
@@ -52,24 +54,49 @@ object Routes:
 
       // /assets/$file
       case req @ GET -> "assets" /: file =>
-        val assets = blog.Shared.assetsPath
+        val assets = blog.Path.assets
         StaticFile
           .fromFile(new File(s"$assets/$file"), blocker, Some(req))
           .getOrElseF(NotFound())
-          
+
+      case GET -> Root / "conf" =>
+        Ok(
+          page.Frame.index(
+            blog.Configuration.onlineBlog.toString
+          )
+        )
+      
+      case GET -> Root / "login" => 
+        Ok(page.Login.index)
+
+      case req @ POST -> Root / "login" / "submit" => {
+        import org.http4s.FormDataDecoder.*
+        given fooMapper: FormDataDecoder[LoginMessage] = (
+          field[String]("userName"),
+          field[String]("password"),
+        ).mapN(LoginMessage.apply)
+        for
+          msg <- req.as[LoginMessage]
+          res <- if(msg.userName == "ireina" && msg.password == "elpsycongroo") 
+            then Ok(page.ControlPanel.index) 
+            else Ok(page.Frame.index(div("Permission denied...")))
+        yield res
+      }
+
+
       // /about
       case GET -> Root / "about" =>
-        Ok(About.index)
+        Ok(page.About.index)
         
       // /filter
       case GET -> Root / "filter" =>
-        Ok(Filter.index(
+        Ok(page.Filter.index(
           span(color := "grey")("No result")
         ))
       
       // /skeleton
       case GET -> Root / "skeleton" => 
-        val content = SkeletonRepl.index
+        val content = page.SkeletonRepl.index
         Ok(content)
           
       // /blog/$file
@@ -81,7 +108,7 @@ object Routes:
       // /compile
       case req @ POST -> Root / "compile" => for {
         code <- req.as[String]
-        res  <- Ok(Frame.index(code))
+        res  <- Ok(page.Frame.index(code))
       } yield res
       
       // /shutdown

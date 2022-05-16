@@ -61,6 +61,8 @@ object Component {
   def text(cls: String)(content: String): HtmlText = 
     span(`class` := cls)(content)
 
+  def space: HtmlText = raw("&nbsp;")
+
 
   object BootStrap extends CSSLibrary("Bootstrap") {
     def html = Seq(
@@ -77,9 +79,9 @@ object Component {
     def html = Seq(
       link(
         rel := "stylesheet",
-        href := s"${conf.blogType.assetsPath}/css/highlight/styles/a11y-light.min.css",
+        href := s"${conf.assetsRoute}/css/highlight/styles/a11y-light.min.css",
       ),
-      script(src := s"${conf.blogType.assetsPath}/css/highlight/highlight.min.js"),
+      script(src := s"${conf.assetsRoute}/css/highlight/highlight.min.js"),
     )
 
     def enable: HtmlText = {

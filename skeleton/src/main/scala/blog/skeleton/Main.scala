@@ -77,6 +77,7 @@ class SkeletonHtml [
   GenEnv,
 ]
 (using
+  conf: blog.Configuration,
   fileIO: FileIOString[F],
   parser: Parser[F, SkeleExpr],
   evalMarkDown: blog.core.Eval[[A] =>> MarkDownEnv ?=> F[A], SkeleExpr, blog.HtmlText],
@@ -92,7 +93,7 @@ class SkeletonHtml [
     for
       idx  <- generator.readIndex
       _    <- generator.generateIndexFile(
-                blog.Path.items,
+                conf.path.index,
                 item :: idx
               )
       _    <- generator.generateIndexPage
@@ -102,6 +103,7 @@ class SkeletonHtml [
   def register(path: String, fileName: String, item: page.Item)
     (using ExprEnv, MarkDownEnv, GenEnv): F[Unit] = 
     // println(generator.config.blogPath)
+    import blog.blogPath
     for
       html <- compile(path)
       _    <- htmlWriter.write
@@ -113,7 +115,8 @@ class SkeletonHtml [
   def registerCmd(path: String, title: String)
     (using ExprEnv, MarkDownEnv, GenEnv): F[Unit] = {
     
-    val linkDir = s"${generator.config.blogType.blogPath}"
+    import blog.blogRoute
+    val linkDir = s"${generator.config.blogRoute}"
     val format = java.time.format.DateTimeFormatter.ofPattern("yyyy年 MM月 dd日")
     val item = page.Item(
       title  = title,
@@ -146,8 +149,8 @@ object Skeleton:
     import MarkDownEvaluator.given
     import PreMarkDownExprEvaluator.given
 
-    given blog.Configuration = blog.Configuration.staticBlog
-    // given blog.Configuration = blog.Configuration.onlineBlog
+    // given blog.Configuration = blog.Configuration.staticBlog
+    given blog.Configuration = blog.Configuration.onlineBlog
     given markdownEnv: MarkDownEvaluator.Environment =
       MarkDownEvaluator.Environment.predef
     given exprEnv: PreMarkDownExprEvaluator.Environment = 

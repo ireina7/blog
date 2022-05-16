@@ -1,5 +1,8 @@
 package blog.core
 
+import scala.util.{Try, Success, Failure}
+// import shapeless.Succ
+
 
 
 trait DiskIO[F[_], Path, -Content, File]:
@@ -7,6 +10,7 @@ trait DiskIO[F[_], Path, -Content, File]:
   def writeFile(file: File, content: Content): F[Unit]
 
   def openFile(path: Path): F[File]
+  def createFile(path: Path): F[File]
   def closeFile(file: File): F[Unit]
 end DiskIO
 
@@ -63,13 +67,20 @@ object FileIO:
     }
   }
 
-  given (using rawIO: FileIO[Id, String, String]): 
-    FileIO[IO, String, String] with {
+  given [Path](using rawIO: FileIO[Id, Path, String]): 
+    FileIO[IO, Path, String] with {
 
-    def readFile(path: String) = 
-      IO { rawIO.readFile(path) }
-    def writeFile(path: String, content: String) = 
-      IO { rawIO.writeFile(path, content) }
+    def readFile(path: Path) = 
+      // IO { rawIO.readFile(path) }
+      Try(rawIO.readFile(path)) match
+        case Success(s) => IO(s)
+        case Failure(e) => IO.raiseError(e)
+    
+    def writeFile(path: Path, content: String) = 
+      // IO { rawIO.writeFile(path, content) }
+      Try(rawIO.writeFile(path, content)) match
+        case Success(_) => IO(())
+        case Failure(e) => IO.raiseError(e)
     
   }
 

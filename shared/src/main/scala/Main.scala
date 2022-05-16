@@ -20,7 +20,7 @@ def testGenerator[Eff[_]: Monad: Runnable]
 
 @main def main(): Unit = {
 
-  import Generator.given
+  import BlogIndexGenerator.given
   given blog.Configuration = blog.Configuration.onlineBlog
   type Effect[A] = Injection[IOErr, blog.Configuration, A]
 

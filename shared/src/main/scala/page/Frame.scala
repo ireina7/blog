@@ -19,7 +19,7 @@ object Frame {
 
   def index(inner: HtmlText = div()): BlogContext[HtmlText] = conf ?=> {
 
-    val assetPath = conf.blogType.assetsPath
+    val assetPath = conf.assetsRoute
     val theBody = 
       body(
         if conf.blogType == blog.BlogType.Static

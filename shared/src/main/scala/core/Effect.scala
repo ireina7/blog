@@ -3,6 +3,8 @@ package blog.core
 import blog.page
 import blog.core.*
 import cats.syntax.traverse
+import scala.util.Success
+import shapeless.Succ
 
 
 trait Runnable[Effect[_]]:
@@ -18,6 +20,7 @@ object Effect:
   /**
    * An example implementation of the effect F[_] inside readIndex
   */
+  import scala.util.{Try, Success, Failure}
   import cats.*
   import cats.syntax.flatMap.*
   import cats.syntax.functor.*
@@ -31,10 +34,16 @@ object Effect:
   given (using rawIO: FileIOString[Id]):
     FileIO[IOErr, String, String] with {
     def readFile(path: String) = {
-      EitherT.rightT[IO, Throwable](rawIO.readFile(path))
+      // EitherT.rightT[IO, Throwable](rawIO.readFile(path))
+      Try(rawIO.readFile(path)) match
+        case Success(s) => EitherT.rightT(s)
+        case Failure(e) => EitherT.leftT(e)
     }
     def writeFile(path: String, content: String) = {
-      EitherT.rightT[IO, Throwable](rawIO.writeFile(path, content))
+      // EitherT.rightT[IO, Throwable](rawIO.writeFile(path, content))
+      Try(rawIO.writeFile(path, content)) match
+        case Success(_) => EitherT.rightT(())
+        case Failure(e) => EitherT.leftT(e)
     }
   }
 
@@ -58,15 +67,14 @@ object Effect:
       import io.circe.parser.*
       given itemDecoder: Decoder[blog.page.Item] = new Decoder[blog.page.Item]:
         def apply(c: HCursor) =
-          for {
+          for 
             title  <- c.downField("title" ).as[String]
             link   <- c.downField("link"  ).as[String]
             author <- c.downField("author").as[String]
             date   <- c.downField("date"  ).as[String]
             view   <- c.downField("view"  ).as[String]
-          } yield {
+          yield 
             blog.page.Item(title, link, author, date, view)
-          }
       
       EitherT.fromEither(decode(s))
     }
@@ -89,7 +97,8 @@ object Effect:
    * @tparam Env the injection environment
    * @tparam A the output type
   */
-  type Injection[F[_], Env, A] = Env ?=> F[A]
+  type Injection[F[_], Env, A] = 
+    Env ?=> F[A]
 
   /*
   Env ?=> Injection[IOErr, Env1, A]
