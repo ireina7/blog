@@ -67,9 +67,11 @@ final class SkeletonHtml[F[_]: Monad, MarkDownEnv, ExprEnv, GenEnv]
     (using GenEnv): F[Unit] = {
     
     for
-      idx  <- generator.readIndex
-      _    <- generator.generateIndexFile(conf.path.index, item :: idx.filter(_.id != item.id))
-      _    <- generator.generateIndexPage
+      exists <- fileIO.existFile(conf.path.index)
+      idx    <- 
+        (if !exists then generator.createIndex else ().pure) >> generator.readIndex
+      _      <- generator.generateIndexFile(conf.path.index, item :: idx.filter(_.id != item.id))
+      _      <- generator.generateIndexPage
     yield ()
   }
 
@@ -86,7 +88,14 @@ final class SkeletonHtml[F[_]: Monad, MarkDownEnv, ExprEnv, GenEnv]
       html <- compile(path)
       id   <- blogNo match
                 case Some(i) => i.pure
-                case None => generator.readIndex.map(xs => xs.map(_.id).maxOption.getOrElse(-1) + 1)
+                case None => 
+                  for
+                    exists <- fileIO.existFile(conf.path.index)
+                    idx    <- 
+                      (if !exists then generator.createIndex else ().pure) >> generator.readIndex
+                    idNum  <- generator.readIndex.map(xs => xs.map(_.id).maxOption.getOrElse(-1) + 1)
+                  yield idNum
+
       _    <- fileIO.createDirectory(s"${generator.config.blogPath}/pages")
       _    <- htmlWriter.write
                 (generator.indexPage(html))
@@ -116,7 +125,13 @@ final class SkeletonHtml[F[_]: Monad, MarkDownEnv, ExprEnv, GenEnv]
       html <- compile(s"$path/index.skele")
       id   <- blogNo match
                 case Some(i) => i.pure
-                case None => generator.readIndex.map(xs => xs.map(_.id).maxOption.getOrElse(-1) + 1)
+                case None => 
+                  for
+                    exists <- fileIO.existFile(conf.path.index)
+                    idx    <- 
+                      (if !exists then generator.createIndex else ().pure) >> generator.readIndex
+                    idNum  <- generator.readIndex.map(xs => xs.map(_.id).maxOption.getOrElse(-1) + 1)
+                  yield idNum
       _    <- fileIO.createDirectory(storePath)
       _    <- fileIO.createDirectory(s"$storePath/$id")
       _    <- fileIO.copyDirectory(path, s"$storePath/$id")

@@ -23,6 +23,7 @@ trait FileIO[F[_], Path, -Content] {
   def createFile(path: Path): F[Unit]
   def readFile  (path: Path): F[String]
   def writeFile (path: Path, content: Content): F[Unit]
+  def existFile (path: Path): F[Boolean]
 
   /** Directory operations */
   def createDirectory(path: Path): F[Unit]
@@ -61,6 +62,10 @@ object FileIO:
         p.close
       }
     }
+    override def existFile(path: String): Boolean = {
+      val f: File = new File(path);
+      f.exists() && !f.isDirectory()
+    }
 
     override def createDirectory(path: String): Unit = {
       val theDir: File = new File(path)
@@ -96,6 +101,10 @@ object FileIO:
         p.close
       }
     }
+    override def existFile(path: java.nio.file.Path): Boolean = {
+      val f: File = new File(path.toString);
+      f.exists() && !f.isDirectory()
+    }
     override def createDirectory(path: java.nio.file.Path): Unit = {
       val theDir: File = new File(path.toString)
       if !theDir.exists() then
@@ -106,6 +115,7 @@ object FileIO:
       import java.nio.file.StandardCopyOption.*
       import java.nio.file.{Files, Path}
       var stream: java.util.stream.Stream[Path] = null
+      deleteFolder(new File(to.toString))
       try {
         stream = Files.walk(from)
         stream.forEach {
@@ -116,15 +126,34 @@ object FileIO:
         stream.close()
       }
     }
+
+    private def deleteFolder(directory: File): Boolean = {
+      import java.io.{ 
+        File,
+        FileInputStream, 
+        FileOutputStream,
+        IOException,
+      }
+
+      if (directory.exists()) {
+        val files = directory.listFiles()
+        if (null != files) {
+          for (i <- 0 until files.length) {
+            if (files(i).isDirectory()) {
+              deleteFolder(files(i));
+            }
+            else {
+              files(i).delete();
+            }
+          }
+        }
+      }
+      directory.delete()
+    }
     private def copyFolder(from: java.nio.file.Path, to: java.nio.file.Path): Unit = {
       import java.nio.file.StandardCopyOption.*
       import java.nio.file.{Files, Path}
-      try {
-        Files.copy(from, to, REPLACE_EXISTING)
-      } catch {
-        case e: Exception =>
-          throw new RuntimeException(e.getMessage(), e)
-      }
+      Files.copy(from, to, REPLACE_EXISTING)
     }
     // override def writeDirectory (path: java.nio.file.Path): Unit = {
     //   ???
@@ -151,6 +180,12 @@ object FileIO:
       // IO { rawIO.writeFile(path, content) }
       IO(Try(rawIO.writeFile(path, content))).flatMap {
         case Success(_) => IO(())
+        case Failure(e) => IO.raiseError(e)
+      }
+
+    override def existFile(path: Path): IO[Boolean] = 
+      IO(Try(rawIO.existFile(path))).flatMap {
+        case Success(b) => IO(b)
         case Failure(e) => IO.raiseError(e)
       }
 

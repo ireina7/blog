@@ -26,6 +26,18 @@
 
   \head {\tf 设计模式}
 
+  \n
+  \image {
+    (\set \src './cats-monad.png')
+    (\set \width 300)
+    (\set \style) {
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  }
+  \n\n
+
   \para {
     \tf 一词目前还多见于论文，是 Oleg 等人提出的一种新的编程设计模式。
     这个名字看上去很怪，其实是因为学术界之前一直将一种编程方式称为 \italic{inital encoding}，

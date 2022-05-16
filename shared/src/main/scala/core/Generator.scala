@@ -97,6 +97,9 @@ class BlogIndexGenerator[F[_]: Monad]
   def readIndex: F[page.Index] = 
     read(config.path.index)
 
+  def createIndex: F[Unit] =
+    fileIO.writeFile(config.path.index, "[]")
+
   def readIndexHtml: F[HtmlText] = {
     
     for {

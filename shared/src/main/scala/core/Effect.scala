@@ -5,6 +5,7 @@ import blog.core.*
 import cats.syntax.traverse
 import scala.util.Success
 import shapeless.Succ
+import scala.languageFeature.existentials
 
 
 trait Runnable[Effect[_]]:
@@ -50,6 +51,11 @@ object Effect:
       // EitherT.rightT[IO, Throwable](rawIO.writeFile(path, content))
       Try(rawIO.writeFile(path, content)) match
         case Success(_) => EitherT.rightT(())
+        case Failure(e) => EitherT.leftT(e)
+    }
+    override def existFile(path: Path): IOErr[Boolean] = {
+      Try(rawIO.existFile(path)) match
+        case Success(b) => EitherT.rightT(b)
         case Failure(e) => EitherT.leftT(e)
     }
 
@@ -193,6 +199,8 @@ object Effect:
       fio.readFile(path)
     override def writeFile(path: Path, content: String) = 
       fio.writeFile(path, content)
+    override def existFile(path: Path) = 
+      fio.existFile(path)
     
     override def createDirectory(path: Path) = 
       fio.createDirectory(path)
