@@ -29,3 +29,7 @@
 - Modular blog! You can group everything related to your article in a folder and pack them later.
 - Lots of bugs fixed
 - TODO: Fix `./shared/assets` problem and add more detailed doc on how to write articles.
+
+## Version `0.3.10`
+- Fixed `./shared/assets` problem
+- client page style bug fixed

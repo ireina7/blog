@@ -107,6 +107,12 @@ object Operations {
       .transferFrom(new FileInputStream(a) getChannel, 0, Long.MaxValue)
   }
 
+  def createFolder(path: String): Unit = {
+    val theDir: File = new File(path.toString)
+    if (!theDir.exists())
+      theDir.mkdirs()
+  }
+
   def deleteFolder(directory: File): Boolean = {
     import java.io.{ 
       File,

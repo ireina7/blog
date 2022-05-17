@@ -43,7 +43,7 @@ object Component {
     div(id := "blog-navigator")
   }
 
-  def mainContent(content: HtmlText) = {
+  def mainContent(content: HtmlText*) = {
     div(`class` := "blog-content")(content)
   }
   

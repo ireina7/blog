@@ -8,9 +8,9 @@ import scalatags.Text.all.*
 
 
 object About {
-  
+  import Component.mainContent
   def index: BlogContext[HtmlText] = Frame.index(
-    div(`class` := "blog-content")(
+    mainContent(
       h2("About"),
       p(i(
         """ |This is Ireina, the traveling majo!

@@ -21,9 +21,9 @@ object Filter {
   }
   
   def index(results: HtmlText = div()): BlogContext[HtmlText] = 
-
+    import Component.mainContent
     Frame.index(
-      div(`class` := "blog-content")(
+      mainContent(
         h2("Filter"),
         br,
         form(cls := "blog-searchBar d-flex")(

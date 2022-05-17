@@ -52,7 +52,7 @@ given [F[_], Env](using
 
   def parse(s: String): Injection[F, Env, SkeleExpr] =
     rawParser.parse(s) match
-      case Left(er) => err.raiseError(Throwable(er))
+      case Left(er) => err.raiseError(er)
       case Right(x) => F.pure(x)
 end given
 

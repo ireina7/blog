@@ -12,6 +12,9 @@ trait Console[F[_]](using ev: Monad[F]) {
   def print(s: String): F[Unit]
   def println(s: String): F[Unit] = print(s"$s\n")
   def log(msg: String): F[Unit] = println(msg)
+  def log(prompt: String, msg: String): F[Unit] =
+    println(s"$prompt$msg")
+  def error(msg: String): F[Unit] = println(msg)
   def readLine(): F[String]
   def readChar(): F[Char]
 }

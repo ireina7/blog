@@ -19,15 +19,27 @@ import scala.io.{ Source, BufferedSource }
 
 trait FileIO[F[_], Path, -Content] {
   
-  /** File operations */
+  /** File operations 
+   * Including:
+      - creating file
+      - reading file
+      - writing file
+      - check if file exists
+  */
   def createFile(path: Path): F[Unit]
   def readFile  (path: Path): F[String]
   def writeFile (path: Path, content: Content): F[Unit]
   def existFile (path: Path): F[Boolean]
 
-  /** Directory operations */
+  /** Directory operations 
+   * Including
+   * - creating directory
+   * - copy entire directory recursively
+   * - check if directory exists
+  */
   def createDirectory(path: Path): F[Unit]
   def copyDirectory(from: Path, to: Path): F[Unit]
+  def existDirectory(path: Path): F[Boolean]
   // def writeDirectory (to: Path): F[Unit]
 }
 
@@ -78,6 +90,12 @@ object FileIO:
       summon[FileIO[Id, java.nio.file.Path, String]]
         .copyDirectory(Paths.get(from), Paths.get(to))
     }
+
+    override def existDirectory(path: String): Boolean = {
+      import java.nio.file.Files
+      import java.nio.file.Paths
+      Files.exists(Paths.get(path))
+    }
     // override def writeDirectory (path: String): Unit = {
     //   ???
     // }
@@ -109,6 +127,11 @@ object FileIO:
       val theDir: File = new File(path.toString)
       if !theDir.exists() then
         theDir.mkdirs()
+    }
+    override def existDirectory(path: java.nio.file.Path): Boolean = {
+      import java.nio.file.Files
+      import java.nio.file.Paths
+      Files.exists(path)
     }
 
     override def copyDirectory(from: java.nio.file.Path, to: java.nio.file.Path): Unit = {
@@ -198,6 +221,11 @@ object FileIO:
     override def copyDirectory(from: Path, to: Path): IO[Unit] = 
       IO(Try(rawIO.copyDirectory(from, to))).flatMap {
         case Success(_) => IO(())
+        case Failure(e) => IO.raiseError(e)
+      }
+    override def existDirectory(path: Path): IO[Boolean] = 
+      IO(Try(rawIO.existDirectory(path))).flatMap {
+        case Success(b) => IO(b)
         case Failure(e) => IO.raiseError(e)
       }
   end given

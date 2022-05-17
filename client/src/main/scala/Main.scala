@@ -104,7 +104,7 @@ object Main {
 
   val searchBar: dom.Element = {
 
-    form(cls := "d-flex", marginLeft := 65, bottom := 0, marginTop := 30, width := 600)(
+    form(cls := "d-flex", marginLeft := 90, bottom := 0, marginTop := 30, width := 600)(
       input(
         `class` := "form-control me-2", 
         `type` := "search",
@@ -150,7 +150,7 @@ object Main {
       backgroundPosition := "right bottom",
       backgroundSize := "cover",
     )(
-      tag("nav")(`class` := "nav sticky-top", marginTop := 0, marginLeft := 70, height := 150)(
+      tag("nav")(`class` := "nav sticky-top", marginTop := 0, marginLeft := 80, height := 150)(
         div(marginTop := 20)(
           a(
             `class` := "navbar-brand",
@@ -166,17 +166,17 @@ object Main {
       ),
       searchBar,
       pre(
-        marginLeft := 65,
+        marginLeft := 100,
         fontSize := 18,
       )(
         """
-Y = λf. (λx. f (x x)) (λx. f (x x))
-
-trait Monad[M[_]] {
-  def pure[A](a: A): M[A]
-  extension [A](ma: M[A]) def flatMap[B](f: A => M[B]): M[B]
-}
-        """
+        |Y = λf. (λx. f (x x)) (λx. f (x x))
+        |
+        |trait Monad[M[_]] {
+        |  def pure[A](a: A): M[A]
+        |  extension [A](ma: M[A]) def flatMap[B](f: A => M[B]): M[B]
+        |}
+        """.stripMargin
       )
     )
   }.render

@@ -13,7 +13,7 @@ def testGenerator[Eff[_]: Monad: Runnable]
     console: Console[Eff],
   ) = {
   import cats.syntax.flatMap.catsSyntaxFlatMapOps
-  console.log("Generating static html file...") >>
+  console.log("[blog] ", "Generating static html file...") >>
   generator.generateIndexPage
 }
 
@@ -25,7 +25,7 @@ def testGenerator[Eff[_]: Monad: Runnable]
   type Effect[A] = Injection[IOErr, blog.Configuration, A]
 
   val console = summon[Console[Effect]]
-  def log(s: String) = console.log(s).run()
+  def log(s: String) = console.log("[blog] ", s).run()
   log("Testing shared module...")
   // val html = blog.static.Generator.generateHtml()
   // println(html.toString)
@@ -33,7 +33,9 @@ def testGenerator[Eff[_]: Monad: Runnable]
   val exe = testGenerator[Effect]
   val result = exe.run()
   result match
-    case Left(error) => log(s"Error while running generator: $error")
+    case Left(err) => 
+      log(s"Error while running generator: $err")
+      log(s"${err.getStackTrace.toList.mkString("Stack trace:\n\t", "\n\t", "\n")}")
     case _ => log(s"Ok generated index page.")
   
 }

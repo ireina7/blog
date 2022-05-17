@@ -32,53 +32,70 @@ object Effect:
 
   type IOErr[A] = EitherT[IO, Throwable, A]
 
-  given [Path](using rawIO: FileIO[Id, Path, String]):
-    FileIO[IOErr, Path, String] with 
+  given [Path](using io: FileIO[IO, Path, String])
+    : FileIO[IOErr, Path, String] with
 
-    override def createFile(path: Path): IOErr[Unit] = 
-      EitherT.rightT[IO, Throwable]
-        (Try(rawIO.createFile(path))).flatMap {
-        case Success(_) => EitherT.rightT(())
-        case Failure(e) => EitherT.leftT(e)
-      }
-    override def readFile(path: Path) = {
-      // EitherT.rightT[IO, Throwable](rawIO.readFile(path))
-      Try(rawIO.readFile(path)) match
-        case Success(s) => EitherT.rightT(s)
-        case Failure(e) => EitherT.leftT(e)
-    }
-    override def writeFile(path: Path, content: String) = {
-      // EitherT.rightT[IO, Throwable](rawIO.writeFile(path, content))
-      Try(rawIO.writeFile(path, content)) match
-        case Success(_) => EitherT.rightT(())
-        case Failure(e) => EitherT.leftT(e)
-    }
-    override def existFile(path: Path): IOErr[Boolean] = {
-      Try(rawIO.existFile(path)) match
-        case Success(b) => EitherT.rightT(b)
-        case Failure(e) => EitherT.leftT(e)
-    }
-
+    override def createFile(path: Path): IOErr[Unit] =
+      EitherT(io.createFile(path).attempt)
+    override def readFile(path: Path): IOErr[String] = 
+      EitherT(io.readFile(path).attempt)
+    override def writeFile(path: Path, content: String): IOErr[Unit] = 
+      EitherT(io.writeFile(path, content).attempt)
+    override def existFile(path: Path): IOErr[Boolean] =
+      EitherT(io.existFile(path).attempt)
     override def createDirectory(path: Path): IOErr[Unit] = 
-      Try(rawIO.createDirectory(path)) match
-        case Success(_) => EitherT.rightT(())
-        case Failure(e) => EitherT.leftT(e)
-
+      EitherT(io.createDirectory(path).attempt)
     override def copyDirectory(from: Path, to: Path): IOErr[Unit] =
-      Try(rawIO.copyDirectory(from, to)) match
-        case Success(_) => EitherT.rightT(())
-        case Failure(e) => EitherT.leftT(e)
+      EitherT(io.copyDirectory(from, to).attempt)
+    override def existDirectory(path: Path): IOErr[Boolean] =
+      EitherT(io.existDirectory(path).attempt)
+
   end given
+
+  // given [Path](using rawIO: FileIO[Id, Path, String])
+  //   : FileIO[IOErr, Path, String] with 
+
+  //   override def createFile(path: Path): IOErr[Unit] = 
+  //     EitherT.rightT[IO, Throwable]
+  //       (Try(rawIO.createFile(path))).flatMap {
+  //       case Success(_) => EitherT.rightT(())
+  //       case Failure(e) => EitherT.leftT(e)
+  //     }
+  //   override def readFile(path: Path) = {
+  //     // EitherT.rightT[IO, Throwable](rawIO.readFile(path))
+  //     Try(rawIO.readFile(path)) match
+  //       case Success(s) => EitherT.rightT(s)
+  //       case Failure(e) => EitherT.leftT(e)
+  //   }
+  //   override def writeFile(path: Path, content: String) = {
+  //     // EitherT.rightT[IO, Throwable](rawIO.writeFile(path, content))
+  //     Try(rawIO.writeFile(path, content)) match
+  //       case Success(_) => EitherT.rightT(())
+  //       case Failure(e) => EitherT.leftT(e)
+  //   }
+  //   override def existFile(path: Path): IOErr[Boolean] = {
+  //     Try(rawIO.existFile(path)) match
+  //       case Success(b) => EitherT.rightT(b)
+  //       case Failure(e) => EitherT.leftT(e)
+  //   }
+
+  //   override def createDirectory(path: Path): IOErr[Unit] = 
+  //     Try(rawIO.createDirectory(path)) match
+  //       case Success(_) => EitherT.rightT(())
+  //       case Failure(e) => EitherT.leftT(e)
+
+  //   override def copyDirectory(from: Path, to: Path): IOErr[Unit] =
+  //     Try(rawIO.copyDirectory(from, to)) match
+  //       case Success(_) => EitherT.rightT(())
+  //       case Failure(e) => EitherT.leftT(e)
+  // end given
 
 
   given (using ioio: Console[IO]): 
     Console[IOErr] with
-
-    override def print(s: String) = {
-      EitherT.right(ioio.print(s))
-    }
-    override def readChar() = EitherT.right(ioio.readChar())
-    override def readLine() = EitherT.right(ioio.readLine())
+    override def print(s: String) = EitherT(ioio.print(s).attempt)
+    override def readChar() = EitherT(ioio.readChar().attempt)
+    override def readLine() = EitherT(ioio.readLine().attempt)
   end given
   
 
@@ -178,8 +195,8 @@ object Effect:
     
     def handleErrorWith[A]
       (fa: Injection[F, Env, A])
-      (f: Throwable => Injection[F, Env, A]) = {
-      ???
+      (f: Throwable => Injection[F, Env, A]): Injection[F, Env, A] = {
+      fa // underwork!
     }
     def raiseError[A](e: Throwable): Injection[F, Env, A] = {
       println(s"raise error: $e")
@@ -204,9 +221,10 @@ object Effect:
     
     override def createDirectory(path: Path) = 
       fio.createDirectory(path)
-
     override def copyDirectory(from: Path, to: Path) =
       fio.copyDirectory(from ,to)
+    override def existDirectory(path: Path) =
+      fio.existDirectory(path)
   }
 
 
@@ -217,7 +235,7 @@ object Effect:
     override def print(s: String) = ioio.print(s)
     override def log(s: String) = env ?=> {
       val prompt = env.prompt
-      ioio.println(s"[$prompt] $s")
+      ioio.println(s"$prompt$s")
     }
     override def readChar() = ioio.readChar()
     override def readLine() = ioio.readLine()

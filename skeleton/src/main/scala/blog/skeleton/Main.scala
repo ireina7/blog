@@ -50,9 +50,10 @@ end SkeletonCompiler
 
 
 
-final class SkeletonHtml[F[_]: Monad, MarkDownEnv, ExprEnv, GenEnv]
+final class SkeletonHtml[F[_], MarkDownEnv, ExprEnv, GenEnv]
 (using
   conf: blog.Configuration,
+  M: MonadError[F, Throwable],
   fileIO: FileIOString[F],
   parser: Parser[F, SkeleExpr],
   evalMarkDown: blog.core.Eval[[A] =>> MarkDownEnv ?=> F[A], SkeleExpr, blog.HtmlText],
@@ -95,7 +96,6 @@ final class SkeletonHtml[F[_]: Monad, MarkDownEnv, ExprEnv, GenEnv]
                       (if !exists then generator.createIndex else ().pure) >> generator.readIndex
                     idNum  <- generator.readIndex.map(xs => xs.map(_.id).maxOption.getOrElse(-1) + 1)
                   yield idNum
-
       _    <- fileIO.createDirectory(s"${generator.config.blogPath}/pages")
       _    <- htmlWriter.write
                 (generator.indexPage(html))
@@ -117,24 +117,37 @@ final class SkeletonHtml[F[_]: Monad, MarkDownEnv, ExprEnv, GenEnv]
     // println(generator.config.blogPath)
     import blog.blogPath
     import blog.blogRoute
+    import fileIO.{
+      createDirectory,
+      copyDirectory,
+      existFile,
+      existDirectory,
+    }
 
     val linkDir = s"${generator.config.blogRoute}"
     val storePath = s"${generator.config.blogPath}/pages"
+    // println(storePath)
     val format = java.time.format.DateTimeFormatter.ofPattern("yyyy年 MM月 dd日")
     for
+      ok   <- existDirectory(s"${generator.config.blogPath}")
+      _    <- if ok 
+              then ().pure 
+              else  M.raiseError(
+                      blog.Error(s"blog path ${generator.config.blogPath} does not exist.")
+                    )
       html <- compile(s"$path/index.skele")
       id   <- blogNo match
                 case Some(i) => i.pure
                 case None => 
                   for
-                    exists <- fileIO.existFile(conf.path.index)
+                    exists <- existFile(conf.path.index)
                     idx    <- 
                       (if !exists then generator.createIndex else ().pure) >> generator.readIndex
                     idNum  <- generator.readIndex.map(xs => xs.map(_.id).maxOption.getOrElse(-1) + 1)
                   yield idNum
-      _    <- fileIO.createDirectory(storePath)
-      _    <- fileIO.createDirectory(s"$storePath/$id")
-      _    <- fileIO.copyDirectory(path, s"$storePath/$id")
+      _    <- createDirectory(storePath)
+      _    <- createDirectory(s"$storePath/$id")
+      _    <- copyDirectory(path, s"$storePath/$id")
       _    <- htmlWriter.write
                 (generator.indexPage(html))
                 (s"$storePath/$id/index.html")
@@ -148,6 +161,11 @@ final class SkeletonHtml[F[_]: Monad, MarkDownEnv, ExprEnv, GenEnv]
               ))
     yield ()
   end registerDirectory
+
+  def register
+    (path: String, title: String, blogNo: Option[Int] = None)
+    (using ExprEnv, MarkDownEnv, GenEnv): F[Unit] = 
+    registerDirectory(path, title, blogNo)
 
 end SkeletonHtml
 
@@ -170,8 +188,8 @@ object Skeleton:
     import MarkDownEvaluator.given
     import PreMarkDownExprEvaluator.given
 
-    // given blog.Configuration = blog.Configuration.staticBlog
-    given blog.Configuration = blog.Configuration.onlineBlog
+    given blog.Configuration = blog.Configuration.staticBlog
+    // given blog.Configuration = blog.Configuration.onlineBlog
     given markdownEnv: MarkDownEvaluator.Environment =
       MarkDownEvaluator.Environment.predef
     given exprEnv: PreMarkDownExprEvaluator.Environment = 
@@ -208,10 +226,12 @@ object Skeleton:
     //   skeleton.registerFile(filePath, fileTitle, blogNo)
 
     val exe = 
-      skeleton.registerDirectory(filePath, fileTitle, blogNo)
+      skeleton.register(filePath, fileTitle, blogNo)
     
     exe.run() match
-      case Left(err) => println(s"[error] $err")
+      case Left(err) => 
+        println(s"[error] $err")
+        println(s"[error] ${err.getStackTrace.mkString("Stack trace:\n\t", "\n\t", "\n")}")
       case Right(_)  => println(s"[info] Ok: $filePath registered.")
 
   end main

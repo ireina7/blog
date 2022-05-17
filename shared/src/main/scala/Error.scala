@@ -6,7 +6,8 @@ package blog
 */
 class Error(val msg: String) extends Exception {
   final override def fillInStackTrace(): Throwable = this
-  override def toString = s"[Error]: $msg"
+  override def toString = 
+    s"[Error]: $msg"
 }
 
 type Result[A] = Either[Throwable, A]

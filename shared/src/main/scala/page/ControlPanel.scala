@@ -13,10 +13,10 @@ import scalatags.Text.tags2.title
 
 
 object ControlPanel:
-  
+  import Component.mainContent
   def index: BlogContext[HtmlText] = conf ?=> {
     Frame.index(
-      div(`class` := "blog-content")(
+      mainContent(
         ul(
           li("blog"),
           li("application")

@@ -2,7 +2,7 @@
 My personal blog written mostly in Scala and Java.
 Trying `finally tagless` with `extensive effects`.
 ![k-on!](./img/k-on-q.png)  
-- version: `0.3.1`
+- version: `0.3.10`
 
 ## Dependences
 - `Scala3` the programming language
@@ -52,7 +52,6 @@ given blog.Configuration = Configuration.onlineBlog
 2. `compile`
 3. `server/run`
 4. Go to [http://localhost:8080/](http://localhost:8080/)
-5. NOTE: currently have some issue... You must create `./shared/assets` yourself, this will be solved soon.
 
 ### Static Engine mode
 0. `cd <this folder>`

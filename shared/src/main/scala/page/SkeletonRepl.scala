@@ -18,7 +18,7 @@ object SkeletonRepl:
       input(`type` := "submit", value := "Submit"),
     )
     Frame.index(
-      div(marginLeft := 50, marginRight := 50, fontSize := 20)(elem)
+      mainContent(elem)
     )
   }
 end SkeletonRepl

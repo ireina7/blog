@@ -37,7 +37,7 @@ object Login:
       )
     )
     Frame.index(
-      div(`class` := "blog-content")(
+      mainContent(
         h2("Login account"), br,
         loginForm
       )

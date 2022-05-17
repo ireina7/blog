@@ -93,19 +93,19 @@
     width : 600;
 }
 
-/* .blog-content {
-    margin-left: 50; 
-    margin-right: 50; 
+.blog-content {
+    margin-left: 20; 
+    margin-right: 20; 
     font-size: 20;
-} */
+}
 
 
 /**
 * Item styles
 */
 .blog-item {
-    margin-left: 50;
-    margin-right: 50;
+    margin-left: 80;
+    margin-right: 80;
     font-size: 20;
 }
 
