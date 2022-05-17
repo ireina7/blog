@@ -1,5 +1,8 @@
 package blog.skeleton
 
+import blog.core
+import blog.core.Effect.*
+import blog.core.Effect.given
 import blog.core.*
 import cats.*
 import cats.data.*
@@ -7,61 +10,119 @@ import cats.effect.IO
 import cats.syntax.applicative.*
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
-// import blog.FileIOString
 import blog.skeleton.Exprs.SkeleExpr
 import blog.skeleton.parser
 import blog.skeleton.evaluator
+// import blog.FileIOString
 
 
 
-trait SkeletonCompiler [
-  F[_]: Monad,
-  Output,
-  MarkDownEnv,
-  ExprEnv,
-  GenEnv,
-]
-(using
-  fileIO: FileIOString[F],
-  parser: Parser[F, SkeleExpr],
-  evalMarkDown: blog.core.Eval[[A] =>> MarkDownEnv ?=> F[A], SkeleExpr, Output],
-  evalExpr: blog.core.Eval[[A] =>> ExprEnv ?=> F[A], SkeleExpr, SkeleExpr],
-  generator: BlogIndexGenerator[[A] =>> GenEnv ?=> F[A]],
-  htmlWriter: blog.core.Writer[F, String, Output],
-):
+
+trait SkeleExprCompiler[F[_]: Monad, Output]
+  extends core.Eval[F, String, Output] {
+  
+  def compile(s: String): F[Output] =
+    s.eval
+}
+
+
+
+open class MarkdownCompiler[F[_]: Monad, Output, MarkEnv, ExprEnv]
+  (using
+    fileIO: FileIOString[F],
+    parser: Parser[F, SkeleExpr],
+    evalMark: core.Eval[[A] =>> MarkEnv ?=> F[A], SkeleExpr, Output],
+    evalExpr: core.Eval[[A] =>> ExprEnv ?=> F[A], SkeleExpr, SkeleExpr],
+  ) extends SkeleExprCompiler[[A] =>> Injection[F, (ExprEnv, MarkEnv), A], Output]:
   import fileIO.readFile
   import parser.parse
 
-  def compile(path: String)
-    (using ExprEnv, MarkDownEnv): F[Output] = {
+  extension (text: String)
+    override def eval: Injection[F, (ExprEnv, MarkEnv), Output] = envs ?=> {
+      envs match
+        case (exprEnv, markEnv) => {
+          given MarkEnv = markEnv
+          given ExprEnv = exprEnv
+          for
+            tree <- parse(text)
+            expr <- evalExpr.eval(tree)
+            html <- evalMark.eval(expr)
+          yield html
+        }
+    }
+
+  def compile(s: String)
+    (using exprEnv: ExprEnv, markEnv: MarkEnv): F[Output] = {
+    given (ExprEnv, MarkEnv) = (exprEnv, markEnv)
+    s.eval
+  }
+
+  def compileFile(path: String)
+    (using exprEnv: ExprEnv, markEnv: MarkEnv): F[Output] = {
     
+    given (ExprEnv, MarkEnv) = (exprEnv, markEnv)
     for
       text <- readFile(path)
-      tree <- parse(text)
-      expr <- evalExpr.eval(tree)
-      html <- {
-        // println(expr.toString)
-        evalMarkDown.eval(expr)
-      }
+      html <- compile(text)
     yield html
   }
-end SkeletonCompiler
+end MarkdownCompiler
+
+
+/** Various compilers for markdown compiling
+ * Including:
+ * - Html
+*/
+object MarkdownCompiler:
+  import Effect.{*, given}
+  import evaluator.PreMarkDownExprEvaluator
+  import evaluator.MarkDownEvaluator
+
+  val htmlCompilerIOErr: MarkdownCompiler[
+    IOErr, 
+    blog.HtmlText, 
+    MarkDownEvaluator.Environment,
+    PreMarkDownExprEvaluator.Environment
+  ] = {
+    
+    import parser.NaiveParser.given
+    import MarkDownEvaluator.given
+    import PreMarkDownExprEvaluator.given
+
+    given markdownEnv: MarkDownEvaluator.Environment = 
+      MarkDownEvaluator.Environment.predef
+    given exprEnv: PreMarkDownExprEvaluator.Environment = 
+      PreMarkDownExprEvaluator.Environment.predefForMarkDown
+
+    new MarkdownCompiler
+  }
+
+  given given_HtmlCompilerIOErr: MarkdownCompiler[
+    IOErr, 
+    blog.HtmlText, 
+    MarkDownEvaluator.Environment,
+    PreMarkDownExprEvaluator.Environment
+  ] = htmlCompilerIOErr
+
+end MarkdownCompiler
 
 
 
 
-final class SkeletonHtml[F[_], MarkDownEnv, ExprEnv, GenEnv]
-(using
-  conf: blog.Configuration,
-  M: MonadError[F, Throwable],
-  fileIO: FileIOString[F],
-  parser: Parser[F, SkeleExpr],
-  evalMarkDown: blog.core.Eval[[A] =>> MarkDownEnv ?=> F[A], SkeleExpr, blog.HtmlText],
-  evalExpr: blog.core.Eval[[A] =>> ExprEnv ?=> F[A], SkeleExpr, SkeleExpr],
-  generator: BlogIndexGenerator[[A] =>> GenEnv ?=> F[A]],
-  htmlWriter: blog.core.Writer[F, String, blog.HtmlText],
 
-) extends SkeletonCompiler[F, blog.HtmlText, MarkDownEnv, ExprEnv, GenEnv]:
+
+final class HtmlRegister[F[_], MarkDownEnv, ExprEnv, GenEnv]
+  (using
+    conf: blog.Configuration,
+    M: MonadError[F, Throwable],
+    fileIO: FileIOString[F],
+    parser: Parser[F, SkeleExpr],
+    evalMark: core.Eval[[A] =>> MarkDownEnv ?=> F[A], SkeleExpr, blog.HtmlText],
+    evalExpr: core.Eval[[A] =>> ExprEnv ?=> F[A], SkeleExpr, SkeleExpr],
+    generator: BlogIndexGenerator[[A] =>> GenEnv ?=> F[A]],
+    htmlWriter: core.Writer[F, String, blog.HtmlText],
+
+  ) extends MarkdownCompiler[F, blog.HtmlText, MarkDownEnv, ExprEnv]:
   import blog.page
 
   def registerIndex(item: page.Item)
@@ -86,7 +147,7 @@ final class SkeletonHtml[F[_], MarkDownEnv, ExprEnv, GenEnv]
     val linkDir = s"${generator.config.blogRoute}"
     val format = java.time.format.DateTimeFormatter.ofPattern("yyyy年 MM月 dd日")
     for
-      html <- compile(path)
+      html <- compileFile(path)
       id   <- blogNo match
                 case Some(i) => i.pure
                 case None => 
@@ -135,7 +196,7 @@ final class SkeletonHtml[F[_], MarkDownEnv, ExprEnv, GenEnv]
               else  M.raiseError(
                       blog.Error(s"blog path ${generator.config.blogPath} does not exist.")
                     )
-      html <- compile(s"$path/index.skele")
+      html <- compileFile(s"$path/index.skele")
       id   <- blogNo match
                 case Some(i) => i.pure
                 case None => 
@@ -167,7 +228,7 @@ final class SkeletonHtml[F[_], MarkDownEnv, ExprEnv, GenEnv]
     (using ExprEnv, MarkDownEnv, GenEnv): F[Unit] = 
     registerDirectory(path, title, blogNo)
 
-end SkeletonHtml
+end HtmlRegister
 
 
 
@@ -188,9 +249,9 @@ object Skeleton:
     import MarkDownEvaluator.given
     import PreMarkDownExprEvaluator.given
 
-    given blog.Configuration = blog.Configuration.staticBlog
-    // given blog.Configuration = blog.Configuration.onlineBlog
-    given markdownEnv: MarkDownEvaluator.Environment =
+    // given blog.Configuration = blog.Configuration.staticBlog
+    given blog.Configuration = blog.Configuration.onlineBlog
+    given markdownEnv: MarkDownEvaluator.Environment = 
       MarkDownEvaluator.Environment.predef
     given exprEnv: PreMarkDownExprEvaluator.Environment = 
       PreMarkDownExprEvaluator.Environment.predefForMarkDown
@@ -211,14 +272,13 @@ object Skeleton:
       else None
 
     // given generator = summon[Generator[GenEffect]]
-    val skeleton: SkeletonHtml[
+    val skeleton: HtmlRegister[
       IOErr,
-      // blog.HtmlText,
       MarkDownEvaluator.Environment,
       PreMarkDownExprEvaluator.Environment,
       blog.Configuration,
     ] = 
-      new SkeletonHtml
+      new HtmlRegister
     
 //    val link = summon[blog.Configuration].blogType.blogPath
     // println(link)

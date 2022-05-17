@@ -32,6 +32,11 @@ object Application extends IOApp:
     BlogHttpServer
       .app.use(_ => IO.never).as(ExitCode.Success)
 
+
+  // def runSuperServer(args: List[String]): IO[ExitCode] =
+  //   SuperBlogHttpServer
+  //     .app.use(???).as(ExitCode.Success)
+
   extension (io: IO.type)
     def println[A](a: A): IO[Unit] = IO(scala.Predef.println(a))
   
@@ -47,8 +52,11 @@ object Application extends IOApp:
 end Application
 
 
+
 object BlogHttpServer {
   
+  import blog.core.Effect.*
+  import blog.core.Effect.given
   // override def run(args: List[String]): IO[ExitCode] =
   //   app.use(_ => IO.never).as(ExitCode.Success)
   given cs: ContextShift[IO] = IO.contextShift(global)
@@ -58,10 +66,60 @@ object BlogHttpServer {
       blocker <- Blocker[IO]
       server  <- BlazeServerBuilder.apply[IO](global)
         .bindHttp(8080)
-        .withHttpApp((Routes.mainRoutes[IO]).orNotFound)
+        .withHttpApp((Routes.mainRoutes[IO] <+> Routes.ioRoutes).orNotFound)
         .resource
     } yield server
 }
+
+
+/** Experimental super http server with super computation effect
+ * - underworking!
+*/
+object SuperBlogHttpServer:
+  import blog.core.Effect.{*, given}
+  import scala.concurrent.ExecutionContext
+  import scala.concurrent.duration.*
+  import cats.effect.Clock
+  import cats.data.EitherT
+  import scala.concurrent.duration.FiniteDuration
+
+  type Eff[A] = Injection[IOErr, blog.Configuration, A]
+
+  val ioCS: ContextShift[IO] = IO.contextShift(global)
+  val ioTimer: Timer[IO] = IO.timer(global)
+  given blog.Configuration = blog.Configuration.onlineBlog
+  given ContextShift[Eff] with
+    def shift: Eff[Unit] = conf ?=> 
+      EitherT.right(ioCS.shift)
+    def evalOn[A](ec: ExecutionContext)(f: Eff[A]): Eff[A] = conf ?=>
+      val ioF: IO[A] = f(using conf).value.flatMap {
+        case Right(x) => IO(x)
+        case Left(er) => IO.raiseError(er)
+      }
+      EitherT.right(ioCS.evalOn(ec)(ioF))
+  
+  given Timer[Eff] with
+    def clock: Clock[Eff] = new Clock {
+      override def realTime(unit: TimeUnit): Eff[Long] =
+        conf ?=> EitherT.right(ioTimer.clock.realTime(unit))
+
+      override def monotonic(unit: TimeUnit): Eff[Long] =
+        conf ?=> EitherT.right(ioTimer.clock.monotonic(unit))
+    }
+    def sleep(duration: FiniteDuration): Eff[Unit] = conf ?=>
+      EitherT.right(ioTimer.sleep(duration))
+
+  
+  val app: ConcurrentEffect[Eff] ?=> Resource[Eff, Server] =
+    for 
+      blocker <- Blocker[Eff]
+      server  <- BlazeServerBuilder.apply[Eff](global)
+        .bindHttp(8080)
+        .withHttpApp((Routes.mainRoutes[Eff]).orNotFound)
+        .resource
+    yield server
+  
+end SuperBlogHttpServer
 
 
 

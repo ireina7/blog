@@ -48,3 +48,5 @@ or even
   (\link (\set \href www.github.com) Github)
 }
 ```
+
+- To see more examples, please check directory `./skeleton/scripts`.

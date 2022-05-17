@@ -25,6 +25,9 @@ import server.staticcontent.*
 import scala.concurrent.ExecutionContext
 import cats.Monad
 import cats.implicits.*
+import blog.skeleton.MarkdownCompiler
+import blog.core.*
+import blog.skeleton.Exprs.SkeleExpr
 
 
 
@@ -105,11 +108,36 @@ object Routes:
           .fromFile(new File(s"${blog.Path.blogs}/pages/$fileName"), blocker, Some(req))
           .getOrElseF(NotFound())
             
+
+      // case req @ POST -> Root / "compile" => {
+      //   println()
+      //   Ok("")
+      // }
       // /compile
-      case req @ POST -> Root / "compile" => for {
-        code <- req.as[String]
-        res  <- Ok(page.Frame.index(code))
-      } yield res
+      // case req @ POST -> Root / "compile" => {
+      //   import org.http4s.FormDataDecoder.*
+      //   import blog.core.Effect.{*, given}
+      //   import blog.skeleton.evaluator.PreMarkDownExprEvaluator
+      //   import blog.skeleton.evaluator.MarkDownEvaluator
+
+      //   given fooMapper: FormDataDecoder[String] = field[String]("src")
+      //   given markdownEnv: MarkDownEvaluator.Environment = 
+      //     MarkDownEvaluator.Environment.predef
+      //   given exprEnv: PreMarkDownExprEvaluator.Environment = 
+      //     PreMarkDownExprEvaluator.Environment.predefForMarkDown
+
+      //   val compiler: blog.skeleton.MarkdownCompiler[
+      //     F,
+      //     blog.HtmlText, 
+      //     MarkDownEvaluator.Environment,
+      //     PreMarkDownExprEvaluator.Environment
+      //   ] = new MarkdownCompiler
+
+      //   for
+      //     code <- req.as[String]
+      //     res  <- Ok(page.Frame.index(code))
+      //   yield res
+      // }
       
       // /shutdown
       case GET -> Root / "shutdown" =>
@@ -133,20 +161,68 @@ object Routes:
   end mainRoutes
 
   
-  // import java.util.concurrent.*
+  import java.util.concurrent.*
   // val blockingPool = Executors.newFixedThreadPool(4)
   // val blocker = Blocker.liftExecutorService(blockingPool)
-  // implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+  implicit val cs: ContextShift[IO] = 
+    IO.contextShift(ExecutionContext.global)
 
-  // val dsl = new Http4sDsl[IO]{}
-  // import dsl.*
-  // val assets = blog.Shared.assetsPath
-  // val ioRoutes: HttpRoutes[IO] = HttpRoutes.of[IO] {
+  val dsl = new Http4sDsl[IO]{}
+  import dsl.*
+  val assets = blog.Shared.assetsPath
+  val ioRoutes: HttpRoutes[IO] = HttpRoutes.of[IO] {
 
-  //   case req @ GET -> Root / "blog" / fileName =>
-  //     StaticFile
-  //       .fromFile(new File(s"${blog.Path.blogs}/$fileName"), blocker, Some(req))
-  //       .getOrElseF(NotFound())
-  // }
+    // /compile
+    case req @ POST -> Root / "compile" => {
+      import org.http4s.FormDataDecoder.*
+      import blog.core.Effect.{*, given}
+      import blog.skeleton.evaluator.PreMarkDownExprEvaluator
+      import blog.skeleton.evaluator.MarkDownEvaluator
+
+      given codeDecoder: FormDataDecoder[String] = field[String]("src")
+      given markdownEnv: MarkDownEvaluator.Environment = 
+        MarkDownEvaluator.Environment.predef
+      given exprEnv: PreMarkDownExprEvaluator.Environment = 
+        PreMarkDownExprEvaluator.Environment.predefForMarkDown
+      
+      // println(s">>>>> ${req.bodyText.compile.toVector.unsafeRunSync}")
+      val compiler = 
+        blog.skeleton.MarkdownCompiler.given_HtmlCompilerIOErr
+      for
+        code <- req.as[String]
+        html <- compiler.compile(code).value
+        res  <- Ok(blog.page.Frame.index(html match {
+          case Left(err) => err.toString
+          case Right(ss) => ss
+        }))
+      yield res
+    }
+    // case req @ POST -> Root / "compile" => {
+    //   import org.http4s.FormDataDecoder.*
+    //   import blog.core.Effect.{*, given}
+    //   import blog.skeleton.evaluator.PreMarkDownExprEvaluator
+    //   import blog.skeleton.evaluator.MarkDownEvaluator
+
+    //   given codeDecoder: FormDataDecoder[String] = field[String]("src")
+    //   given markdownEnv: MarkDownEvaluator.Environment = 
+    //     MarkDownEvaluator.Environment.predef
+    //   given exprEnv: PreMarkDownExprEvaluator.Environment = 
+    //     PreMarkDownExprEvaluator.Environment.predefForMarkDown
+      
+    //   println(s">>>>> ${req.bodyText.compile.toVector.unsafeRunSync}")
+    //   val compiler = 
+    //     blog.skeleton.MarkdownCompiler.given_HtmlCompilerIOErr
+    //   for
+    //     code <- req.as[String]
+    //     html <- compiler.compile(code).value
+    //     res  <- Ok(html.getOrElse("").toString)
+    //   yield res
+    // }
+
+    // case req @ GET -> Root / "blog" / fileName =>
+    //   StaticFile
+    //     .fromFile(new File(s"${blog.Path.blogs}/$fileName"), blocker, Some(req))
+    //     .getOrElseF(NotFound())
+  }
 
 end Routes

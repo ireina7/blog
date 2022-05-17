@@ -181,7 +181,43 @@ object Main {
     )
   }.render
 
+  /** AJAX function for skele dynamic compiler
+   * skele-compiler-box {
+   *   skele-compiler-input
+   *   skele-compiler-output
+   *   ...skele-compiler-units
+   * }
+  */
+  @JSExport
+  def compileSkele(): Unit = {
+    val httpReq = new dom.XMLHttpRequest()
+    httpReq.onreadystatechange = event =>
+      if (httpReq.readyState == 4 && httpReq.status == 200)
+      then {
+        document.getElementById("skele-compiler-box")
+          .appendChild(
+            div(`class` := "skele-compiler-output")(httpReq.responseText)
+              .render
+          )
+        document.getElementById("skele-compiler-box")
+          .appendChild(
+            textarea(`class` := "skele-compiler-input", name := "src", rows := 4, cols := 80)
+              .render
+          )
+      }
+    httpReq.open("POST", "/compile", true)
+    httpReq.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
+    httpReq.send("src=\\\\bold{scala}")
+  }
+
 }//end Main
+
+
+
+
+
+
+
 
 
 
