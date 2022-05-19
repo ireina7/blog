@@ -259,7 +259,8 @@ object Main {
       .asInstanceOf[HTMLTextAreaElement]
       .value
     
-    httpReq.send(js.URIUtils.encodeURI(s"src=$content&name=$nameContent"))
+    val encode = js.URIUtils.encodeURIComponent
+    httpReq.send(s"src=${encode(content)}&name=${encode(nameContent)}")
   }
 
 }//end Main
