@@ -166,6 +166,10 @@ jsPipe := {
     "./client/css/main.css",
     "./shared/assets/css/main.css"
   )
+  copyFile(
+    "./client/css/bootstrap.min.css",
+    "./shared/assets/css/bootstrap.min.css"
+  )
   copyFolder(
     "./client/img",
     "./shared/assets/img"

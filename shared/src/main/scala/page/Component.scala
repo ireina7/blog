@@ -65,12 +65,13 @@ object Component {
   def space: HtmlText = raw("&nbsp;")
 
 
-  object BootStrap extends CSSLibrary("Bootstrap") {
+  class BootStrap(conf: blog.Configuration) extends CSSLibrary("Bootstrap") {
     def html = Seq(
       link(
-        href := "https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css",
+        // href := "https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css",
+        href := s"${conf.assetsRoute}/css/bootstrap.min.css",
         rel := "stylesheet",
-        attr("integrity") := "sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC",
+        // attr("integrity") := "sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC",
         attr("crossorigin") := "anonymous",
       )
     )
@@ -81,6 +82,7 @@ object Component {
       link(
         rel := "stylesheet",
         href := s"${conf.assetsRoute}/css/highlight/styles/a11y-light.min.css",
+        // attr("integrity") := "",
       ),
       script(src := s"${conf.assetsRoute}/css/highlight/highlight.min.js"),
     )
@@ -97,7 +99,7 @@ object Component {
 
     given blog.Configuration = conf
     def html = Seq(
-      BootStrap.html,
+      BootStrap(conf).html,
       Highlight.html,
     ).flatten
   }

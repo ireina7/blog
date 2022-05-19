@@ -8,6 +8,7 @@ import cats.{
 import blog.core.Eval
 import blog.skeleton.Exprs.SkeleExpr.*
 import blog.skeleton.Exprs.*
+import blog.skeleton.Modular
 
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
@@ -231,7 +232,7 @@ object PreMarkDownExprEvaluator:
       fileIO: FileIO[F, String, String],
       parser: Parser[F, SkeleExpr],
     )
-    : EvalSkeleExpr[[A] =>> Skele[F, A], SkeleExpr] =
+    : (EvalSkeleExpr[[A] =>> Skele[F, A], SkeleExpr] & Modular[[A] =>> Skele[F, A], SkeleExpr]) =
     evalSkeleExpr
 
   /** Implementation for Expression Evaluator (ExprEvaluator,EvalSkeleExpr)
@@ -247,14 +248,17 @@ object PreMarkDownExprEvaluator:
       import Exprs.*
       import SkeleExpr.*
   */
+  
   def evalSkeleExpr[F[_]]
     (using 
       err: MonadError[F, Throwable], 
       fileIO: FileIO[F, String, String],
       parser: Parser[F, SkeleExpr]
     )
-    : EvalSkeleExpr[[A] =>> Skele[F, A], SkeleExpr] =
-    new EvalSkeleExpr {
+    : EvalSkeleExpr[[A] =>> Skele[F, A], SkeleExpr]
+    & Modular[[A] =>> Skele[F, A], SkeleExpr] =
+    new EvalSkeleExpr[[A] =>> Skele[F, A], SkeleExpr] 
+      with Modular[[A] =>> Skele[F, A], SkeleExpr] {
     
     import cats.syntax.apply.*
     // given Conversion[SkeleExpr, F[SkeleExpr]] = _.pure
@@ -422,12 +426,18 @@ object PreMarkDownExprEvaluator:
           s"Addition error: operating $x and $y"
         ))
     }
-    private def `import`(path: String): Skele[F, SkeleExpr] = 
+    private def `import`(path: String): Skele[F, Unit] = 
       for
         src <- fileIO.readFile(path)
         exp <- parser.parse(src)
         res <- exp.eval
-      yield Pass
+      yield ()
+
+    override def `import`(path: SkeleExpr): Skele[F, Unit] = {
+      path match
+        case Str(s) => `import`(s)
+        case _ => err.raiseError(blog.Error(s"Unsupported import: $path"))
+    }
 
 
     private def condition
@@ -476,7 +486,7 @@ object PreMarkDownExprEvaluator:
         }
           // xs.traverse(_.eval).map(Box.apply)
         case App(Var("import"), List(Str(path))) =>
-          `import`(path)
+          `import`(path) >> Pass.pure
         
         case App(Var("square"), xs) => {
           env.get("square") match

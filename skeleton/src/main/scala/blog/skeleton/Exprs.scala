@@ -72,6 +72,10 @@ trait Statement[F[_], E] extends
   def block(statements: List[E]): F[E]
 }
 
+trait Modular[F[_], E] {
+  def `import`(path: E): F[Unit]
+}
+
 /** The expression */
 trait Expr[F[_], E] extends 
   LambdaCalculus[F, E], 

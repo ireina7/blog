@@ -11,16 +11,71 @@ object SkeletonRepl:
   import scalatags.Text.tags2.title
 
   def index: BlogContext[HtmlText] = conf ?=> {
+    val nameTag = 
+      div(cls := "skele-compiler-input-name md-form amber-textarea active-pink-textarea-2")(
+        textarea(
+          `class` := "skele-compiler-input-name md-textarea form-control", 
+          id := s"name0", 
+          name := "name", 
+          rows := 1,
+          placeholder := "name",
+          style := "font-family:monospace; background-color:#fbfaf0;",
+        ),
+        // label(`for` := "name0")("Unit name")
+      )
+    val submitButton = 
+      input(
+        cls := "btn btn-outline-info", 
+        `type` := "button", 
+        value := "\u27f3", 
+        onclick := "blog.compileSkele(0)"
+      )
+    val newButton =
+      input(
+        `class` := "btn", 
+        `type` := "button", 
+        value := "\uFF0B", 
+        style := "background-color:white;",
+        onclick := s"blog.newSkeleCompileUnit()"
+      )
+        
+    val inputArea = 
+      div(cls := "md-form mb-4 pink-textarea active-amber-textarea-2")(
+        i(cls := "fas fa-angle-double-right prefix"),
+        textarea(
+          `class` := "skele-compiler-input md-textarea form-control", 
+          id := s"src0", 
+          name := "src", 
+          rows := 4,
+          placeholder := "\\italic { Please code in. }",
+          style := "font-family:monospace;",
+        ),
+      )
+    val outputArea = 
+      div(`class` := "skele-compiler-output", id := "output0")
     val elem = form(action := "/compile", method := "post") (
-      label(`for` := "src")("Code here."), br,
-      textarea(id := "src", name := "src", rows := 20, cols := 80),
-      br,br,
-      input(`type` := "submit", value := "Submit", `class` := "btn btn-outline-success"),
-      // input(`type` := "button", value := "Submit", onclick := "blog.compileSkele()"),
+      // label(`for` := "src")("Enjoy."), 
+      // input(cls := "form-control me-2", `type` := "text", placeholder := "name"),
+      // input(`type` := "submit", value := "Submit", `class` := "btn btn-outline-success"),
+      nameTag,
+      inputArea,
+      submitButton,
+      newButton,
+      br, br,
+      outputArea,
     )
+    val helpButton = 
+      input(
+        cls := "btn btn-outline-info", 
+        `type` := "button", 
+        value := "\uff1f", 
+        onclick := ""
+      )
     Frame.index(
       mainContent(
-        h2("Skeleton playground"),
+        h2("Skeleton notebook"), //helpButton,
+        hr,
+        br,
         div(id := "skele-compiler-box")(elem)
       )
     )

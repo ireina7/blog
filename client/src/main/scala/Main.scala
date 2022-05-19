@@ -10,6 +10,7 @@ import js.annotation.{
   JSExport,
 }
 import scalatags.JsDom.all._
+import org.scalajs.dom.raw.HTMLTextAreaElement
 
 
 
@@ -104,7 +105,7 @@ object Main {
 
   val searchBar: dom.Element = {
 
-    form(cls := "d-flex", marginLeft := 90, bottom := 0, marginTop := 30, width := 600)(
+    form(cls := "blog-searchBar d-flex")(
       input(
         `class` := "form-control me-2", 
         `type` := "search",
@@ -122,6 +123,7 @@ object Main {
       a(href := "/")("Home"),
       a(href := "/about")("About"),
       a(href := "/filter")("Filter"),
+      a(href := "/skeleton")("Skeleton"),
       a(href := "#")("Category"),
       a(href := "#")("Structure"),
     )
@@ -150,7 +152,7 @@ object Main {
       backgroundPosition := "right bottom",
       backgroundSize := "cover",
     )(
-      tag("nav")(`class` := "nav sticky-top", marginTop := 0, marginLeft := 80, height := 150)(
+      tag("nav")(`class` := "blog-navigator nav sticky-top")(
         div(marginTop := 20)(
           a(
             `class` := "navbar-brand",
@@ -166,7 +168,7 @@ object Main {
       ),
       searchBar,
       pre(
-        marginLeft := 100,
+        marginLeft := 60,
         fontSize := 18,
       )(
         """
@@ -189,25 +191,75 @@ object Main {
    * }
   */
   @JSExport
-  def compileSkele(): Unit = {
+  var srcId: Int = 1
+  @JSExport
+  def newSkeleCompileUnit(): Unit = {
+    document.getElementById("skele-compiler-box")
+      .appendChild {
+        val inputArea = div(cls := "md-form mb-4 pink-textarea active-amber-textarea-2")(
+          i(cls := "fas fa-angle-double-right prefix"),
+          textarea(
+            `class` := "skele-compiler-input md-textarea form-control", 
+            id := s"src$srcId", 
+            name := "src", 
+            rows := 4,
+            style := "font-family:monospace;",
+          ),
+          // label(`for` := "Code here"),
+        )
+        val outputArea = 
+          div(`class` := "skele-compiler-output", id := s"output$srcId")
+        val submitButton =
+          input(`class` := "btn btn-outline-info", `type` := "button", value := "\u27f3", onclick := s"blog.compileSkele(${srcId})")
+        val newButton =
+          input(`class` := "btn", `type` := "button", value := "\uFF0B", onclick := s"blog.newSkeleCompileUnit()", style := "background-color:white;")
+        val variableTag =
+          div(cls := "skele-compiler-input-name md-form amber-textarea active-pink-textarea-2")(
+            textarea(
+              `class` := "skele-compiler-input-name md-textarea form-control", 
+              id := s"name$srcId", 
+              name := "name", 
+              rows := 1,
+              placeholder := "name",
+              style := "font-family:monospace; background-color:#fbfaf0;",
+            ),
+            // label(`for` := "name0")("Unit name")
+          )
+
+        div(
+          br,
+          variableTag,
+          inputArea,
+          submitButton,
+          newButton,
+          br, br,
+          outputArea,
+        ).render
+      }
+      srcId += 1
+  }
+  @JSExport
+  def compileSkele(curId: Int): Unit = {
     val httpReq = new dom.XMLHttpRequest()
+    println(curId)
     httpReq.onreadystatechange = event =>
       if (httpReq.readyState == 4 && httpReq.status == 200)
       then {
-        document.getElementById("skele-compiler-box")
-          .appendChild(
-            div(`class` := "skele-compiler-output")(httpReq.responseText)
-              .render
-          )
-        document.getElementById("skele-compiler-box")
-          .appendChild(
-            textarea(`class` := "skele-compiler-input", name := "src", rows := 4, cols := 80)
-              .render
-          )
+        val outputArea = document.getElementById(s"output$curId")
+        outputArea.innerHTML = httpReq.responseText
       }
     httpReq.open("POST", "/compile", true)
-    httpReq.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
-    httpReq.send("src=\\\\bold{scala}")
+    // httpReq.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
+    val content = document
+      .getElementById(s"src$curId")
+      .asInstanceOf[HTMLTextAreaElement]
+      .value
+    val nameContent = document
+      .getElementById(s"name$curId")
+      .asInstanceOf[HTMLTextAreaElement]
+      .value
+    
+    httpReq.send(js.URIUtils.encodeURI(s"src=$content&name=$nameContent"))
   }
 
 }//end Main
