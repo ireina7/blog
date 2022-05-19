@@ -25,3 +25,8 @@
   于 \ref{[vultr.com] Vultr}\ 购买。
 
 }
+
+
+(\set \greet {\name}) {
+  \## {Hello, \name !}
+}

@@ -65,15 +65,13 @@ object SkeletonRepl:
       outputArea,
     )
     val helpButton = 
-      input(
-        cls := "btn btn-outline-info", 
-        `type` := "button", 
-        value := "\uff1f", 
-        onclick := ""
-      )
-    Frame.index(
-      mainContent(
-        h2("Skeleton notebook"), //helpButton,
+      a(
+        style := "float: right; bottom: 0; font-size: 20;",
+        href := ""
+      )("help?")
+    Frame.index(div(
+        h2(style := "display: inline;")(i("Skeleton notebook")), helpButton,
+        br,
         hr,
         br,
         div(id := "skele-compiler-box")(elem)

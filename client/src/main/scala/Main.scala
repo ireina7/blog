@@ -113,6 +113,7 @@ object Main {
         placeholder := "order", 
         attr("aria-label") := "Search"
       ),
+      raw("&nbsp"), raw("&nbsp"), raw("&nbsp"),
       button(`class` := "btn btn-outline-success", `type` := "submit", height := 40)("summon")
     )
   }.render
@@ -120,12 +121,13 @@ object Main {
   val sideBar: dom.Element = {
 
     div(id := "mySidenav", `class` := "sidenav")(
-      a(href := "/")("Home"),
-      a(href := "/about")("About"),
-      a(href := "/filter")("Filter"),
+      a(href := "/")("主页"),
+      a(href := "/about")("关于我"),
+      a(href := "/filter")("过滤器"),
       a(href := "/skeleton")("Skeleton"),
-      a(href := "#")("Category"),
-      a(href := "#")("Structure"),
+      a(href := "#")("范畴"),
+      a(href := "#")("结构"),
+      a(href := "#", onclick := "blog.changeMainContentMode()")("模式"),
     )
   }.render
 
@@ -262,6 +264,48 @@ object Main {
     val encode = js.URIUtils.encodeURIComponent
     httpReq.send(s"src=${encode(content)}&name=${encode(nameContent)}")
   }
+
+  @JSExport
+  var mainContentWideMode: Boolean = false
+
+  @JSExport
+  def changeMainContentMode(): Unit = {
+    if mainContentWideMode 
+    then decreaseMainContent()
+    else widenMainContent()
+
+    mainContentWideMode = !mainContentWideMode
+  }
+
+  @JSExport
+  def widenMainContent(): Unit = {
+    import scalajs.js.internal.UnitOps.unitOrOps
+    document.querySelector(".blog-content")
+      .asInstanceOf[html.Element]
+      .style
+      .marginLeft = "3%"
+      
+    document.querySelector(".blog-content")
+      .asInstanceOf[html.Element]
+      .style
+      .marginRight = "3%"
+  }
+
+  @JSExport
+  def decreaseMainContent(): Unit = {
+    import scalajs.js.internal.UnitOps.unitOrOps
+    document.querySelector(".blog-content")
+      .asInstanceOf[html.Element]
+      .style
+      .marginLeft = "20%"
+      
+    document.querySelector(".blog-content")
+      .asInstanceOf[html.Element]
+      .style
+      .marginRight = "20%"
+  }
+  // js.timers.setTimeout(100)(changeMainContentMode())
+  
 
 }//end Main
 
