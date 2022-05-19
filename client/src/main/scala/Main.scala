@@ -241,7 +241,7 @@ object Main {
   @JSExport
   def compileSkele(curId: Int): Unit = {
     val httpReq = new dom.XMLHttpRequest()
-    println(curId)
+    // println(c·urId)
     httpReq.onreadystatechange = event =>
       if (httpReq.readyState == 4 && httpReq.status == 200)
       then {
@@ -285,82 +285,82 @@ object Main {
 
 // import scala.scalajs.js.annotation.JSExport
 // import org.scalajs.dom
-import scala.util.Random
+// import scala.util.Random
 // import scala.scalajs.js.annotation.JSExportTopLevel
 
-case class Point(x: Int, y: Int){
-  def +(p: Point) = Point(x + p.x, y + p.y)
-  def /(d: Int) = Point(x / d, y / d)
-}
+// case class Point(x: Int, y: Int){
+//   def +(p: Point) = Point(x + p.x, y + p.y)
+//   def /(d: Int) = Point(x / d, y / d)
+// }
 
 
-object ScalaJSExample {
+// object ScalaJSExample {
     
-  def draw(canvas: html.Canvas): Unit = {
-    val renderer = canvas.getContext("2d")
-      .asInstanceOf[dom.CanvasRenderingContext2D]
+//   def draw(canvas: html.Canvas): Unit = {
+//     val renderer = canvas.getContext("2d")
+//       .asInstanceOf[dom.CanvasRenderingContext2D]
 
-    canvas.width = canvas.parentElement.clientWidth
-    canvas.height = canvas.parentElement.clientHeight
+//     canvas.width = canvas.parentElement.clientWidth
+//     canvas.height = canvas.parentElement.clientHeight
 
-    renderer.fillStyle = "#f8f8f8"
-    renderer.fillRect(0, 0, canvas.width, canvas.height)
+//     renderer.fillStyle = "#f8f8f8"
+//     renderer.fillRect(0, 0, canvas.width, canvas.height)
 
-    renderer.fillStyle = "black"
-    var down = false
-    canvas.onmousedown =
-      (e: dom.MouseEvent) => down = true
+//     renderer.fillStyle = "black"
+//     var down = false
+//     canvas.onmousedown =
+//       (e: dom.MouseEvent) => down = true
 
-    canvas.onmouseup =
-      (e: dom.MouseEvent) => down = false
+//     canvas.onmouseup =
+//       (e: dom.MouseEvent) => down = false
 
-    canvas.onmousemove = (e: dom.MouseEvent) => {
-      val rect =
-      canvas.getBoundingClientRect()
-      if (down) renderer.fillRect(
-        e.clientX - rect.left,
-        e.clientY - rect.top,
-        10, 10
-      )
-    }
-  }
+//     canvas.onmousemove = (e: dom.MouseEvent) => {
+//       val rect =
+//       canvas.getBoundingClientRect()
+//       if (down) renderer.fillRect(
+//         e.clientX - rect.left,
+//         e.clientY - rect.top,
+//         10, 10
+//       )
+//     }
+//   }
 
-  def clock(canvas: html.Canvas): Unit = {
-    val renderer = canvas.getContext("2d")
-      .asInstanceOf[dom.CanvasRenderingContext2D]
+//   def clock(canvas: html.Canvas): Unit = {
+//     val renderer = canvas.getContext("2d")
+//       .asInstanceOf[dom.CanvasRenderingContext2D]
 
-    canvas.width = canvas.parentElement.clientWidth
-    canvas.height = canvas.parentElement.clientHeight
+//     canvas.width = canvas.parentElement.clientWidth
+//     canvas.height = canvas.parentElement.clientHeight
 
-    val gradient = renderer.createLinearGradient(
-      canvas.width / 2 - 100, 0, canvas.width/ 2 + 100, 0
-    )
-    gradient.addColorStop(0,"red")
-    gradient.addColorStop(0.5,"green")
-    gradient.addColorStop(1,"blue")
-    renderer.fillStyle = gradient
-    //renderer.fillStyle = "black"
+//     val gradient = renderer.createLinearGradient(
+//       canvas.width / 2 - 100, 0, canvas.width/ 2 + 100, 0
+//     )
+//     gradient.addColorStop(0,"red")
+//     gradient.addColorStop(0.5,"green")
+//     gradient.addColorStop(1,"blue")
+//     renderer.fillStyle = gradient
+//     //renderer.fillStyle = "black"
 
-    renderer.textAlign = "center"
-    renderer.textBaseline = "middle"
+//     renderer.textAlign = "center"
+//     renderer.textBaseline = "middle"
 
-    def render() = {
-      val date = new js.Date()
-      renderer.clearRect(
-        0, 0, canvas.width, canvas.height
-      )
+//     def render() = {
+//       val date = new js.Date()
+//       renderer.clearRect(
+//         0, 0, canvas.width, canvas.height
+//       )
 
-      renderer.font = "75px sans-serif"
-      renderer.fillText(
-        Seq(
-          date.getHours(),
-          date.getMinutes(),
-          date.getSeconds()
-        ).mkString(":"),
-        canvas.width / 2,
-        canvas.height / 2
-      )
-    }
-    dom.window.setInterval(render _, 1000)
-  }
-}
+//       renderer.font = "75px sans-serif"
+//       renderer.fillText(
+//         Seq(
+//           date.getHours(),
+//           date.getMinutes(),
+//           date.getSeconds()
+//         ).mkString(":"),
+//         canvas.width / 2,
+//         canvas.height / 2
+//       )
+//     }
+//     dom.window.setInterval(render _, 1000)
+//   }
+// }

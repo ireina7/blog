@@ -186,16 +186,21 @@ object Parser:
       case Nil => Pass
       case f::ps => application(f, ps)
     }
-    private def variableList = variable ~ ("{" ~> expr.* <~"}") ^^ {
-      case f ~ xs => App(f, xs)
+    private def variableList = variable ~ ("{" ~> expr.* <~"}").+ ^^ {
+      case f ~ xs => App(f, xs.flatten)
     }
 
-    private def structList = lists ~ ("{" ~> expr.* <~ "}").? ^^ {
-      case App(f, xs) ~ Some(es) => SkeleExpr.application(f, xs ++ es)
-      // case App(f, xs) ~ Some(es) => SkeleExpr.application(f, xs ++ List(App(Var("block"), es)))
-      case App(f, xs) ~ _ => SkeleExpr.application(f, xs)
+    // private def structList = lists ~ ("{" ~> expr.* <~ "}").? ^^ {
+    //   case App(f, xs) ~ Some(es) => SkeleExpr.application(f, xs ++ es)
+    //   case App(f, xs) ~ _ => SkeleExpr.application(f, xs)
+    //   case Pass ~ _ => Pass
+    //   case _ => ???//Left(blog.Error("unknown parser error"))
+    // } | variableList
+
+    private def structList = lists ~ ("{" ~> expr.* <~ "}").* ^^ {
+      case App(f, xs) ~ es => SkeleExpr.application(f, xs ++ es.flatten)
       case Pass ~ _ => Pass
-      case _ => ???//Left(blog.Error("unknown parser error"))
+      case other => println(other); ???//Left(blog.Error("unknown parser error"))
     } | variableList
 
     private def branch: Parser[SkeleExpr] =
@@ -213,7 +218,7 @@ object Parser:
       number     | 
       quoted     |
       squares    |
-      symbol     |
+      // symbol     |
       text       | 
       boxed      |
       comments   |
