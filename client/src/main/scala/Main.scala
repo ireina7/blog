@@ -306,6 +306,11 @@ object Main {
   }
   // js.timers.setTimeout(100)(changeMainContentMode())
   
+  @JSExport
+  def expandTextArea(obj: HTMLTextAreaElement): Unit = {
+    obj.style.height = s"${obj.style.height.toInt + 1}"
+  }
+
 
 }//end Main
 

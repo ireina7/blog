@@ -208,6 +208,7 @@ object Routes:
     // }
     case req @ POST -> Root / "compile" => {
       import org.http4s.FormDataDecoder.*
+      import blog.skeleton.Exprs.SkeleExpr.*
       
       given codeDecoder: FormDataDecoder[(String, String)] = 
         (field[String]("src"), field[String]("name"))
@@ -218,7 +219,16 @@ object Routes:
         blog.skeleton.MarkdownCompiler.htmlCompilerIOErr
       for
         (code, name) <- req.as[(String, String)]
-        html <- compiler.compile(code).value
+        // expr <- PreMarkDownExprEvaluator.eval
+        html <- if name == ""
+                then compiler.compile(code).value
+                else 
+                  (compiler.compile(
+                    s"(\\set \\$name $code)"
+                  ) >> 
+                  compiler.compile(
+                    s"\\box {$code}"
+                  )).value
         res  <- Ok(html match {
           case Right(ss) => div(ss).toString
           case Left(err) => span(style := "color:red")(err.toString).toString
