@@ -396,8 +396,9 @@ object PreMarkDownExprEvaluator:
           then env(s) match
             case ref: Ref => ref.update(v)
             case _ => env += (s -> Ref(v))
-          else env += (s -> Ref(v))
-        case _ => err.raiseError(blog.Error("set error"))
+          else 
+            env += (s -> Ref(v))
+        case _ => err.raiseError(blog.Error(s"set error: setting $pat"))
       
       // env.foreach(println)
       // println(s"set env: ${env.##}")

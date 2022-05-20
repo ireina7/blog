@@ -33,3 +33,7 @@
 ## Version `0.3.10`
 - Fixed `./shared/assets` problem
 - client page style bug fixed
+
+## Version `0.4.1`
+- Fixed many bugs
+- Skeleton online notebook !

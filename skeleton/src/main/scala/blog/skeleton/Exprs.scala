@@ -263,6 +263,7 @@ object Exprs:
     case class Lambda(ps: List[Pattern], expr: SkeleExpr) extends SkeleExpr
     case class Closure(ps: List[Pattern], expr: SkeleExpr, env: Env) extends SkeleExpr {
       override def toString = s"Closure($ps, $expr)"
+      override def hashCode = toString.hashCode
     }
     case class Lisp(xs: List[SkeleExpr]) extends SkeleExpr
     case class Let(bindings: List[(Pattern, SkeleExpr)], expr: SkeleExpr) extends SkeleExpr

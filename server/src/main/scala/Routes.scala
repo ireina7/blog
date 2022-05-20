@@ -213,7 +213,7 @@ object Routes:
         (field[String]("src"), field[String]("name"))
           .mapN((a, b) => (a, b))
       
-      println(s">>>>> ${req.bodyText.compile.toVector.unsafeRunSync}")
+      // println(s">>>>> ${req.bodyText.compile.toVector.unsafeRunSync}")
       val compiler = 
         blog.skeleton.MarkdownCompiler.htmlCompilerIOErr
       for

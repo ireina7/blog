@@ -2,7 +2,7 @@
 My personal blog written mostly in Scala and Java.
 Trying `finally tagless` with `extensive effects`.
 ![k-on!](./img/k-on-q.png)  
-- version: `0.3.10`
+- version: `0.4.1`
 
 ## Dependences
 - `Scala3` the programming language
@@ -21,6 +21,8 @@ Trying `finally tagless` with `extensive effects`.
 ## Features
 ### The **Skeleton** programming language
 - Please refer to the [Skeleton guide](./doc/Skeleton.md)
+- The Skeleton online repl! You can try Skeleton directly on web page!
+  Check [Skeleton notebook](http://ireina.us/skeleton)
 
 ## Development log
 - Pleaase refer to the [Development log](./doc/DEV.md)
