@@ -33,39 +33,31 @@ open class MarkdownCompiler[F[_]: Monad, Output, MarkEnv, ExprEnv]
     parser: Parser[F, SkeleExpr],
     evalMark: core.Eval[[A] =>> MarkEnv ?=> F[A], SkeleExpr, Output],
     evalExpr: core.Eval[[A] =>> ExprEnv ?=> F[A], SkeleExpr, SkeleExpr],
-  ) extends SkeleExprCompiler[[A] =>> Injection[F, (ExprEnv, MarkEnv), A], Output]:
+  ) extends SkeleExprCompiler[[A] =>> Injection[[A] =>> MarkEnv ?=> F[A], ExprEnv, A], Output]:
+    // ) extends SkeleExprCompiler[[A] =>> Effect.Inject[F, ExprEnv ?=> MarkEnv ?=> F[A], A], Output]:
+  // ) extends SkeleExprCompiler[[A] =>> ExprEnv ?=> MarkEnv ?=> F[Output], Output]:
   import fileIO.readFile
   import parser.parse
 
   extension (text: String)
-    override def eval: Injection[F, (ExprEnv, MarkEnv), Output] = envs ?=> {
-      envs match
-        case (exprEnv, markEnv) => {
-          given MarkEnv = markEnv
-          given ExprEnv = exprEnv
-          for
-            tree <- parse(text)
-            expr <- evalExpr.eval(tree)
-            html <- evalMark.eval(expr)
-          yield html
-        }
-    }
+    override def eval: ExprEnv ?=> MarkEnv ?=> F[Output] = 
+      for
+        tree <- parse(text)
+        expr <- evalExpr.eval(tree)
+        html <- evalMark.eval(expr)
+      yield html
 
   def compile(s: String)
-    (using exprEnv: ExprEnv, markEnv: MarkEnv): F[Output] = {
-    given (ExprEnv, MarkEnv) = (exprEnv, markEnv)
+    (using exprEnv: ExprEnv, markEnv: MarkEnv): F[Output] = 
     s.eval
-  }
 
   def compileFile(path: String)
-    (using exprEnv: ExprEnv, markEnv: MarkEnv): F[Output] = {
-    
-    given (ExprEnv, MarkEnv) = (exprEnv, markEnv)
+    (using exprEnv: ExprEnv, markEnv: MarkEnv): F[Output] =     
     for
       text <- readFile(path)
       html <- compile(text)
     yield html
-  }
+  
 end MarkdownCompiler
 
 
@@ -88,12 +80,7 @@ object MarkdownCompiler:
     import parser.NaiveParser.given
     import MarkDownEvaluator.given
     import PreMarkDownExprEvaluator.given
-
-    given markdownEnv: MarkDownEvaluator.Environment = 
-      MarkDownEvaluator.Environment.predef
-    given exprEnv: PreMarkDownExprEvaluator.Environment = 
-      PreMarkDownExprEvaluator.Environment.predefForMarkDown
-
+    
     new MarkdownCompiler
   }
 
@@ -231,7 +218,17 @@ final class HtmlRegister[F[_], MarkDownEnv, ExprEnv, GenEnv]
 end HtmlRegister
 
 
-
+/**
+ * op1: [M] => M ?=> F[A]
+ * op2: [N] => N ?=> F[B]
+ * 
+ * def func[C](using M, N): F[C] =
+ *  for
+      a <- op1
+      b <- op2
+    yield
+      f(a, b)
+*/
 
 
 

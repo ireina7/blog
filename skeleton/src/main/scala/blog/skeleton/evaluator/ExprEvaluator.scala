@@ -178,6 +178,45 @@ object PreMarkDownExprEvaluator:
 
   object Environment:
     def empty: Environment = mutable.Map.empty
+    def prim(ps: List[SkeleExpr], expr: SkeleExpr): SkeleExpr = {
+      Closure(ps.map(_.asInstanceOf[Pattern]), expr, primitives)
+    }
+    import blog.skeleton.parser.NaiveParser.given
+    val parser = summon[blog.core.Parser[cats.Id, SkeleExpr]]
+    given Conversion[String, SkeleExpr] =
+      parser.parse(_)
+    val prims: Environment = mutable.Map(
+      "set"       -> prim(List("\\pattern", "\\self"), "(\\set \\pattern \\self)"),
+      "block"     -> prim(List("\\self"), "(\\block \\self)"),
+      "space"     -> "\\space",
+      "slash"     -> "\\slash",
+      "code"      -> prim(List("\\self"), "(\\code \\self)"),
+      "pure"      -> prim(List("\\self"), "(\\pure \\self)"),
+      "n"         -> "\\n",
+      "bold"      -> prim(List("\\self"), "(\\bold \\self)"),
+      "italic"    -> prim(List("\\self"), "(\\italic \\self)"),
+      "_"         -> prim(List("\\self"), "(\\_ \\self)"),
+      "@"         -> prim(List("\\self"), "(\\@ \\self)"),
+      "#"         -> prim(List("\\self"), "(\\# \\self)"),
+      "##"        -> prim(List("\\self"), "(\\## \\self)"),
+      "###"       -> prim(List("\\self"), "(\\### \\self)"),
+      "####"      -> prim(List("\\self"), "(\\#### \\self)"),
+      "#####"     -> prim(List("\\self"), "(\\##### \\self)"),
+      "######"    -> prim(List("\\self"), "(\\###### \\self)"),
+      "section"   -> prim(List("\\self"), "(\\section \\self)"),
+      "paragraph" -> prim(List("\\self"), "(\\paragraph \\self)"),
+      "module"    -> prim(List("\\self"), "(\\module \\self)"),
+      "link"      -> prim(List("\\self"), "(\\link \\self)"),
+      "image"     -> prim(List("\\self"), "(\\image \\self)"),
+      "font"      -> prim(List("\\self"), "(\\font \\self)"),
+      "span"      -> prim(List("\\self"), "(\\span \\self)"),
+      "line"      -> "\\line",
+      "list"      -> prim(List("\\self"), "(\\list \\self)"),
+      "video"     -> prim(List("\\self"), "(\\video \\self)"),
+      "audio"     -> prim(List("\\self"), "(\\audio \\self)"),
+      "source"    -> prim(List("\\self"), "(\\source \\self)"),
+      "document"  -> prim(List("\\self"), "(\\document \\self)"),
+    )
     val primitives: Environment = mutable.Map(
       "set"       -> Primitive,
       "block"     -> Primitive,
@@ -401,7 +440,6 @@ object PreMarkDownExprEvaluator:
         case _ => err.raiseError(blog.Error(s"set error: setting $pat"))
       
       // env.foreach(println)
-      // println(s"set env: ${env.##}")
       Set(Quote(pat), v)
     }
     override def define
@@ -536,8 +574,9 @@ object PreMarkDownExprEvaluator:
         
         case App(f, ps) => {
           val env1 = env.clone() // to prevent polluting environment
+          // println(s">>> $ps")
           for {
-            func  <- f.eval(using env)
+            func  <- f.eval(using env1)
             param <- ps.foldLeft(List.empty[SkeleExpr].pure) {
               (ps, p) =>
                 for {

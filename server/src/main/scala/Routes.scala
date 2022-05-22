@@ -108,6 +108,9 @@ object Routes:
       
       // /skeleton
       case GET -> Root / "skeleton" => 
+        // Refresh environment
+        exprEnvEvil = 
+          PreMarkDownExprEvaluator.Environment.predefForMarkDown
         val content = page.SkeletonRepl.index
         Ok(content)
           
@@ -220,18 +223,18 @@ object Routes:
       for
         (code, name) <- req.as[(String, String)]
         // expr <- PreMarkDownExprEvaluator.eval
-        html <- if name == ""
-                then compiler.compile(code).value
-                else 
-                  (compiler.compile(
-                    s"(\\set \\$name $code)"
-                  ) >> 
-                  compiler.compile(
-                    s"\\box {$code}"
-                  )).value
+        html <- {
+          val evalExpr = compiler.eval(s"\\box {$code}")(using exprEnvEvil)
+          if name == ""
+          then evalExpr.value
+          else (
+            compiler.eval(s"(\\set $name $code)")(using exprEnvEvil) >> 
+            span(style := "color:green;font-family:monospace;")(s"\\set $name").pure
+          ).value
+        }
         res  <- Ok(html match {
           case Right(ss) => div(ss).toString
-          case Left(err) => span(style := "color:red")(err.toString).toString
+          case Left(err) => span(style := "color:red;font-family:monospace;")(err.toString).toString
         })
       yield res
     }

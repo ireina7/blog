@@ -6,7 +6,7 @@ enum BlogType:
   case Online
   case Static
 
-case class Configuration(
+open case class Configuration(
   /** Blog type: static | online */
   blogType: BlogType,
 
@@ -15,6 +15,9 @@ case class Configuration(
 
   /** Path configurations */
   path: Path = Path.default,
+
+  /** Debugging mode? */
+  debugging: Boolean = false,
 )
 
 

@@ -70,7 +70,7 @@ object SkeletonRepl:
         href := ""
       )("help?")
     Frame.index(div(
-        h2(style := "display: inline;")(i("Skeleton notebook")), helpButton,
+        h1(style := "display: inline;")(i("Skeleton notebook")), helpButton,
         br,
         hr,
         br,

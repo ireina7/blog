@@ -82,12 +82,20 @@ object Parser:
     private def quoted     = ("'" ~> "[^']+".r <~ "'") ^^ Str.apply.compose(_.stripMargin)
 //    private def pattern    = symbol | lists
     private def text       = "[^{}()\\[\\]\\\\\"]+".r ^^ SkeleExpr.string
-    private def lambda     = "(\\" ~> lists ~ expr <~ ")" ^^ {
+    private def simpleLambda     = "(\\lambda" ~> lists ~ expr <~ ")" ^^ {
       case App(x, xs) ~ e => SkeleExpr.lambda(
         (x :: xs).map(o => Quote(o.asInstanceOf[Pattern])), 
         Quote(e)
       )
     }
+    private def structLambda = "\\lambda" ~> ("{" ~> expr.* <~ "}").+ ^^ {
+      case es if es.length < 2 => Pass
+      case es => Lambda(
+        es.init.flatten.map(o => Quote(o.asInstanceOf[Pattern])),
+        Quote(Box(es.last))
+      )
+    }
+    private def lambda = simpleLambda | structLambda
     private def dot = "."
     private def bracketBoxed = ("(" ~ "\\box " ~> expr.* <~ ")") ~ ("{" ~> expr.* <~ "}").? ^^ {
       case xs ~ None => Box(xs)
@@ -116,7 +124,11 @@ object Parser:
     private def setAssign = "\\set" ~> ("{" ~> variable ~ expr.+ <~ "}") ^^ {
       case key ~ es => Set(Quote(key), Box(es))
     }
-    private def assignment = structAssign | simpleAssignment | setAssign
+    private def curriedAssign = 
+      "\\set" ~> ("{" ~> variable <~ "}") ~ ("{" ~> expr.* <~ "}").+ ^^ {
+        case key ~ es => Set(Quote(key), Box(es.flatten))
+      }
+    private def assignment = structAssign | simpleAssignment | setAssign | curriedAssign
     private def simpleDef = ("(" ~ "\\set" ~> structList ~ expr.+ <~ ")") ^^ {
       case App(f, xs) ~ es => 
         Set(
@@ -149,7 +161,18 @@ object Parser:
       )
       case _ => Pass
     }
-    private def definition = simpleDef | structDef | setDef
+    private def curriedDef =
+      "\\set" ~> ("{" ~> structList <~ "}") ~ ("{" ~> expr.* <~ "}").+ ^^ {
+        case App(f, ps) ~ es => Set(
+          Quote(f),
+          Lambda(
+            ps.map(x => Quote(x.asInstanceOf[Pattern])), 
+            Quote(Box(es.flatten))
+          )
+        )
+        case _ => Pass
+      }
+    private def definition = simpleDef | structDef | setDef | curriedDef
     // def codes      = ("(\\code" ~> ??? <~ ")") ^^ {
     //   case code => App(Var("code"), "[.]")
     // }
@@ -214,6 +237,7 @@ object Parser:
 
 
     private def expr: Parser[SkeleExpr] =
+      lambda     |
       escapes    |
       number     | 
       quoted     |
@@ -224,7 +248,6 @@ object Parser:
       comments   |
       brackets   |
       braces     |
-      lambda     |
       assignment |
       definition |
       structList |
@@ -234,7 +257,7 @@ object Parser:
 
     def read(s: String): blog.Result[SkeleExpr] =
       parse(expr, s) match
-        case Success(res, _) => Right(res)
+        case Success(res, _) => println(res); Right(res)
         case Failure(msg, _) => Left(blog.Error(msg))
         case Error(msg, _)   => Left(blog.Error(msg))
   }

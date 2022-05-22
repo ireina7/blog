@@ -139,7 +139,18 @@ object Effect:
    * @tparam A the output type
   */
   type Injection[F[_], Env, A] = 
-    Env ?=> F[A]
+    Env ?=> F[A] //match 
+      // case ContextFunction1[env, a] => a
+
+  // type Inject[Func] = Func match {
+  //   case (x ?=> xs) => {
+  //     [A] =>> Injection[[A] =>> Inject[xs], x, A]
+  //   }
+  //   // case F[A] => Func
+  // }
+
+  // given conv[F[_], A, B, Env1, Env2]
+  //   : Conversion[Injection[F, Env1, Injection[]]]
 
   /*
   Env ?=> Injection[IOErr, Env1, A]
@@ -148,17 +159,28 @@ object Effect:
   [A] =>> Injection[[B] =>> Injection[IOErr, env1, B], env0, A]
   */
 
-  type AddEnv[T, Env2] = T match
-    case Injection[f, env, a] => (Env2, env) ?=> f[a]
+  // type AddEnv[Env, T] = T match
+  //   case ContextFunction1[env, a] => Env ?=> env ?=> a
+  //   case t => Env ?=> t
 
   given [Env, F[_]: Functor]: 
     Functor[[A] =>> Injection[F, Env, A]] with
     override def map[A, B](ma: Injection[F, Env, A])(f: A => B) = env ?=> {
       ma(using env).map(f)
     }
+
+  given [F[_]: Functor, Env1, Env2]:
+    Functor[[A] =>> (Env1, Env2) ?=> F[A]] with
+    override def map[A, B](ma: (Env1, Env2) ?=> F[A])(f: A => B) = 
+      (env1, env2) ?=>
+        ma(using env1, env2).map(f)
+
+  // given [F[_]: Functor]:
+  //   Functor[[A] =>> ContextFunctionN]
+
   
 
-  given [Env, F[_]](using app: Applicative[F]): 
+  given [F[_] ,Env](using app: Applicative[F]): 
     Applicative[[A] =>> Injection[F, Env, A]] with {
     override def pure[A](a: A) = app.pure(a)
     override def ap[A, B]
@@ -168,6 +190,19 @@ object Effect:
         app.ap(ff(using env))(fa(using env))
       }
   }
+
+  given [F[_] ,Env1, Env2](using app: Applicative[F]): 
+    Applicative[[A] =>> (Env1, Env2) ?=> F[A]] with {
+    override def pure[A](a: A) = app.pure(a)
+    override def ap[A, B]
+      (ff: (Env1, Env2) ?=> F[A => B])
+      (fa: (Env1, Env2) ?=> F[A]) = 
+      (env1, env2) ?=> {
+        app.ap(ff(using env1, env2))(fa(using env1, env2))
+      }
+  }
+
+  
 
   given [F[_]: Monad, Env](using app: Applicative[[A] =>> Injection[F, Env, A]]):
     Monad[[A] =>> Injection[F, Env, A]] with {
@@ -186,6 +221,25 @@ object Effect:
       }
     }
   }
+
+  given [Env](using app: Applicative[[A] =>> Env ?=> A]):
+    Monad[[A] =>> Env ?=> A] with {
+    export app.pure
+    override def flatMap[A, B]
+      (fa: Env ?=> A)
+      (f: A => Env ?=> B): Env ?=> B =
+      env ?=> {
+        f(fa(using env))(using env)
+      }
+    override def tailRecM[A, B]
+      (a: A)(f: A => Env ?=> Either[A, B]): Env ?=> B = {
+      flatMap(f(a)) {
+        case Left(a) => tailRecM(a)(f)
+        case Right(b) => pure(b)
+      }
+    }
+  }
+
 
   given [F[_]: Monad, Env](using 
     monad: Monad[[A] =>> Injection[F, Env, A]], 
@@ -256,9 +310,19 @@ object Effect:
   }
   
 
-  given [F[_], Env](using fp: Parser[F, page.Index]):
-    Parser[[A] =>> Injection[F, Env, A], page.Index] with
-    override def parse(s: String) = fp.parse(s)
+  given [F[_]: Monad, Env](using 
+    fp: Parser[F, page.Index],
+    console: Console[F],
+  ): Parser[[A] =>> Injection[F, Env, A], page.Index] with
+    override inline def parse(s: String) = conf ?=> 
+      val ftree = fp.parse(s)
+      ftree
+      // if conf.debugging
+      // then for
+      //   tree <- ftree
+      //   _    <- console.log(tree.toString)
+      // yield tree
+      // else ftree
   
 
   given [F[_], Env](using F: Runnable[F], env: Env):
