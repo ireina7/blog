@@ -18,7 +18,7 @@ object SkeletonRepl:
           id := s"name0", 
           name := "name", 
           rows := 1,
-          placeholder := "name",
+          placeholder := "definiton",
           style := "font-family:monospace; background-color:#fbfaf0;",
         ),
         // label(`for` := "name0")("Unit name")

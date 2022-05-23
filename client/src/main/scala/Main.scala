@@ -222,7 +222,7 @@ object Main {
               id := s"name$srcId", 
               name := "name", 
               rows := 1,
-              placeholder := "name",
+              placeholder := "definition",
               style := "font-family:monospace; background-color:#fbfaf0;",
             ),
             // label(`for` := "name0")("Unit name")

@@ -44,7 +44,7 @@ open class MarkdownCompiler[F[_]: Monad, Output, MarkEnv, ExprEnv]
       for
         tree <- parse(text)
         expr <- {
-          println(tree)
+          // println(tree)
           evalExpr.eval(tree)
         }
         html <- {
