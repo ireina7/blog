@@ -179,13 +179,13 @@ object PreMarkDownExprEvaluator:
   object Environment:
     def empty: Environment = mutable.Map.empty
     def prim(ps: List[SkeleExpr], expr: SkeleExpr): SkeleExpr = {
-      Closure(ps.map(_.asInstanceOf[Pattern]), expr, primitives)
+      Closure(ps.map(_.asInstanceOf[Pattern]), expr, empty)
     }
     import blog.skeleton.parser.NaiveParser.given
     val parser = summon[blog.core.Parser[cats.Id, SkeleExpr]]
     given Conversion[String, SkeleExpr] =
       parser.parse(_)
-    val prims: Environment = mutable.Map(
+    lazy val prims: Environment = mutable.Map(
       "set"       -> prim(List("\\pattern", "\\self"), "(\\set \\pattern \\self)"),
       "block"     -> prim(List("\\self"), "(\\block \\self)"),
       "space"     -> "\\space",
@@ -217,49 +217,53 @@ object PreMarkDownExprEvaluator:
       "source"    -> prim(List("\\self"), "(\\source \\self)"),
       "document"  -> prim(List("\\self"), "(\\document \\self)"),
     )
-    val primitives: Environment = mutable.Map(
-      "set"       -> Primitive,
-      "block"     -> Primitive,
-      "space"     -> Primitive,
-      "slash"     -> Primitive,
-      "code"      -> Primitive,
-      "pure"      -> Primitive,
-      "n"         -> Primitive,
-      "bold"      -> Primitive,
-      "italic"    -> Primitive,
-      "_"         -> Primitive,
-      "@"         -> Primitive,
-      "#"         -> Primitive,
-      "##"        -> Primitive,
-      "###"       -> Primitive,
-      "####"      -> Primitive,
-      "#####"     -> Primitive,
-      "######"    -> Primitive,
-      "section"   -> Primitive,
-      "paragraph" -> Primitive,
-      "module"    -> Primitive,
-      "link"      -> Primitive,
-      "image"     -> Primitive,
-      "font"      -> Primitive,
-      "span"      -> Primitive,
-      "line"      -> Primitive,
-      "list"      -> Primitive,
-      "video"     -> Primitive,
-      "audio"     -> Primitive,
-      "source"    -> Primitive,
-      "document"  -> Primitive,
-    )
+    // val primitives: Environment = mutable.Map(
+    //   "set"       -> Primitive,
+    //   "block"     -> Primitive,
+    //   "space"     -> Primitive,
+    //   "slash"     -> Primitive,
+    //   "code"      -> Primitive,
+    //   "pure"      -> Primitive,
+    //   "n"         -> Primitive,
+    //   "bold"      -> Primitive,
+    //   "italic"    -> Primitive,
+    //   "_"         -> Primitive,
+    //   "@"         -> Primitive,
+    //   "#"         -> Primitive,
+    //   "##"        -> Primitive,
+    //   "###"       -> Primitive,
+    //   "####"      -> Primitive,
+    //   "#####"     -> Primitive,
+    //   "######"    -> Primitive,
+    //   "section"   -> Primitive,
+    //   "paragraph" -> Primitive,
+    //   "module"    -> Primitive,
+    //   "link"      -> Primitive,
+    //   "image"     -> Primitive,
+    //   "font"      -> Primitive,
+    //   "span"      -> Primitive,
+    //   "line"      -> Primitive,
+    //   "list"      -> Primitive,
+    //   "video"     -> Primitive,
+    //   "audio"     -> Primitive,
+    //   "source"    -> Primitive,
+    //   "document"  -> Primitive,
+    // )
     val arith: Environment = mutable.Map(
-
+      "+" -> prim(List("\\a", "\\b"), "(\\+ \\a \\b)"),
+      "-" -> prim(List("\\a", "\\b"), "(\\- \\a \\b)"),
+      "*" -> prim(List("\\a", "\\b"), "(\\* \\a \\b)"),
+      "/" -> prim(List("\\a", "\\b"), "(\\/ \\a \\b)"),
     )
     /** Predefined environment for markdown evaluation
      * encluding:
     */
     def predefForMarkDown: Environment = 
-      primitives ++ 
+      // primitives ++ 
+      prims ++ 
       arith ++
       mutable.Map(
-        "strong" -> Closure(List(Var("n")), App(Var("bold"), List(Var("n"))), primitives),
+        "strong" -> Closure(List(Var("n")), App(Var("bold"), List(Var("n"))), prims),
         // "box"    -> Closure(List(Var("x")), )
       )
   end Environment
@@ -305,7 +309,7 @@ object PreMarkDownExprEvaluator:
     override def quoted(expr: SkeleExpr) = expr.pure
     override def variable(name: String) = env ?=> {
       env.get(name) match
-        case Some(Primitive) => Var(name).pure
+        // case Some(Primitive) => Var(name).pure
         case Some(Ref(x)) => x.pure
         case Some(x) => x.pure
         case None => 
@@ -366,7 +370,7 @@ object PreMarkDownExprEvaluator:
             yield res
           }
         }
-        case Var(name) => App(f, xs).pure
+        // case Var(name) => App(f, xs).pure
         case Closure(params, expr, environment) => {
           // println(s"$ps, $expr, $env")
           val env = environment.clone()
@@ -424,7 +428,7 @@ object PreMarkDownExprEvaluator:
         }
         case _ => 
           err.raiseError(
-            blog.Error(s"Application error: found $f")
+            blog.Error(s"Application error: found $f with $xs")
           )
       end match
     }
@@ -439,6 +443,9 @@ object PreMarkDownExprEvaluator:
             env += (s -> Ref(v))
         case _ => err.raiseError(blog.Error(s"set error: setting $pat"))
       
+      v match
+        case v: Closure => v.env = env
+        case _ => {}
       // env.foreach(println)
       Set(Quote(pat), v)
     }
@@ -459,8 +466,8 @@ object PreMarkDownExprEvaluator:
         case (Num(n), Num(m))         => Num(f(n ,m)).pure
         case (Integer(i), Num(j))     => Num(f(i, j)).pure
         case (Num(n), Integer(m))     => Num(f(n, m)).pure
-        case (Box(List(x)), y)        => App(Var("+"), List(x, y)).eval
-        case (x, Box(List(y)))        => App(Var("+"), List(x, y)).eval
+        // case (Box(List(x)), y)        => App(Var("+"), List(x, y)).eval
+        // case (x, Box(List(y)))        => App(Var("+"), List(x, y)).eval
         case _ => err.raiseError(blog.Error(
           s"Addition error: operating $x and $y"
         ))
@@ -488,17 +495,22 @@ object PreMarkDownExprEvaluator:
     private def cases(
       expr: SkeleExpr, 
       branches: List[(SkeleExpr, SkeleExpr)]
-    ): Skele[F, SkeleExpr] = {
+    ): Skele[F, SkeleExpr] = env ?=> {
       
       val notMatch: Skele[F, SkeleExpr] = 
         err.raiseError(
-          blog.Error(s"case matching failed: matching: $expr")
+          blog.Error(s"case matching failed: matching $expr")
         )
       
       branches.foldLeft(notMatch) {
         case (acc, (p, v)) =>
           if p == expr then return v.eval//.flatMap{x => println(x); x.pure}
-          else acc
+          else if p.isInstanceOf[Var] then
+            env += (p.asInstanceOf[Var].name -> expr)
+            v.eval(using env)
+          else
+            // println(p)
+            acc
       }
     }
 
@@ -571,6 +583,19 @@ object PreMarkDownExprEvaluator:
           y <- b.eval
           z <- arithmetic(_ / _)(x, y)
         } yield z
+        case App(Var(f), ps) if Environment.prims.contains(f) =>
+          val env1 = if f == "module" 
+            then env 
+            else env.clone() // to prevent polluting environment
+          for {
+            param <- ps.foldLeft(List.empty[SkeleExpr].pure) {
+              (ps, p) =>
+                for {
+                  xs <- ps
+                  pv <- p.eval(using env1)
+                } yield pv :: xs // for perfomance
+            }.map(_.reverse)
+          } yield App(Var(f), param)
         
         case App(f, ps) => {
           val env1 = env.clone() // to prevent polluting environment

@@ -261,7 +261,7 @@ object Exprs:
     case class App(f: SkeleExpr, xs: List[SkeleExpr]) extends Pattern
     
     case class Lambda(ps: List[Pattern], expr: SkeleExpr) extends SkeleExpr
-    case class Closure(ps: List[Pattern], expr: SkeleExpr, env: Env) extends SkeleExpr {
+    case class Closure(ps: List[Pattern], expr: SkeleExpr, var env: Env) extends SkeleExpr {
       override def toString = s"Closure($ps, $expr)"
       override def hashCode = toString.hashCode
     }

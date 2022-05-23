@@ -112,7 +112,12 @@ object MarkDownEvaluator:
     
     override def quoted(expr: SkeleExpr) = expr match
       case Var(s) => string(s)
-      case Closure(_, _, _) => raw("???")
+      case Closure(ps, _, _) => span(style := "color:grey; font-family:monospace;")(s"\\closure${
+        ps.map {
+          case Var(s) => s"\\$s"
+          case p => p.toString
+        }.mkString("{", " ", "}")
+      }")
       case _ => string(expr.toString)
     // override def evalPattern(pat: SkeleExpr) = string(pat.toString)
     // override def evalSkeleLambda(lam: SkeleExpr) = 
@@ -137,7 +142,7 @@ object MarkDownEvaluator:
     override def lambda(ps: List[HtmlText], expr: blog.HtmlText) = 
       errDsl.raiseError(
         blog.Error(
-          s"Evaluation error: lambda(closure) is not valid markdown value."
+          s"Evaluation error: lambda(closure) is not valid markdown value: $ps => $expr"
         )
       )
     override def quote(e: HtmlText) = e

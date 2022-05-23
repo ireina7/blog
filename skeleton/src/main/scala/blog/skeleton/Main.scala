@@ -43,8 +43,13 @@ open class MarkdownCompiler[F[_]: Monad, Output, MarkEnv, ExprEnv]
     override def eval: ExprEnv ?=> MarkEnv ?=> F[Output] = 
       for
         tree <- parse(text)
-        expr <- evalExpr.eval(tree)
-        html <- evalMark.eval(expr)
+        expr <- {
+          println(tree)
+          evalExpr.eval(tree)
+        }
+        html <- {
+          evalMark.eval(expr)
+        }
       yield html
 
   def compile(s: String)
@@ -80,7 +85,7 @@ object MarkdownCompiler:
     import parser.NaiveParser.given
     import MarkDownEvaluator.given
     import PreMarkDownExprEvaluator.given
-    
+
     new MarkdownCompiler
   }
 

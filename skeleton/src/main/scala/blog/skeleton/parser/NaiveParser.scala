@@ -237,7 +237,6 @@ object Parser:
 
 
     private def expr: Parser[SkeleExpr] =
-      lambda     |
       escapes    |
       number     | 
       quoted     |
@@ -248,6 +247,7 @@ object Parser:
       comments   |
       brackets   |
       braces     |
+      lambda     |
       assignment |
       definition |
       structList |
@@ -257,7 +257,7 @@ object Parser:
 
     def read(s: String): blog.Result[SkeleExpr] =
       parse(expr, s) match
-        case Success(res, _) => println(res); Right(res)
+        case Success(res, _) => Right(res)
         case Failure(msg, _) => Left(blog.Error(msg))
         case Error(msg, _)   => Left(blog.Error(msg))
   }
