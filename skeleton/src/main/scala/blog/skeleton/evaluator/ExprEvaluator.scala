@@ -255,17 +255,16 @@ object PreMarkDownExprEvaluator:
       "*" -> prim(List("\\a", "\\b"), "(\\* \\a \\b)"),
       "/" -> prim(List("\\a", "\\b"), "(\\/ \\a \\b)"),
     )
+    val listOps: Environment = mutable.Map(
+      "::" -> prim(List("\\x", "\\xs"), "(\\:: \\x \\xs)"),
+    )
     /** Predefined environment for markdown evaluation
      * encluding:
     */
     def predefForMarkDown: Environment = 
       // primitives ++ 
       prims ++ 
-      arith ++
-      mutable.Map(
-        "strong" -> Closure(List(Var("n")), App(Var("bold"), List(Var("n"))), prims),
-        // "box"    -> Closure(List(Var("x")), )
-      )
+      arith 
   end Environment
 
   import blog.core.FileIOString
@@ -304,7 +303,6 @@ object PreMarkDownExprEvaluator:
       with Modular[[A] =>> Skele[F, A], SkeleExpr] {
     
     import cats.syntax.apply.*
-    // given Conversion[SkeleExpr, F[SkeleExpr]] = _.pure
     
     override def quoted(expr: SkeleExpr) = expr.pure
     override def variable(name: String) = env ?=> {
@@ -313,19 +311,9 @@ object PreMarkDownExprEvaluator:
         case Some(Ref(x)) => x.pure
         case Some(x) => x.pure
         case None => 
-          // println(s"!!! $name")
           // env.foreach(println)
-          // println(env.##)
           err.raiseError(blog.Error(s"Variable not found: $name"))
     }
-    // override def evalPattern(pat: SkeleExpr) = pat.pure
-    // override def evalSkeleLambda(lam: SkeleExpr) = lam match
-    //   case Lambda(ps, exp) => lambda(ps, exp)
-    //   case _ => err.raiseError(Throwable(s"$lam is not valid lambda"))
-
-    // override def evalSkeleBindings(binds: SkeleExpr) = binds match
-    //   case Let(bs, e) => bindings(bs, e)
-    //   case _ => err.raiseError(Throwable(s"$binds is not valid binding"))
     
     override def integer(i: Int) = Integer(i).pure
     override def number(n: Double) = Num(n).pure
@@ -362,17 +350,17 @@ object PreMarkDownExprEvaluator:
       
       f match
         /**Primitive case, no change! very dirty!*/
-        case Var("module") => {
-          xs.foldLeft(Pass.pure) { case (acc, x) => 
-            for
-              pre <- acc
-              res <- x.eval(using env)
-            yield res
-          }
-        }
+        // case Var("module") => {
+        //   xs.foldLeft(Pass.pure) { case (acc, x) => 
+        //     for
+        //       pre <- acc
+        //       res <- x.eval(using env)
+        //     yield res
+        //   }
+        // }
         // case Var(name) => App(f, xs).pure
         case Closure(params, expr, environment) => {
-          // println(s"$ps, $expr, $env")
+          // println(s"closure: $params, $expr")
           val env = environment.clone()
           var ps = params
           
@@ -396,7 +384,6 @@ object PreMarkDownExprEvaluator:
             case _ => {}
           }
           // println(s"$xs -> $expr")
-          // env.foreach(println)
           // println(ps)
           if !lefts.isEmpty then
             lambda(lefts, expr)(using env)
@@ -419,12 +406,6 @@ object PreMarkDownExprEvaluator:
             
           else
             expr.eval(using env)
-            // Auto currying
-            // if ps.isEmpty || ps.last != Var("self") then
-            //   lambda(List(Var("self")), expr)(using env)
-            // else 
-            //   expr.eval(using env)
-            // end if
         }
         case _ => 
           err.raiseError(
@@ -441,11 +422,12 @@ object PreMarkDownExprEvaluator:
             case _ => env += (s -> Ref(v))
           else 
             env += (s -> Ref(v))
+          v match
+            case v: Closure => v.env += (s -> Ref(v)) // for auto recursion
+            case _ => {}
         case _ => err.raiseError(blog.Error(s"set error: setting $pat"))
       
-      v match
-        case v: Closure => v.env = env
-        case _ => {}
+      
       // env.foreach(println)
       Set(Quote(pat), v)
     }
@@ -501,17 +483,19 @@ object PreMarkDownExprEvaluator:
         err.raiseError(
           blog.Error(s"case matching failed: matching $expr")
         )
-      
-      branches.foldLeft(notMatch) {
+      println(s"casess: $expr $branches")
+      val ans = branches.foldLeft(notMatch) {
         case (acc, (p, v)) =>
           if p == expr then return v.eval//.flatMap{x => println(x); x.pure}
           else if p.isInstanceOf[Var] then
+            println(s"add: $p")
             env += (p.asInstanceOf[Var].name -> expr)
             v.eval(using env)
           else
-            // println(p)
             acc
       }
+      // println(s"casess end: $expr $branches")
+      ans
     }
 
     extension (expr: SkeleExpr)
@@ -557,7 +541,7 @@ object PreMarkDownExprEvaluator:
             case other => return 
               err.raiseError(blog.Error(s"case pattern syntax error: $other"))
           }
-          // println(s">>> $bs")
+          // println(s">>> ${expr.eval}")
           for {
             e <- expr.eval
             v <- cases(e, bs)
@@ -599,7 +583,6 @@ object PreMarkDownExprEvaluator:
         
         case App(f, ps) => {
           val env1 = env.clone() // to prevent polluting environment
-          // println(s">>> $ps")
           for {
             func  <- f.eval(using env1)
             param <- ps.foldLeft(List.empty[SkeleExpr].pure) {
@@ -615,7 +598,6 @@ object PreMarkDownExprEvaluator:
         }
         
         case _ => super.eval(expr)
-        // println(s"end` eval $expr")
         ans
       end eval
   }

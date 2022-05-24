@@ -199,4 +199,12 @@ box-shadow: 0 1px 0 0 #f48fb1;
 
 textarea { 
     font-family: monospace; 
+    font-size: 24;
 } 
+
+textarea.skele-compiler-input-name {
+    font-weight: bold;
+    font-size: 18;
+}
+
+

@@ -48,6 +48,7 @@ open class MarkdownCompiler[F[_]: Monad, Output, MarkEnv, ExprEnv]
           evalExpr.eval(tree)
         }
         html <- {
+          // println(expr)
           evalMark.eval(expr)
         }
       yield html

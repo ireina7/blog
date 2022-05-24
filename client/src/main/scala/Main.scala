@@ -204,8 +204,9 @@ object Main {
             `class` := "skele-compiler-input md-textarea form-control", 
             id := s"src$srcId", 
             name := "src", 
-            rows := 4,
+            rows := 2,
             style := "font-family:monospace;",
+            oninput := "this.parentNode.dataset.replicatedValue = this.value",
           ),
           // label(`for` := "Code here"),
         )
@@ -215,6 +216,22 @@ object Main {
           input(`class` := "btn btn-outline-info", `type` := "button", value := "\u27f3", onclick := s"blog.compileSkele(${srcId})")
         val newButton =
           input(`class` := "btn", `type` := "button", value := "\uFF0B", onclick := s"blog.newSkeleCompileUnit()", style := "background-color:white;")
+        val delButton =
+          input(
+            `class` := "btn", 
+            `type` := "button", 
+            value := "\uff0d", 
+            style := "background-color:white;",
+            onclick := s"blog.newSkeleCompileUnit()"
+          )
+        val newBlogButton = 
+          input(
+            `class` := "btn btn-outline-success", 
+            `type` := "button", 
+            value := "⏏", 
+            style := "float: right;",
+            onclick := s"blog.newSkeleCompileUnit()"
+          )
         val variableTag =
           div(cls := "skele-compiler-input-name md-form amber-textarea active-pink-textarea-2")(
             textarea(
@@ -222,8 +239,9 @@ object Main {
               id := s"name$srcId", 
               name := "name", 
               rows := 1,
-              placeholder := "definition",
+              placeholder := s"\\res$srcId",
               style := "font-family:monospace; background-color:#fbfaf0;",
+              oninput := "this.parentNode.dataset.replicatedValue = this.value",
             ),
             // label(`for` := "name0")("Unit name")
           )
@@ -233,11 +251,14 @@ object Main {
           variableTag,
           inputArea,
           submitButton,
+          // delButton,
           newButton,
+          newBlogButton,
           br, br,
           outputArea,
         ).render
       }
+      activeTextareaAutoExpand()
       srcId += 1
   }
   @JSExport
@@ -256,10 +277,14 @@ object Main {
       .getElementById(s"src$curId")
       .asInstanceOf[HTMLTextAreaElement]
       .value
-    val nameContent = document
+    val nameTag = document
       .getElementById(s"name$curId")
       .asInstanceOf[HTMLTextAreaElement]
-      .value
+    var nameContent = 
+      if nameTag.value == "" 
+      then nameTag.placeholder
+      else nameTag.value
+    
     
     val encode = js.URIUtils.encodeURIComponent
     httpReq.send(s"src=${encode(content)}&name=${encode(nameContent)}")
@@ -326,6 +351,35 @@ object Main {
   //     el.style.cssText = "height:" + el.scrollHeight + "px"
   //   }, 0)
   // }
+
+  // const tx = document.getElementsByTagName("textarea");
+  // for (let i = 0; i < tx.length; i++) {
+  //   tx[i].setAttribute("style", "height:" + (tx[i].scrollHeight) + "px;overflow-y:hidden;");
+  //   tx[i].addEventListener("input", OnInput, false);
+  // }
+
+  // function OnInput() {
+  //   this.style.height = "auto";
+  //   this.style.height = (this.scrollHeight) + "px";
+  // }
+
+  // import js.given
+  def activeTextareaAutoExpand(): Unit = {
+    val tx = document.getElementsByTagName("textarea")
+    for i <- 0 until tx.length do
+      val cur = tx(i).getAttribute("style")
+      tx(i).setAttribute("style", cur + "height:" + (tx(i).scrollHeight) + "px;overflow-y:hidden;")
+      tx(i).addEventListener("input", OnInput, false)
+
+    def OnInput(event: dom.Event) = {
+      val self = event.target.asInstanceOf[html.Element]
+      self.style.height = "auto"
+      self.style.height = (self.scrollHeight) + "px"
+    }
+  }
+
+  activeTextareaAutoExpand()
+
 
 
 }//end Main

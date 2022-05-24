@@ -257,7 +257,7 @@ object Parser:
 
     def read(s: String): blog.Result[SkeleExpr] =
       parse(expr, s) match
-        case Success(res, _) => Right(res)
+        case Success(res, _) => println(s"parser: $res"); Right(res)
         case Failure(msg, _) => Left(blog.Error(msg))
         case Error(msg, _)   => Left(blog.Error(msg))
   }
@@ -265,7 +265,6 @@ object Parser:
   def parseSkeleExpr(src: String): blog.Result[SkeleExpr] = {
     import scala.util.parsing.combinator.*
     val res = Combinators.read(src)
-    // println(res)
     res
   }
 

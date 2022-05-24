@@ -216,7 +216,7 @@ object Routes:
       given codeDecoder: FormDataDecoder[(String, String)] = 
         (field[String]("src"), field[String]("name"))
           .mapN((a, b) => (a, b))
-      
+
       // println(s">>>>> ${req.bodyText.compile.toVector.unsafeRunSync}")
       val compiler = 
         blog.skeleton.MarkdownCompiler.htmlCompilerIOErr
@@ -229,12 +229,21 @@ object Routes:
           then evalExpr.value
           else (
             compiler.eval(s"(\\set $name $code)")(using exprEnvEvil) >> 
-            span(style := "color:green;font-family:monospace;")(s"\\set $name").pure
+            compiler.eval(s"${name.takeWhile(_ != '{')}")(using exprEnvEvil).flatMap { e =>
+              div(
+                span(style := "color:green;font-family:monospace;font-size:18;")(
+                  s"\\set{$name}:"
+                ),
+                div(e),
+              ).pure
+            }
           ).value
         }
         res  <- Ok(html match {
           case Right(ss) => div(ss).toString
-          case Left(err) => span(style := "color:red;font-family:monospace;")(err.toString).toString
+          case Left(err) => span(style := "color:red;font-family:monospace;font-size:18;")(
+            err.toString
+          ).toString
         })
       yield res
     }

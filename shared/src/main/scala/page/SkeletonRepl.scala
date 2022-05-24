@@ -18,8 +18,9 @@ object SkeletonRepl:
           id := s"name0", 
           name := "name", 
           rows := 1,
-          placeholder := "definiton",
+          placeholder := "\\res0",
           style := "font-family:monospace; background-color:#fbfaf0;",
+          oninput := "this.parentNode.dataset.replicatedValue = this.value",
         ),
         // label(`for` := "name0")("Unit name")
       )
@@ -38,6 +39,22 @@ object SkeletonRepl:
         style := "background-color:white;",
         onclick := s"blog.newSkeleCompileUnit()"
       )
+    val delButton =
+      input(
+        `class` := "btn", 
+        `type` := "button", 
+        value := "\uff0d", 
+        style := "background-color:white;",
+        onclick := s"blog.newSkeleCompileUnit()"
+      )
+    val newBlogButton = 
+      input(
+        `class` := "btn btn-outline-success", 
+        `type` := "button", 
+        value := "⏏", 
+        style := "float: right;",
+        onclick := s"blog.newSkeleCompileUnit()"
+      )
         
     val inputArea = 
       div(cls := "md-form mb-4 pink-textarea active-amber-textarea-2")(
@@ -46,9 +63,10 @@ object SkeletonRepl:
           `class` := "skele-compiler-input md-textarea form-control", 
           id := s"src0", 
           name := "src", 
-          rows := 4,
+          rows := 2,
           placeholder := "\\italic { Please code in. }",
           style := "font-family:monospace;",
+          oninput := "this.parentNode.dataset.replicatedValue = this.value",
         ),
       )
     val outputArea = 
@@ -59,8 +77,10 @@ object SkeletonRepl:
       // input(`type` := "submit", value := "Submit", `class` := "btn btn-outline-success"),
       nameTag,
       inputArea,
-      submitButton,
+      submitButton, space,
+      delButton,
       newButton,
+      newBlogButton,
       br, br,
       outputArea,
     )
@@ -70,7 +90,9 @@ object SkeletonRepl:
         href := ""
       )("help?")
     Frame.index(div(
-        h1(style := "display: inline;")(i("Skeleton notebook")), helpButton,
+        h2(style := "display: inline;")(
+          span(style := "color:purple; font-weight: bold;")(i("λ ")), i("Skeleton notebook")
+        ), helpButton,
         br,
         hr,
         br,

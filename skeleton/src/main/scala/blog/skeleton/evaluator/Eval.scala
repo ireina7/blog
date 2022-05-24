@@ -80,7 +80,7 @@ trait EvalSkeleExpr[F[_], Value]
         } yield res
         case Closure(_, _, _) => quoted(expr)
         case Lambda(ps, e) => for {
-          arg <- ps.traverse(p => p.eval)
+          arg <- ps.traverse(_.eval)
           exp <- e.eval
           lam <- lambda(arg, exp)
         } yield lam
