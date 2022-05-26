@@ -17,9 +17,14 @@ object ControlPanel:
   def index: BlogContext[HtmlText] = conf ?=> {
     Frame.index(
       mainContent(
-        ul(
-          li("blog"),
-          li("application")
+        h2("终端·控制台"),
+        hr,
+        div(cls := "container")(
+          div(cls := "row")(
+            div(cls := "col")(a(href := "/")("博客")),
+            div(cls := "col")(a(href := "#")("功能应用")),
+            div(cls := "col")(a(href := "/skeleton")("Skeleton 笔记本")),
+          ),
         ),
       )
     )

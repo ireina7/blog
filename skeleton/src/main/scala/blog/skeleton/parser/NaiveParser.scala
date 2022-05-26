@@ -28,10 +28,9 @@ object NaiveParser:
       IO { Parser.parseSkeleExpr(s).getOrElse(SkeleExpr.Pass) }
   }
   given Parser[IOErr, SkeleExpr] with {
-    def parse(s: String): IOErr[SkeleExpr] =
-      Parser.parseSkeleExpr(s) match 
-        case Right(exp) => EitherT.right(IO(exp))
-        case Left (err) => EitherT.left (IO(err))
+    def parse(s: String): IOErr[SkeleExpr] = EitherT.apply(IO {
+      Parser.parseSkeleExpr(s) 
+    })
   }
   given Parser[blog.Result, SkeleExpr] with {
     def parse(s: String): blog.Result[SkeleExpr] =
@@ -73,28 +72,33 @@ object Parser:
     private def variable: Parser[Var] = "\\" ~ identity ^^ {
       case _ ~ name => Var.apply(name)
     }
-    private def real       = "\\d+\\.\\d*".r ^^ (s => SkeleExpr.number(s.toDouble))
+    private def real       = "\\d+\\.\\d+".r ^^ (s => SkeleExpr.number(s.toDouble))
     private def integer    = "\\d+".r ^^ (s => SkeleExpr.integer(s.toInt))
     private def number     = real | integer
-    private def symbol     = "." ~> identity  ^^ SkeleExpr.string
+    // private def symbol     = "." ~> identity  ^^ SkeleExpr.string
     
     private def space      = "\\ " ^^ (_ => Str(" "))
     private def quoted     = ("'" ~> "[^']+".r <~ "'") ^^ Str.apply.compose(_.stripMargin)
 //    private def pattern    = symbol | lists
     private def text       = "[^{}()\\[\\]\\\\\"]+".r ^^ SkeleExpr.string
-    private def simpleLambda     = "(\\lambda" ~> lists ~ expr <~ ")" ^^ {
+    private def simpleLambda     = "(\\lambda" ~> simpleLists ~ expr <~ ")" ^^ {
       case App(x, xs) ~ e => SkeleExpr.lambda(
         (x :: xs).map(o => Quote(o.asInstanceOf[Pattern])), 
         Quote(e)
       )
     }
-    private def structLambda = "\\lambda" ~> ("{" ~> expr.* <~ "}").+ ^^ {
-      case es if es.length < 2 => Pass
-      case es => Lambda(
-        es.init.flatten.map(o => Quote(o.asInstanceOf[Pattern])),
-        Quote(Box(es.last))
+    private def structLambda = 
+      "\\lambda" ~> ("{" ~> expr.* <~ "}") ~ ("{" ~> expr.* <~ "}") ~ ("{" ~> expr.* <~ "}").* ^^ {
+      case ps ~ es ~ Nil => Lambda(
+        ps.map(o => Quote(o.asInstanceOf[Pattern])),
+        Quote(Box(es))
       )
+      case ps ~ es ~ xs => App(Lambda(
+        ps.map(o => Quote(o.asInstanceOf[Pattern])),
+        Quote(Box(es))
+      ), xs.flatten)
     }
+    // private def haskellLambda = variable ~ "=>"
     private def lambda = simpleLambda | structLambda
     private def dot = "."
     private def bracketBoxed = ("(" ~ "\\box " ~> expr.* <~ ")") ~ ("{" ~> expr.* <~ "}").? ^^ {
@@ -128,7 +132,8 @@ object Parser:
       "\\set" ~> ("{" ~> variable <~ "}") ~ ("{" ~> expr.* <~ "}").+ ^^ {
         case key ~ es => Set(Quote(key), Box(es.flatten))
       }
-    private def assignment = structAssign | simpleAssignment | setAssign | curriedAssign
+    private def assignment = 
+      structAssign | simpleAssignment | setAssign | curriedAssign
     private def simpleDef = ("(" ~ "\\set" ~> structList ~ expr.+ <~ ")") ^^ {
       case App(f, xs) ~ es => 
         Set(
@@ -205,13 +210,30 @@ object Parser:
       | bracketEscaped 
       | braceEscaped 
       | quotesEscaped
-    private def lists      = ("(" ~> expr.* <~ ")") ^^ {
+    private def simpleLists      = ("(" ~> expr.* <~ ")") ^^ {
       case Nil => Pass
       case f::ps => application(f, ps)
     }
-    private def variableList = variable ~ ("{" ~> expr.* <~"}").+ ^^ {
-      case f ~ xs => App(f, xs.flatten)
-    }
+    private def variableList: Parser[SkeleExpr] = 
+      variable 
+        ~ ("{" ~> expr.* <~"}").+ ^^ {
+          case f ~ xs => App(f, xs.flatten)
+      }
+
+    private def identityList: Parser[SkeleExpr] = 
+      identity
+        ~ ("{" ~> expr.* <~"}").* ^^ {
+          case s ~ xs => App(Var(s), xs.flatten)
+      }
+
+    // private def pureLambda = "lambda" ~> ("{" ~> expr.* <~ "}").+ ^^ {
+    //   case es if es.length < 2 => Pass
+    //   case es => Lambda(
+    //     es.init.flatten.map(o => Quote(o.asInstanceOf[Pattern])),
+    //     Quote(Box(es.last))
+    //   )
+    // }
+
 
     // private def structList = lists ~ ("{" ~> expr.* <~ "}").? ^^ {
     //   case App(f, xs) ~ Some(es) => SkeleExpr.application(f, xs ++ es)
@@ -220,11 +242,24 @@ object Parser:
     //   case _ => ???//Left(blog.Error("unknown parser error"))
     // } | variableList
 
-    private def structList = lists ~ ("{" ~> expr.* <~ "}").* ^^ {
-      case App(f, xs) ~ es => SkeleExpr.application(f, xs ++ es.flatten)
-      case Pass ~ _ => Pass
-      case other => println(other); ???//Left(blog.Error("unknown parser error"))
+    private def structList: Parser[SkeleExpr] = 
+      simpleLists 
+        ~ ("{" ~> expr.* <~ "}").* ^^ {
+        case App(f, xs) ~ es => SkeleExpr.application(f, xs ++ es.flatten)
+        case Pass ~ _ => Pass
+        case other => println(other); ???//Left(blog.Error("unknown parser error"))
     } | variableList
+
+    // private def lists: Parser[SkeleExpr] = 
+    //   (structList | variable | number | boxed | squares)
+    //     ~ ("." ~> (pureLambda | identityList)).* ^^ {
+    //       case x ~ fs => fs.foldLeft(x: SkeleExpr) { (xs, f) =>
+    //         f match
+    //           case App(f, ps) => App(f, ps ++ List(xs))
+    //           case Lambda(ps, e) => App(f, List(xs))
+    //       }
+    //     }
+      
 
     private def branch: Parser[SkeleExpr] =
       "(" ~> expr ~ expr <~ ")" ^^ {
@@ -235,29 +270,41 @@ object Parser:
         case e ~ bs => App(Var("case"), e :: bs)
       }
 
+    private def endDots: Parser[SkeleExpr] = 
+      ". " ^^ (_ => Str("."))
+    // private def dottyExpr: Parser[SkeleExpr] = 
+    //   expr ~ ("." ~> structList).+ ^^ {
+    //     case e ~ fs => fs.foldLeft(e) { (es, f) =>
+    //       f match
+    //         case App(f, ps) => App(f, ps ++ List(es))
+    //         case _ => ???
+    //     }
+    //   } | expr
+
 
     private def expr: Parser[SkeleExpr] =
       escapes    |
-      number     | 
+      endDots    |
       quoted     |
-      squares    |
       // symbol     |
-      text       | 
-      boxed      |
       comments   |
       brackets   |
       braces     |
       lambda     |
       assignment |
       definition |
+      boxed      |
       structList |
+      number     |
+      text       | 
+      squares    |
       variable   //| 
       // structList // end
 
 
     def read(s: String): blog.Result[SkeleExpr] =
       parse(expr, s) match
-        case Success(res, _) => println(s"parser: $res"); Right(res)
+        case Success(res, _) => Right(res)
         case Failure(msg, _) => Left(blog.Error(msg))
         case Error(msg, _)   => Left(blog.Error(msg))
   }

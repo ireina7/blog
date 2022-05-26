@@ -49,6 +49,8 @@ object Routes:
   val blockingPool = Executors.newFixedThreadPool(4)
   val blocker = Blocker.liftExecutorService(blockingPool)
 
+  var hasLogin: Boolean = false
+
   def mainRoutes
     [F[_]: Sync: ContextShift: Monad]
     : HttpRoutes[F] =
@@ -79,7 +81,16 @@ object Routes:
         )
       
       case GET -> Root / "login" => 
-        Ok(page.Login.index)
+        if hasLogin
+        then Ok(page.ControlPanel.index)
+        else Ok(page.Login.index)
+
+      case GET -> Root / "logout" => 
+        Ok(
+          page.Frame.index(
+            div("Logged out.")
+          )
+        )
 
       case req @ POST -> Root / "login" / "submit" => {
         import org.http4s.FormDataDecoder.*
@@ -90,7 +101,9 @@ object Routes:
         for
           msg <- req.as[LoginMessage]
           res <- if(msg.userName == "ireina" && msg.password == "elpsycongroo") 
-            then Ok(page.ControlPanel.index) 
+            then 
+              hasLogin = true
+              Ok(page.ControlPanel.index) 
             else Ok(page.Frame.index(div("Permission denied...")))
         yield res
       }
@@ -209,6 +222,37 @@ object Routes:
     //     }))
     //   yield res
     // }
+
+    case req @ POST -> Root / "submit" => {
+      import org.http4s.FormDataDecoder.*
+      import blog.skeleton.Exprs.SkeleExpr.*
+      
+      given codeDecoder: FormDataDecoder[(String, String, String)] = 
+        (field[String]("src"), field[String]("name"), field[String]("title"))
+          .mapN((a, b, c) => (a, b, c))
+      
+      val register = 
+        blog.skeleton.HtmlRegister.htmlRegisterIOErr
+
+      for
+        (code, name, title) <- req.as[(String, String, String)]
+        res <-  
+          if hasLogin
+          then {
+            val boxedCode = s"\\box{$code}"
+            register.registerString(boxedCode, title)(using exprEnvEvil)
+              .value 
+              .flatMap {
+                case Right(_)  => 
+                  Ok(span(style := "color:green;font-family:monospace;font-size:18;")("Ok registered.").toString)
+                case Left(err) => 
+                  Ok(span(style := "color:red;font-family:monospace;font-size:18;")(err.toString))
+              }
+          }
+          else Ok(span(style := "color:red;font-family:monospace;font-size:18;")("Permission denied. You have to login first."))
+      yield res
+    }
+
     case req @ POST -> Root / "compile" => {
       import org.http4s.FormDataDecoder.*
       import blog.skeleton.Exprs.SkeleExpr.*
@@ -225,14 +269,15 @@ object Routes:
         // expr <- PreMarkDownExprEvaluator.eval
         html <- {
           val evalExpr = compiler.eval(s"\\box {$code}")(using exprEnvEvil)
-          if name == ""
-          then evalExpr.value
-          else (
+          // if name == ""
+          // then evalExpr.value
+          // else (
+          (
             compiler.eval(s"(\\set $name $code)")(using exprEnvEvil) >> 
             compiler.eval(s"${name.takeWhile(_ != '{')}")(using exprEnvEvil).flatMap { e =>
               div(
                 span(style := "color:green;font-family:monospace;font-size:18;")(
-                  s"\\set{$name}:"
+                  s"\\set$name:"
                 ),
                 div(e),
               ).pure

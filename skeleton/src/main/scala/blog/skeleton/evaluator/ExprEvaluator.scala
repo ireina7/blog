@@ -427,8 +427,6 @@ object PreMarkDownExprEvaluator:
             case _ => {}
         case _ => err.raiseError(blog.Error(s"set error: setting $pat"))
       
-      
-      // env.foreach(println)
       Set(Quote(pat), v)
     }
     override def define
@@ -436,7 +434,7 @@ object PreMarkDownExprEvaluator:
       ???
     }
     override def block(states: List[SkeleExpr]): Skele[F, SkeleExpr] = {
-      Pass.pure
+      states.lastOption.getOrElse(Pass).pure
     }
 
     private def arithmetic
@@ -522,6 +520,21 @@ object PreMarkDownExprEvaluator:
           // xs.traverse(_.eval).map(Box.apply)
         case App(Var("import"), List(Str(path))) =>
           `import`(path) >> Pass.pure
+
+        case App(Var("block"), ps) =>
+          val env1 = env.clone() // to prevent polluting environment
+          for {
+            param <- ps.foldLeft(List.empty[SkeleExpr].pure) {
+              (ps, p) =>
+                for {
+                  xs <- ps
+                  pv <- p.eval(using env1)
+                } yield pv :: xs // for perfomance
+            }.map(_.reverse)
+            // param <- ps.traverse(_.eval(using env)) //bad bad bad! never use abstractions you do not familiar with
+            res   <- block(param)(using env)
+          } yield res
+        
         
         case App(Var("square"), xs) => {
           env.get("square") match

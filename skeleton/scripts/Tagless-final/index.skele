@@ -1,6 +1,6 @@
 \document {
   (\set\class blog)
-  (\import './skeleton/scripts/predef.skele')
+  \import{./skeleton/scripts/predef.skele}
 
   (\set\tf) {
     \italic{\color{[purple] Tagless Final}}\ 

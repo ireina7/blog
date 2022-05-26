@@ -15,7 +15,7 @@ import org.scalajs.dom.raw.HTMLTextAreaElement
 
 
 @JSExportTopLevel("blog")
-object Main {
+object Main:
 
   def main(args: Array[String]): Unit = {
     println("Hello world!")
@@ -33,11 +33,8 @@ object Main {
   def setup(): Unit = {
     
     document.body.appendChild(sideBar)
-    // if isStatic then
-    //   setupStaticBlogIfNecessary()
-    // else // is dynamic blog
-      document.getElementById("blog-navigator").appendChild(navBar)
-      document.getElementById("blog-footer"   ).appendChild(footer)
+    document.getElementById("blog-navigator").appendChild(navBar)
+    document.getElementById("blog-footer"   ).appendChild(footer)
     // ScalaJSExample.draw(canvas)
     // ScalaJSExample.clock(canvas)
   }
@@ -54,35 +51,6 @@ object Main {
       staticBlog.appendChild(footer)
   }
 
-
-
-
-
-
-//   val content: dom.Element = {
-//     div(marginLeft := 50, marginRight := 50, fontSize := 20)(
-//       p("""
-// 这是一个首页测试，目前问题还有很多，视觉性较差。@%%%%
-// 我是Ireina，混迹在世界各地的旅行魔女，遇到我将会是你的荣幸。
-//       """),
-//       p("高亮解决！"),
-//       p("代码示例："),
-//       pre()(code(`class` := "language-scala")("""
-// def searchBar: dom.Element = {  
-
-// form(cls := "d-flex")(  
-//     input(
-//         `class` := "form-control me-2",
-//         `type` := "search", 
-//         placeholder := "search", 
-//         attr("aria-label") := "Search"
-//     ),
-//     button(`class` := "btn btn-outline-success", `type` := "submit")("search")
-// )
-// }.render
-//       """)),
-//     )
-//   }.render
 
   val footer: dom.Element = {
 
@@ -122,12 +90,14 @@ object Main {
 
     div(id := "mySidenav", `class` := "sidenav")(
       a(href := "/")("主页"),
-      a(href := "/about")("关于我"),
-      a(href := "/filter")("过滤器"),
-      a(href := "/skeleton")("Skeleton"),
+      a(href := "/login")("登录"),
+      a(href := "/about")("关于"),
+      a(href := "/filter")("过滤"),
+      // a(href := "/skeleton")("Skeleton"),
       a(href := "#")("范畴"),
       a(href := "#")("结构"),
       a(href := "#", onclick := "blog.changeMainContentMode()")("模式"),
+      a(href := "/logout")("登出"),
     )
   }.render
 
@@ -198,14 +168,14 @@ object Main {
   def newSkeleCompileUnit(): Unit = {
     document.getElementById("skele-compiler-box")
       .appendChild {
-        val inputArea = div(cls := "md-form mb-4 pink-textarea active-amber-textarea-2")(
+        val inputArea = div(cls := "md-form pink-textarea active-amber-textarea-2")(
           i(cls := "fas fa-angle-double-right prefix"),
           textarea(
             `class` := "skele-compiler-input md-textarea form-control", 
             id := s"src$srcId", 
             name := "src", 
             rows := 2,
-            style := "font-family:monospace;",
+            style := "font-family:monospace; margin-bottom: 1rem!important;",
             oninput := "this.parentNode.dataset.replicatedValue = this.value",
           ),
           // label(`for` := "Code here"),
@@ -224,13 +194,26 @@ object Main {
             style := "background-color:white;",
             onclick := s"blog.newSkeleCompileUnit()"
           )
+        val titleInput =
+          // div(cls := "skele-compiler-input-name md-form amber-textarea active-pink-textarea-2")(
+          textarea(
+            `class` := "md-textarea form-control", 
+            id := s"title$srcId", 
+            name := "title", 
+            rows := 1,
+            // width := 350,
+            placeholder := s"title here",
+            style := "width: 500px; font-family:monospace; background-color:white; float:right; display: none",
+            oninput := "this.parentNode.dataset.replicatedValue = this.value",
+          )
+          // )
         val newBlogButton = 
           input(
             `class` := "btn btn-outline-success", 
             `type` := "button", 
             value := "⏏", 
             style := "float: right;",
-            onclick := s"blog.newSkeleCompileUnit()"
+            onclick := s"blog.newBlogSkele(${srcId})",
           )
         val variableTag =
           div(cls := "skele-compiler-input-name md-form amber-textarea active-pink-textarea-2")(
@@ -254,6 +237,7 @@ object Main {
           // delButton,
           newButton,
           newBlogButton,
+          titleInput,
           br, br,
           outputArea,
         ).render
@@ -288,6 +272,42 @@ object Main {
     
     val encode = js.URIUtils.encodeURIComponent
     httpReq.send(s"src=${encode(content)}&name=${encode(nameContent)}")
+  }
+
+  @JSExport
+  def newBlogSkele(curId: Int): Unit = {
+    val httpReq = new dom.XMLHttpRequest()
+    // println(c·urId)
+    httpReq.onreadystatechange = event =>
+      if (httpReq.readyState == 4 && httpReq.status == 200)
+      then {
+        val outputArea = document.getElementById(s"output$curId")
+        outputArea.innerHTML = httpReq.responseText
+      }
+    httpReq.open("POST", "/submit", true)
+    // httpReq.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
+    val content = document
+      .getElementById(s"src$curId")
+      .asInstanceOf[HTMLTextAreaElement]
+      .value
+    val nameTag = document
+      .getElementById(s"name$curId")
+      .asInstanceOf[HTMLTextAreaElement]
+    var nameContent = 
+      if nameTag.value == "" 
+      then nameTag.placeholder
+      else nameTag.value
+    val titleContent =
+      document
+      .getElementById(s"title$curId")
+      .asInstanceOf[HTMLTextAreaElement]
+      .value
+    
+    
+    val encode = js.URIUtils.encodeURIComponent
+    httpReq.send(
+      s"src=${encode(content)}&name=${encode(nameContent)}&title=${encode(titleContent)}"
+    )
   }
 
   @JSExport
@@ -381,8 +401,7 @@ object Main {
   activeTextareaAutoExpand()
 
 
-
-}//end Main
+end Main
 
 
 

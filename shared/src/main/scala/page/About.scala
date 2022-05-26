@@ -18,7 +18,7 @@ object About {
         """.stripMargin
       )),
       tag("ul")(
-        li(i("Github:\t"), a(href := "https://www.github.com/ireina7")("github/ireina7"))
+        li(span(style := "color:green;")("Github:\t"), a(href := "https://www.github.com/ireina7")("github/ireina7"))
       )
     )
   )

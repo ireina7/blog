@@ -1,26 +1,53 @@
 \module {
 
-  
-  (\set (\color \c \self)) {
-    (\font (\set \style color:\c) \self)
+  \doc { To color texts }
+  \set {\color{\c}{\self}} {
+    \font{\self} {
+      \set{\style} {color:\c ;}
+    }
   }
-  (\set \Skeleton) {
+
+  \set {\skeleton} {
     (\color [purple] Skeleton)
   }
-    
-  (\set (\ref \h \self)) {
+  \set {\scala} {
+    (\color [red] Scala)
+  }
+  
+  \doc { 
+    API for references 
+  }
+  \set {\ref{\h}{\self}} {
     (\link (\set \href \h) \self)
   }
 
-  (\set (\head \self)) {
+  \set {\head{\self}} {
     (\## (\bold \self))\line
   }
 
-  \doc { to generate indented paragraph }
-  (\set (\para \self)) {
+  \doc { To generate indented paragraph }
+  \set {\para{\self}} {
     \paragraph {
       (\set \style text-indent:2em)
       \self
+    }
+  }
+
+  \set {\css{\style}{\self}} {
+    \font{\self} {
+      \set{\style}{\style}
+    }
+  }
+
+
+  \set {\std{\function}} {
+    \case {\function} {
+      ('color'\color)
+      ('ref'  \ref)
+      ('head' \head)
+      ('para' \para)
+      ('css'  \css)
+      (\undefined [Undefined function name: \function])
     }
   }
 }

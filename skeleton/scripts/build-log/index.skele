@@ -1,11 +1,11 @@
 \document {
   (\set\class blog)
-  (\import './skeleton/scripts/predef.skele')
+  \import {./skeleton/scripts/predef.skele}
 
   (\set\scala) {
     \color{.red Scala\ }
   }
-  (\set\part{\self}) {
+  \set {\part{\self}} {
     \line\###{\self}
   }
 
