@@ -30,33 +30,37 @@ trait SkeleExprCompiler[F[_]: Monad, Output]
 open class MarkdownCompiler[F[_]: Monad, Output, MarkEnv, ExprEnv]
   (using
     fileIO: FileIOString[F],
-    parser: Parser[F, SkeleExpr],
+    parser: Parser[[A] =>> blog.Configuration ?=> F[A], SkeleExpr],
     evalMark: core.Eval[[A] =>> MarkEnv ?=> F[A], SkeleExpr, Output],
     evalExpr: core.Eval[[A] =>> ExprEnv ?=> F[A], SkeleExpr, SkeleExpr],
-  ) extends SkeleExprCompiler[[A] =>> Injection[[A] =>> MarkEnv ?=> F[A], ExprEnv, A], Output]:
+  ) extends SkeleExprCompiler[
+    // [A] =>> 
+    //   Injection[
+    //     [A] =>> 
+    //       Injection[
+    //         [B] =>> MarkEnv ?=> F[B], 
+    //         ExprEnv, 
+    //         A
+    //       ], 
+    //     blog.Configuration, 
+    //     A
+    //   ], 
+    [A] =>> Effect.Injections[F, (blog.Configuration, ExprEnv, MarkEnv), A],
+    Output
+  ]:
   import fileIO.readFile
   import parser.parse
 
   extension (text: String)
-    override def eval: ExprEnv ?=> MarkEnv ?=> F[Output] = 
+    override def eval = 
       for
         tree <- parse(text)
-        expr <- {
-          // println(tree)
-          evalExpr.eval(tree)
-        }
-        html <- {
-          // println(expr)
-          evalMark.eval(expr)
-        }
+        expr <- evalExpr.eval(tree)
+        html <- evalMark.eval(expr)
       yield html
 
-  def compile(s: String)
-    (using exprEnv: ExprEnv, markEnv: MarkEnv): F[Output] = 
-    s.eval
-
   def compileFile(path: String)
-    (using exprEnv: ExprEnv, markEnv: MarkEnv): F[Output] =     
+    : Effect.Injections[F, (blog.Configuration, ExprEnv, MarkEnv), Output] =     
     for
       text <- readFile(path)
       html <- compile(text)
@@ -71,24 +75,27 @@ end MarkdownCompiler
 */
 object MarkdownCompiler:
   import Effect.{*, given}
+  import blog.Configuration.given
   import evaluator.PreMarkDownExprEvaluator
   import evaluator.MarkDownEvaluator
 
-  val htmlCompilerIOErr: MarkdownCompiler[
-    IOErr, 
-    blog.HtmlText, 
-    MarkDownEvaluator.Environment,
-    PreMarkDownExprEvaluator.Environment
-  ] = {
-    
-    import parser.NaiveParser.given
-    import MarkDownEvaluator.given
-    import PreMarkDownExprEvaluator.given
+  def htmlCompilerIOErr(using conf: blog.Configuration) 
+    : MarkdownCompiler[
+      IOErr, 
+      blog.HtmlText, 
+      MarkDownEvaluator.Environment,
+      PreMarkDownExprEvaluator.Environment
+    ] = {
+      
+      import blog.skeleton.parser.NaiveParser.given
+      import MarkDownEvaluator.given
+      import PreMarkDownExprEvaluator.given
 
-    new MarkdownCompiler
-  }
+      new MarkdownCompiler
+    }
 
-  given given_HtmlCompilerIOErr: MarkdownCompiler[
+  given given_HtmlCompilerIOErr(using conf: blog.Configuration)
+    : MarkdownCompiler[
     IOErr, 
     blog.HtmlText, 
     MarkDownEvaluator.Environment,
@@ -107,7 +114,7 @@ final class HtmlRegister[F[_], MarkDownEnv, ExprEnv, GenEnv]
     conf: blog.Configuration,
     M: MonadError[F, Throwable],
     fileIO: FileIOString[F],
-    parser: Parser[F, SkeleExpr],
+    parser: Parser[[A] =>> blog.Configuration ?=> F[A], SkeleExpr],
     evalMark: core.Eval[[A] =>> MarkDownEnv ?=> F[A], SkeleExpr, blog.HtmlText],
     evalExpr: core.Eval[[A] =>> ExprEnv ?=> F[A], SkeleExpr, SkeleExpr],
     generator: BlogIndexGenerator[[A] =>> GenEnv ?=> F[A]],

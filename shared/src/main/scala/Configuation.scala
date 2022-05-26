@@ -53,6 +53,16 @@ object Configuration:
   val staticBlog = Configuration(blogType = Static)
   val onlineBlog = Configuration(blogType = Online)
 
+  given [F[_], Query, A]
+    : core.Environment[F, Configuration, Query, A] with
+
+    extension (conf: Configuration) 
+      override inline def configuration: blog.Configuration = conf
+      override inline def debugging: Boolean = conf.debugging
+      override def query(query: Query): F[A] = ???
+      override def add(query: Query, a: A): F[Unit] = ???
+  end given
+
 end Configuration
 
 

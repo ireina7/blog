@@ -139,15 +139,29 @@ object Effect:
    * @tparam A the output type
   */
   type Injection[F[_], Env, A] = 
-    Env ?=> F[A] //match 
-      // case ContextFunction1[env, a] => a
+    Env ?=> F[A]
 
-  // type Inject[Func] = Func match {
-  //   case (x ?=> xs) => {
-  //     [A] =>> Injection[[A] =>> Inject[xs], x, A]
-  //   }
-  //   // case F[A] => Func
-  // }
+  type Injections[F[_], Deps <: Tuple, A] =  
+    Deps match 
+      case x *: EmptyTuple => x ?=> F[A]
+      case x *: xs => Injection[[A] =>> Injections[F, xs, A], x, A]
+
+  type Inject[F[_], Envs <: Tuple] =
+    [A] =>> Injections[F, Envs, A]
+
+
+  // Inject[F, (Env1, Env2)] = 
+  //   [A] =>> Injection[Inject[F, (Env2,)], Env1, A]
+  //   [A] =>> Injection[
+  //     [B] =>> Env2 ?=> F[B],
+  //     Env1,
+  //     A
+  //   ]
+
+  // type FG[F[_], A] = [A] =>>
+  //   A match 
+  //     case String => Int
+  //     case Int => FG[FG[F, A], Int]
 
   // given conv[F[_], A, B, Env1, Env2]
   //   : Conversion[Injection[F, Env1, Injection[]]]
@@ -310,19 +324,20 @@ object Effect:
   }
   
 
-  given [F[_]: Monad, Env](using 
+  given ppp[F[_]: Monad, Env](using 
     fp: Parser[F, page.Index],
+    environ: blog.core.Environment[F, Env, String, String],
     console: Console[F],
   ): Parser[[A] =>> Injection[F, Env, A], page.Index] with
-    override inline def parse(s: String) = conf ?=> 
+    override def parse(s: String) = conf ?=>
       val ftree = fp.parse(s)
-      ftree
-      // if conf.debugging
-      // then for
-      //   tree <- ftree
-      //   _    <- console.log(tree.toString)
-      // yield tree
-      // else ftree
+      if conf.debugging
+      then 
+        for
+          tree <- ftree
+          _    <- console.log(tree.toString)
+        yield tree
+      else ftree
   
 
   given [F[_], Env](using F: Runnable[F], env: Env):

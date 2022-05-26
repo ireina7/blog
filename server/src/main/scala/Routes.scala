@@ -237,7 +237,7 @@ object Routes:
       for
         (code, name, title) <- req.as[(String, String, String)]
         res <-  
-          if hasLogin
+          if true
           then {
             val boxedCode = s"\\box{$code}"
             register.registerString(boxedCode, title)(using exprEnvEvil)
@@ -268,13 +268,20 @@ object Routes:
         (code, name) <- req.as[(String, String)]
         // expr <- PreMarkDownExprEvaluator.eval
         html <- {
-          val evalExpr = compiler.eval(s"\\box {$code}")(using exprEnvEvil)
+          val evalExpr = compiler
+            .eval(s"\\box {$code}")
+              (using summon[blog.Configuration])
+              (using exprEnvEvil)
           // if name == ""
           // then evalExpr.value
           // else (
           (
-            compiler.eval(s"(\\set $name $code)")(using exprEnvEvil) >> 
-            compiler.eval(s"${name.takeWhile(_ != '{')}")(using exprEnvEvil).flatMap { e =>
+            compiler.eval(s"(\\set $name $code)")
+              (using summon[blog.Configuration])
+              (using exprEnvEvil) >> 
+            compiler.eval(s"${name.takeWhile(_ != '{')}")
+              (using summon[blog.Configuration])
+              (using exprEnvEvil).flatMap { e =>
               div(
                 span(style := "color:green;font-family:monospace;font-size:18;")(
                   s"\\set$name:"

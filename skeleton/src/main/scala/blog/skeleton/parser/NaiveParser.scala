@@ -32,6 +32,11 @@ object NaiveParser:
       Parser.parseSkeleExpr(s) 
     })
   }
+  given [F[_], Env](using p: Parser[F, SkeleExpr])
+    : Parser[[A] =>> Injection[F, Env, A], SkeleExpr] with {
+    def parse(s: String): Injection[F, Env, SkeleExpr] = 
+      p.parse(s)
+  }
   given Parser[blog.Result, SkeleExpr] with {
     def parse(s: String): blog.Result[SkeleExpr] =
       Parser.parseSkeleExpr(s)
