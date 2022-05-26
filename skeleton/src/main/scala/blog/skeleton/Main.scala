@@ -13,97 +13,8 @@ import cats.syntax.functor.*
 import blog.skeleton.Exprs.SkeleExpr
 import blog.skeleton.parser
 import blog.skeleton.evaluator
-// import blog.FileIOString
-
-
-
-
-trait SkeleExprCompiler[F[_]: Monad, Output]
-  extends core.Eval[F, String, Output] {
-  
-  def compile(s: String): F[Output] =
-    s.eval
-}
-
-
-
-open class MarkdownCompiler[F[_]: Monad, Output, MarkEnv, ExprEnv]
-  (using
-    fileIO: FileIOString[F],
-    parser: Parser[[A] =>> blog.Configuration ?=> F[A], SkeleExpr],
-    evalMark: core.Eval[[A] =>> MarkEnv ?=> F[A], SkeleExpr, Output],
-    evalExpr: core.Eval[[A] =>> ExprEnv ?=> F[A], SkeleExpr, SkeleExpr],
-  ) extends SkeleExprCompiler[
-    // [A] =>> 
-    //   Injection[
-    //     [A] =>> 
-    //       Injection[
-    //         [B] =>> MarkEnv ?=> F[B], 
-    //         ExprEnv, 
-    //         A
-    //       ], 
-    //     blog.Configuration, 
-    //     A
-    //   ], 
-    [A] =>> Effect.Injections[F, (blog.Configuration, ExprEnv, MarkEnv), A],
-    Output
-  ]:
-  import fileIO.readFile
-  import parser.parse
-
-  extension (text: String)
-    override def eval = 
-      for
-        tree <- parse(text)
-        expr <- evalExpr.eval(tree)
-        html <- evalMark.eval(expr)
-      yield html
-
-  def compileFile(path: String)
-    : Effect.Injections[F, (blog.Configuration, ExprEnv, MarkEnv), Output] =     
-    for
-      text <- readFile(path)
-      html <- compile(text)
-    yield html
-  
-end MarkdownCompiler
-
-
-/** Various compilers for markdown compiling
- * Including:
- * - Html
-*/
-object MarkdownCompiler:
-  import Effect.{*, given}
-  import blog.Configuration.given
-  import evaluator.PreMarkDownExprEvaluator
-  import evaluator.MarkDownEvaluator
-
-  def htmlCompilerIOErr(using conf: blog.Configuration) 
-    : MarkdownCompiler[
-      IOErr, 
-      blog.HtmlText, 
-      MarkDownEvaluator.Environment,
-      PreMarkDownExprEvaluator.Environment
-    ] = {
-      
-      import blog.skeleton.parser.NaiveParser.given
-      import MarkDownEvaluator.given
-      import PreMarkDownExprEvaluator.given
-
-      new MarkdownCompiler
-    }
-
-  given given_HtmlCompilerIOErr(using conf: blog.Configuration)
-    : MarkdownCompiler[
-    IOErr, 
-    blog.HtmlText, 
-    MarkDownEvaluator.Environment,
-    PreMarkDownExprEvaluator.Environment
-  ] = htmlCompilerIOErr
-
-end MarkdownCompiler
-
+import blog.skeleton.compiler.Compiler
+import blog.skeleton.compiler.MarkDownCompiler
 
 
 
@@ -114,13 +25,10 @@ final class HtmlRegister[F[_], MarkDownEnv, ExprEnv, GenEnv]
     conf: blog.Configuration,
     M: MonadError[F, Throwable],
     fileIO: FileIOString[F],
-    parser: Parser[[A] =>> blog.Configuration ?=> F[A], SkeleExpr],
-    evalMark: core.Eval[[A] =>> MarkDownEnv ?=> F[A], SkeleExpr, blog.HtmlText],
-    evalExpr: core.Eval[[A] =>> ExprEnv ?=> F[A], SkeleExpr, SkeleExpr],
+    compiler: MarkDownCompiler[F, blog.HtmlText, MarkDownEnv, ExprEnv],
     generator: BlogIndexGenerator[[A] =>> GenEnv ?=> F[A]],
     htmlWriter: core.Writer[F, String, blog.HtmlText],
-
-  ) extends MarkdownCompiler[F, blog.HtmlText, MarkDownEnv, ExprEnv]:
+  ):
   import blog.page
 
   def registerIndex(item: page.Item)
@@ -160,7 +68,7 @@ final class HtmlRegister[F[_], MarkDownEnv, ExprEnv, GenEnv]
               else  M.raiseError(
                       blog.Error(s"blog path ${generator.config.blogPath} does not exist.")
                     )
-      html <- compileFile(s"$path/index.skele")
+      html <- compiler.compileFile(s"$path/index.skele")
       id   <- blogNo.map(_.pure).getOrElse(registerNewId)
       _    <- createDirectory(storePath)
       _    <- createDirectory(s"$storePath/$id")
@@ -189,7 +97,7 @@ final class HtmlRegister[F[_], MarkDownEnv, ExprEnv, GenEnv]
     val linkDir = s"${generator.config.blogRoute}"
     val format = java.time.format.DateTimeFormatter.ofPattern("yyyy年 MM月 dd日")
     for
-      html <- compileFile(path)
+      html <- compiler.compileFile(path)
       id   <- blogNo.map(_.pure).getOrElse(registerNewId)
       _    <- fileIO.createDirectory(s"${generator.config.blogPath}/pages")
       _    <- htmlWriter.write
@@ -223,7 +131,7 @@ final class HtmlRegister[F[_], MarkDownEnv, ExprEnv, GenEnv]
               else  M.raiseError(
                       blog.Error(s"blog path ${generator.config.blogPath} does not exist.")
                     )
-      html <- compile(src)
+      html <- compiler.compile(src)
       id   <- { println(html); blogNo.map(_.pure).getOrElse(registerNewId) }
       _    <- createDirectory(storePath)
       _    <- createDirectory(s"$storePath/$id")
@@ -241,21 +149,6 @@ final class HtmlRegister[F[_], MarkDownEnv, ExprEnv, GenEnv]
               ))
     yield ()
   end registerString
-
-  // def registerDirectory
-  //   (path: String, title: String, blogNo: Option[Int] = None)
-  //   (using ExprEnv, MarkDownEnv, GenEnv): F[Unit] = 
-  //   import blog.blogPath
-  //   import blog.blogRoute
-
-  //   val storePath = s"${generator.config.blogPath}/pages"
-  //   for 
-  //     src <- fileIO.readFile(s"$path/index.skele")
-  //     _   <- registerSkeleton(src, title, blogNo)
-  //     id  <- blogNo.map(_.pure).getOrElse(registerNewId)
-  //     _   <- fileIO.copyDirectory(path, s"$storePath/$id")
-  //   yield ()
-  // end registerDirectory
 
   def register
     (path: String, title: String, blogNo: Option[Int] = None)
@@ -284,19 +177,6 @@ object HtmlRegister:
   ] = new HtmlRegister
 
 end HtmlRegister
-
-
-/**
- * op1: [M] => M ?=> F[A]
- * op2: [N] => N ?=> F[B]
- * 
- * def func[C](using M, N): F[C] =
- *  for
-      a <- op1
-      b <- op2
-    yield
-      f(a, b)
-*/
 
 
 

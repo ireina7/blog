@@ -25,7 +25,7 @@ import server.staticcontent.*
 import scala.concurrent.ExecutionContext
 import cats.Monad
 import cats.implicits.*
-import blog.skeleton.MarkdownCompiler
+import blog.skeleton.compiler.MarkDownCompiler
 import blog.core.*
 import blog.skeleton.Exprs.SkeleExpr
 
@@ -263,7 +263,7 @@ object Routes:
 
       // println(s">>>>> ${req.bodyText.compile.toVector.unsafeRunSync}")
       val compiler = 
-        blog.skeleton.MarkdownCompiler.htmlCompilerIOErr
+        MarkDownCompiler.htmlCompilerIOErr
       for
         (code, name) <- req.as[(String, String)]
         // expr <- PreMarkDownExprEvaluator.eval
