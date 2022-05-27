@@ -258,7 +258,7 @@ object Exprs:
     case class Num(n: Double) extends Pattern
     case class Str(s: String) extends Pattern
     case class Quote(e: SkeleExpr) extends Pattern
-    case class App(f: SkeleExpr, xs: List[SkeleExpr]) extends Pattern
+    case class App(function: SkeleExpr, parameters: List[SkeleExpr]) extends Pattern
     
     case class Lambda(ps: List[Pattern], expr: SkeleExpr) extends SkeleExpr
     case class Closure(ps: List[Pattern], expr: SkeleExpr, var env: Env) extends SkeleExpr {

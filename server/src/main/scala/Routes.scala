@@ -28,6 +28,7 @@ import cats.implicits.*
 import blog.skeleton.compiler.MarkDownCompiler
 import blog.core.*
 import blog.skeleton.Exprs.SkeleExpr
+import blog.page.Component
 
 
 
@@ -239,17 +240,17 @@ object Routes:
         res <-  
           if true
           then {
-            val boxedCode = s"\\box{$code}"
-            register.registerString(boxedCode, title)(using exprEnvEvil)
-              .value 
-              .flatMap {
+            val src = s"\\box{$code}"
+            for
+              ans <- register.registerString(src, title)(using exprEnvEvil).value
+              res <- ans match
                 case Right(_)  => 
-                  Ok(span(style := "color:green;font-family:monospace;font-size:18;")("Ok registered.").toString)
+                  Ok(Component.successMessage("Ok registered."))
                 case Left(err) => 
-                  Ok(span(style := "color:red;font-family:monospace;font-size:18;")(err.toString))
-              }
+                  Ok(Component.errorMessage(err.toString))
+            yield res
           }
-          else Ok(span(style := "color:red;font-family:monospace;font-size:18;")("Permission denied. You have to login first."))
+          else Ok(Component.errorMessage("Permission denied. You have to login first."))
       yield res
     }
 
@@ -282,19 +283,15 @@ object Routes:
             compiler.eval(s"${name.takeWhile(_ != '{')}")(using conf)(using exprEnvEvil)
               .flatMap { e =>
                 div(
-                  span(style := "color:green;font-family:monospace;font-size:18;")(
-                    s"\\set$name:"
-                  ),
+                  Component.successMessage(s"\\set$name:"),
                   div(e),
                 ).pure
               }
           ).value
         }
         res  <- Ok(html match {
-          case Right(ss) => div(ss).toString
-          case Left(err) => span(style := "color:red;font-family:monospace;font-size:18;")(
-            err.toString
-          ).toString
+          case Right(ss) => div(ss)
+          case Left(err) => Component.errorMessage(err.toString)
         })
       yield res
     }

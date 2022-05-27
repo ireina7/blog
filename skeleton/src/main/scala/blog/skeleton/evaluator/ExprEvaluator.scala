@@ -511,7 +511,7 @@ object PreMarkDownExprEvaluator:
               (ps, p) =>
                 for {
                   xs <- ps
-                  pv <- p.eval(using env1)
+                  pv <- p.eval(using env)
                 } yield pv :: xs // for perfomance
             }.map(_.reverse)
             // param <- ps.traverse(_.eval(using env)) //bad bad bad! never use abstractions you do not familiar with

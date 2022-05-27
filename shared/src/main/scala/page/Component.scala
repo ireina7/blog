@@ -107,4 +107,10 @@ object Component {
   def Dependencies: BlogContext[AllLibraries] = conf ?=>
     new AllLibraries(conf)
 
+  def successMessage(msg: String): HtmlText =
+    span(style := "color:green;font-family:monospace;font-size:18;")(msg)
+
+  def errorMessage(msg: String): HtmlText = 
+    span(style := "color:red;font-family:monospace;font-size:18;")(msg)
+
 }
