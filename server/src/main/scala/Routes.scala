@@ -256,39 +256,38 @@ object Routes:
     case req @ POST -> Root / "compile" => {
       import org.http4s.FormDataDecoder.*
       import blog.skeleton.Exprs.SkeleExpr.*
+      import blog.skeleton.parser.NaiveParser.given
+      import MarkDownEvaluator.given
+      import PreMarkDownExprEvaluator.given
       
       given codeDecoder: FormDataDecoder[(String, String)] = 
         (field[String]("src"), field[String]("name"))
           .mapN((a, b) => (a, b))
 
       // println(s">>>>> ${req.bodyText.compile.toVector.unsafeRunSync}")
-      val compiler = 
-        MarkDownCompiler.htmlCompilerIOErr
+      val compiler = MarkDownCompiler
+        .given_markDownCompiler[
+          IOErr,
+          MarkDownEvaluator.Environment,
+          PreMarkDownExprEvaluator.Environment,
+          blog.HtmlText, 
+        ]
       for
         (code, name) <- req.as[(String, String)]
-        // expr <- PreMarkDownExprEvaluator.eval
         html <- {
           val evalExpr = compiler
-            .eval(s"\\box {$code}")
-              (using summon[blog.Configuration])
-              (using exprEnvEvil)
-          // if name == ""
-          // then evalExpr.value
-          // else (
+            .eval(s"\\box {$code}")(using conf)(using exprEnvEvil)
           (
-            compiler.eval(s"(\\set $name $code)")
-              (using summon[blog.Configuration])
-              (using exprEnvEvil) >> 
-            compiler.eval(s"${name.takeWhile(_ != '{')}")
-              (using summon[blog.Configuration])
-              (using exprEnvEvil).flatMap { e =>
-              div(
-                span(style := "color:green;font-family:monospace;font-size:18;")(
-                  s"\\set$name:"
-                ),
-                div(e),
-              ).pure
-            }
+            compiler.eval(s"(\\set $name $code)")(using conf)(using exprEnvEvil) >> 
+            compiler.eval(s"${name.takeWhile(_ != '{')}")(using conf)(using exprEnvEvil)
+              .flatMap { e =>
+                div(
+                  span(style := "color:green;font-family:monospace;font-size:18;")(
+                    s"\\set$name:"
+                  ),
+                  div(e),
+                ).pure
+              }
           ).value
         }
         res  <- Ok(html match {

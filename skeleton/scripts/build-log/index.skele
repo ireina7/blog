@@ -3,7 +3,7 @@
   \import {./skeleton/scripts/predef.skele}
 
   (\set\scala) {
-    \color{.red Scala\ }
+    \color{[red] Scala\ }
   }
   \set {\part{\self}} {
     \line\###{\self}
