@@ -237,7 +237,7 @@ object Main:
           // delButton,
           newButton,
           newBlogButton,
-          titleInput,
+          // titleInput,
           br, br,
           outputArea,
         ).render
@@ -297,16 +297,16 @@ object Main:
       if nameTag.value == "" 
       then nameTag.placeholder
       else nameTag.value
-    val titleContent =
-      document
-      .getElementById(s"title$curId")
-      .asInstanceOf[HTMLTextAreaElement]
-      .value
+    // val titleContent =
+    //   document
+    //   .getElementById(s"title$curId")
+    //   .asInstanceOf[HTMLTextAreaElement]
+    //   .value
     
     
     val encode = js.URIUtils.encodeURIComponent
     httpReq.send(
-      s"src=${encode(content)}&name=${encode(nameContent)}&title=${encode(titleContent)}"
+      s"src=${encode(content)}&name=${encode(nameContent)}&title="
     )
   }
 

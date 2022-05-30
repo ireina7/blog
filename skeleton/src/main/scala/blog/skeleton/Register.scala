@@ -113,7 +113,7 @@ final class HtmlRegister[F[_], MarkDownEnv, ExprEnv, GenEnv]
   end registerFile
 
   def registerString
-    (src: String, title: String, blogNo: Option[Int] = None)
+    (src: String, blogNo: Option[Int] = None)
     (using ExprEnv, MarkDownEnv, GenEnv): F[Unit] = 
     import blog.blogPath
     import blog.blogRoute
@@ -130,6 +130,7 @@ final class HtmlRegister[F[_], MarkDownEnv, ExprEnv, GenEnv]
                       blog.Error(s"blog path ${generator.config.blogPath} does not exist.")
                     )
       html <- compiler.compile(src)
+      tit  <- compiler.compile("\\title")
       id   <- { println(html); blogNo.map(_.pure).getOrElse(registerNewId) }
       _    <- createDirectory(storePath)
       _    <- createDirectory(s"$storePath/$id")
@@ -139,7 +140,7 @@ final class HtmlRegister[F[_], MarkDownEnv, ExprEnv, GenEnv]
                 (s"$storePath/$id/index.html")
       _    <- registerIndex(page.Item(
                 id     = id, 
-                title  = title,
+                title  = tit.render,
                 link   = s"$linkDir/$id/index.html",
                 author = "Ireina7",
                 date   = java.time.LocalDateTime.now.format(format),

@@ -227,6 +227,11 @@ object Routes:
     case req @ POST -> Root / "submit" => {
       import org.http4s.FormDataDecoder.*
       import blog.skeleton.Exprs.SkeleExpr.*
+      import blog.core.Effect.given
+      import blog.skeleton.parser.NaiveParser.given
+      import PreMarkDownExprEvaluator.given
+      import MarkDownEvaluator.given
+      import MarkDownCompiler.given
       
       given codeDecoder: FormDataDecoder[(String, String, String)] = 
         (field[String]("src"), field[String]("name"), field[String]("title"))
@@ -234,6 +239,9 @@ object Routes:
       
       val register = 
         blog.skeleton.HtmlRegister.htmlRegisterIOErr
+      val extractor = blog.skeleton.abstractor
+        .SkeleEnvAbstractor
+        .skeleEnvAbstractorF[IOErr]
 
       for
         (code, name, title) <- req.as[(String, String, String)]
@@ -242,13 +250,17 @@ object Routes:
           then {
             val src = s"\\box{$code}"
             for
-              ans <- register.registerString(src, title)(using exprEnvEvil).value
-              res <- ans match
+              article <- register.registerString(src)(using exprEnvEvil).value
+              title   <- extractor.extract(Var("title")).value
+              res     <- article match
                 case Right(_)  => 
-                  Ok(Component.successMessage("Ok registered."))
+                  Ok(Component.successMessage(s"Ok registered blog: ${title.map(_.render).getOrElse("none")}"))
                 case Left(err) => 
                   Ok(Component.errorMessage(err.toString))
-            yield res
+            yield {
+              // println(s"Title: $title")
+              res
+            }
           }
           else Ok(Component.errorMessage("Permission denied. You have to login first."))
       yield res
@@ -258,6 +270,7 @@ object Routes:
       import org.http4s.FormDataDecoder.*
       import blog.skeleton.Exprs.SkeleExpr.*
       import blog.skeleton.parser.NaiveParser.given
+      // import blog.skeleton.evaluator.ExprEvaluator.given
       import MarkDownEvaluator.given
       import PreMarkDownExprEvaluator.given
       

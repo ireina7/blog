@@ -26,4 +26,9 @@ object Path:
   val blogs = s"$root/shared/public"
   val items = default.index
 
+
+  // val Root = new Path {
+  //   def x = 0
+  // }
+
 end Path

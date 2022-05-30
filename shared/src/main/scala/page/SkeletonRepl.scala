@@ -55,18 +55,18 @@ object SkeletonRepl:
         style := "float: right;",
         onclick := "blog.newBlogSkele(0)",
       )
-    val titleInput =
-      // div(cls := "skele-compiler-input-name md-form amber-textarea active-pink-textarea-2")(
-        textarea(
-          `class` := "md-textarea form-control", 
-          id := s"title0", 
-          name := "title", 
-          rows := 1,
-          width := 500,
-          placeholder := s"title here",
-          style := "font-family:monospace; background-color:white; float:right; display: none",
-          oninput := "this.parentNode.dataset.replicatedValue = this.value",
-        )
+    // val titleInput =
+    //   // div(cls := "skele-compiler-input-name md-form amber-textarea active-pink-textarea-2")(
+    //     textarea(
+    //       `class` := "md-textarea form-control", 
+    //       id := s"title0", 
+    //       name := "title", 
+    //       rows := 1,
+    //       width := 500,
+    //       placeholder := s"title here",
+    //       style := "font-family:monospace; background-color:white; float:right; display: none",
+    //       oninput := "this.parentNode.dataset.replicatedValue = this.value",
+    //     )
       // )
         
     val inputArea = 
@@ -94,7 +94,7 @@ object SkeletonRepl:
       delButton,
       newButton,
       newBlogButton,
-      titleInput,
+      // titleInput,
       br, br,
       outputArea,
     )

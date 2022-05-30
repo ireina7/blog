@@ -24,6 +24,7 @@ class MarkDownCompiler[F[_]: Monad, MarkEnv, ExprEnv, Output]
     evalExpr: core.Eval[[A] =>> ExprEnv ?=> F[A], SkeleExpr, SkeleExpr],
   ) extends blog.skeleton.compiler.Compiler[
     [A] =>> Effect.Injections[F, (blog.Configuration, ExprEnv, MarkEnv), A],
+    String,
     Output
     // [A] =>> 
     //   Injection[

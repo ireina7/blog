@@ -9,10 +9,10 @@ import cats.syntax.functor.*
 import blog.core
 
 
-trait Compiler[F[_]: Monad, Output]
-  extends core.Eval[F, String, Output] {
+trait Compiler[F[_]: Monad, Input, Output]
+  extends core.Eval[F, Input, Output] {
   
-  def compile(s: String): F[Output] =
+  def compile(s: Input): F[Output] =
     s.eval
 }
 
