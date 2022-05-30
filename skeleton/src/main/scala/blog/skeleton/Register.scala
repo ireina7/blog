@@ -112,12 +112,16 @@ final class HtmlRegister[F[_], MarkDownEnv, ExprEnv, GenEnv]
     yield ()
   end registerFile
 
+  // def x = 0
+
   def registerString
     (src: String, blogNo: Option[Int] = None)
     (using ExprEnv, MarkDownEnv, GenEnv): F[Unit] = 
     import blog.blogPath
     import blog.blogRoute
     import fileIO.*
+    import cats.syntax.all.catsSyntaxApplicativeError
+    import scalatags.Text.all.raw
 
     val linkDir = s"${generator.config.blogRoute}"
     val storePath = s"${generator.config.blogPath}/pages"
@@ -130,7 +134,7 @@ final class HtmlRegister[F[_], MarkDownEnv, ExprEnv, GenEnv]
                       blog.Error(s"blog path ${generator.config.blogPath} does not exist.")
                     )
       html <- compiler.compile(src)
-      tit  <- compiler.compile("\\title")
+      tit  <- compiler.compile("\\title").recoverWith(_ => raw("无题").pure)
       id   <- { println(html); blogNo.map(_.pure).getOrElse(registerNewId) }
       _    <- createDirectory(storePath)
       _    <- createDirectory(s"$storePath/$id")

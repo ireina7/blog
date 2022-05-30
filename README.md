@@ -2,7 +2,7 @@
 My personal blog written mostly in Scala and Java.
 Trying `finally tagless` with `extensive effects`.
 ![k-on!](./img/k-on-q.png)  
-- version: `0.4.1`
+- version: `0.4.2`
 
 ## Dependences
 - `Scala3` the programming language
@@ -36,6 +36,9 @@ where `F` is the computation effect.
 All trait are parameterized with computation effects (e.g. `F[_]`).
 One can easily extend more implementations of 
 the program **without** changing any existed code.
+
+### Dependency Injection
+Using `The ReaderT pattern`.
 
 #### Static blog generation
 Just `given` the static blog configuration, then everything done!

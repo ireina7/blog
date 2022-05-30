@@ -331,13 +331,14 @@ object Effect:
   ): Parser[[A] =>> Injection[F, Env, A], page.Index] with
     override def parse(s: String) = conf ?=>
       val ftree = fp.parse(s)
-      if conf.debugging
-      then 
-        for
-          tree <- ftree
-          _    <- console.log(tree.toString)
-        yield tree
-      else ftree
+      ftree
+      // if conf.debugging
+      // then 
+      //   for
+      //     tree <- ftree
+      //     _    <- console.log(tree.toString)
+      //   yield tree
+      // else ftree
   
 
   given [F[_], Env](using F: Runnable[F], env: Env):

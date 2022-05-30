@@ -37,3 +37,7 @@
 ## Version `0.4.1`
 - Fixed many bugs
 - Skeleton online notebook !
+
+## Version `0.4.2`
+- Dependency injection is not simple, decide to try `The ReaderT pattern`.
+- Now can set title inside article file.

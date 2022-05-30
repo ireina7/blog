@@ -18,9 +18,9 @@ given [F[_]: Monad, A]:
   Environment[F, BlogEnv[A], String, A] with {
 
   extension (env: BlogEnv[A]) 
-    inline def configuration: blog.Configuration = env.config
-    inline def debugging: Boolean = false
-    def query(query: String): F[A] = ???
+    // inline def configuration: blog.Configuration = env.config
+    // inline def debugging: Boolean = false
+    def get(query: String): F[A] = ???
     def add(query: String, a: A): F[Unit] = ???
 }
 
