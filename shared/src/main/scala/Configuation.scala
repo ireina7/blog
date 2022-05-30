@@ -1,6 +1,12 @@
 package blog
 
 
+/**
+ * Typeclass to get configuration
+*/
+trait HasConfiguration[F[_], Conf]:
+  def conf: Configuration
+
 
 enum BlogType:
   case Online
@@ -64,5 +70,10 @@ object Configuration:
   end given
 
 end Configuration
+
+
+
+
+
 
 

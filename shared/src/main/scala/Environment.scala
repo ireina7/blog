@@ -1,6 +1,7 @@
 package blog
 
 import cats.*
+import cats.syntax.applicative.*
 
 
 class BlogEnv[A](val config: blog.Configuration) {
@@ -14,14 +15,18 @@ class BlogEnv[A](val config: blog.Configuration) {
 
 
 import blog.core.Environment
-given [F[_]: Monad, A]: 
-  Environment[F, BlogEnv[A], String, A] with {
+given [F[_], A](using M: MonadError[F, Throwable])
+  : Environment[F, BlogEnv[A], String, A] with {
 
   extension (env: BlogEnv[A]) 
     // inline def configuration: blog.Configuration = env.config
     // inline def debugging: Boolean = false
-    def get(query: String): F[A] = ???
-    def add(query: String, a: A): F[Unit] = ???
+    override def get(query: String): F[A] = 
+      env.get(query) match 
+        case Some(x) => x.pure
+        case None => M.raiseError(blog.Error(s"Not found in environment: $query"))
+    override def add(k: String, v: A): F[Unit] = 
+      env.put(k ,v).pure
 }
 
 

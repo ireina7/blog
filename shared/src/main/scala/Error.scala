@@ -11,6 +11,7 @@ class Error(val msg: String) extends Exception {
 }
 
 type Result[A] = Either[Throwable, A]
+type MonadThrow[F[_]] = cats.MonadError[F, Throwable]
 
 
 object Error {

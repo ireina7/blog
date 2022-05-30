@@ -24,16 +24,16 @@ Trying `finally tagless` with `extensive effects`.
 - The Skeleton online repl! You can try Skeleton directly on web page!
   Check [Skeleton notebook](http://ireina.us/skeleton)
 
-## Development log
-- Pleaase refer to the [Development log](./doc/DEV.md)
+## Development
+- Please refer to the [Development log](./doc/DEV.md)
 
 ### The HTTP server
-The HTTP server is modeled as a simple function:
+The HTTP server is modeled as a *simple function*:
 `Request[F] => OptionT[F, Response[F]]`
-where `F` is the computation effect.
+where `F` is the *computation effect*.
 
 ### Highly extensible and scalable by using finally tagless
-All trait are parameterized with computation effects (e.g. `F[_]`).
+All trait are parameterized with *computation effects* (e.g. `F[_]`).
 One can easily extend more implementations of 
 the program **without** changing any existed code.
 

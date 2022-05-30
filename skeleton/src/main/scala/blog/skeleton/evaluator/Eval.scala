@@ -9,8 +9,6 @@ import blog.core.Eval
 import blog.skeleton.Expr
 import blog.skeleton.Exprs.SkeleExpr.*
 import blog.skeleton.Exprs.*
-// import blog.skeleton.Trees.*
-// import blog.skeleton.Trees.SkeleTree.*
 
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
@@ -42,7 +40,7 @@ trait EvalExpr[F[_], Input, Output] extends
 
 
 trait EvalSkeleExpr[F[_], Value] 
-  (using errDsl: MonadError[F, Throwable])
+  (using M: MonadError[F, Throwable])
   extends EvalExpr[F, SkeleExpr, Value]:
 
   /** Function for evaluate [[SkeleExpr]]s.
@@ -89,19 +87,30 @@ trait EvalSkeleExpr[F[_], Value]
           v <- e.eval
           s <- set(p, v)
         } yield s
-        case Define(name, ps, e) => for {
-          params <- ps.traverse(p => p.eval)
-          exp    <- e.eval
-          definition <- define(name, params, exp)
-        } yield definition
-        case Block(states) => states.foldLeft(Pass.eval)(_ *> _.eval)
-        case App(f, ps) => for {
-          func  <- f.eval
-          param <- ps.traverse(_.eval)
-          res   <- application(func, param)
-        } yield res
+        case Define(name, ps, e) => 
+          for
+            params <- ps.traverse(p => p.eval)
+            exp    <- e.eval
+            definition <- define(name, params, exp)
+          yield definition
+        case Block(states) => 
+          states.foldLeft(Pass.eval)(_ *> _.eval)
+        /**
+         * Function application
+         * @param f the function
+         * @param ps parameters
+        */
+        case App(f, ps) => 
+          for
+            function   <- f.eval
+            parameters <- ps.traverse(_.eval)
+            result     <- application(function, parameters)
+          yield result
+        /**
+         * Unknown expression error (default)
+        */
         case _ => 
-          errDsl.raiseError(
+          M.raiseError(
             blog.Error(s"Evaluation error: Unknown expression: $expr")
           )
       end match

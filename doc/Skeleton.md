@@ -30,21 +30,53 @@ or even
   x y z o...
 }
 ```
+```
+\f{x}{y}{z} {o...}
+```
+
+### Variables and definitons
+In `Skeleton`, all abstraction are achieved by a special function `\set`.
+To `\set` a variable, write
+```
+\set {<variable name>} {<variable value>}
+```
+
+To `\set` a function, try
+```
+\set {<function pattern>} {<function body>}
+```
+
+For example:
+```
+\set {\css{\style}} {
+  \lambda{\self} {
+    font{\style}{\self}
+  }
+}
+```
+
+### Common utility functions
+
+
+
+
 #### Example
 ```
 \document {
-  (\set \class article)
+  \set {\class} {article}
 
-  (\** Head titles, the more stars, the less weigth of font)
+  \## {Head titles, the more stars, the less weigth of font}
   \paragraph {
     This is a paragraph.
     You can make (\italic texts italic) or (\bold texts).
   }
 
-  (\*** Lets insert image!)
-  (\image (\set \src ./assets/k-on.png))
+  \### {Lets insert image!}
+  \image {
+    (\set \src ./assets/k-on.png)
+  }
 
-  (\*** Or a link)
+  \### {Or a link}
   (\link (\set \href www.github.com) Github)
 }
 ```
